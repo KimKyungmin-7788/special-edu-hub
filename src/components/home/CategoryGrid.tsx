@@ -12,6 +12,7 @@ import {
   Sparkles,
   Users,
   Settings,
+  Zap,
   type LucideIcon,
 } from "lucide-react"
 import { categories, type Category } from "@/config/categories"
@@ -30,6 +31,7 @@ const iconMap: Record<string, LucideIcon> = {
   sparkles: Sparkles,
   users: Users,
   settings: Settings,
+  zap: Zap,
 }
 
 /** 카테고리는 과목→과목별 상세, 업무→업무혁신 페이지로 이동. */
@@ -43,7 +45,9 @@ export function CategoryGrid() {
     <section>
       <h2 className="mb-4 text-lg font-semibold tracking-tight">카테고리</h2>
       <ul className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-6">
-        {categories.map((c) => {
+        {categories
+          .filter((c) => !c.hideFromGrid)
+          .map((c) => {
           const Icon = iconMap[c.icon] ?? Sparkles
           return (
             <li key={c.id}>

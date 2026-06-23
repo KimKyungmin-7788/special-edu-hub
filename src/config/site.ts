@@ -10,9 +10,9 @@ export type HeroSlide =
 
 export const site = {
   /** 가칭 — 추후 교체 */
-  name: "강원 특수교육 디지털 학습자료 누리집",
+  name: "(가칭)강원 특수교육 디지털 학습자료 누리집",
   /** 이미지 로고 들어오면 교체 */
-  logoText: "(로고 미정)",
+  logoText: "로고",
 
   hero: {
     title: "교과서만으로는 수업이 힘든\n특수교사가 직접 만든 디지털 교육자료",

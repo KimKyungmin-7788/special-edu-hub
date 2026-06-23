@@ -11,7 +11,7 @@ export function Header() {
     <header className="sticky top-0 z-40 border-b bg-background">
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4">
         <Link to="/" className="flex shrink-0 items-center gap-2">
-          <span className="text-base font-semibold tracking-tight">
+          <span className="flex items-center rounded-md bg-muted px-2.5 py-1 text-sm font-semibold tracking-tight text-muted-foreground">
             {site.logoText}
           </span>
           <span className="hidden text-sm text-muted-foreground lg:inline">

@@ -38,7 +38,7 @@ export const seedApps: App[] = [
   },
   {
     id: "multiboard",
-    title: "멀티보드",
+    title: "특수교육 툴킷",
     appUrl: "https://example.com",
     thumbnailUrl: "",
     authorName: "이수아",
@@ -133,5 +133,33 @@ export const seedApps: App[] = [
     likeCount: 5,
     bookmarkCount: 3,
     createdAt: "2026-05-29",
+  },
+  {
+    id: "iep-helper",
+    title: "개별화교육계획 도우미",
+    appUrl: "https://example.com",
+    thumbnailUrl: "",
+    authorName: "서지호",
+    description:
+      "개별화교육계획(IEP) 목표 문장을 영역별로 골라 조합하는 도구. 반복 작성 부담을 줄이려고 만들었습니다.",
+    categoryIds: ["work"],
+    viewCount: 274,
+    likeCount: 16,
+    bookmarkCount: 12,
+    createdAt: "2026-06-20",
+  },
+  {
+    id: "lecture-log-collect",
+    title: "강사수업일지 일괄 취합",
+    appUrl: "https://example.com",
+    thumbnailUrl: "",
+    authorName: "노은채",
+    description:
+      "강사들이 제출한 수업일지를 한 번에 모아 정리해 주는 도구. 양식 통일과 취합 작업을 자동화해 행정 부담을 줄입니다.",
+    categoryIds: ["work", "automation"],
+    viewCount: 183,
+    likeCount: 9,
+    bookmarkCount: 7,
+    createdAt: "2026-06-10",
   },
 ]

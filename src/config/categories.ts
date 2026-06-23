@@ -12,6 +12,11 @@ export type Category = {
   type: CategoryType
   icon: string
   sortOrder: number
+  /**
+   * 랜딩 카테고리 그리드에서 숨긴다(상위 진입점 아님).
+   * 업무혁신 같은 상위 분류의 하위 필터로만 쓰는 카테고리에 사용.
+   */
+  hideFromGrid?: boolean
 }
 
 export const categories: Category[] = [
@@ -27,6 +32,7 @@ export const categories: Category[] = [
   { id: "creative", name: "창체", type: "subject", icon: "sparkles", sortOrder: 10 },
   { id: "class", name: "학급경영", type: "subject", icon: "users", sortOrder: 11 },
   { id: "work", name: "업무혁신", type: "work", icon: "settings", sortOrder: 12 },
+  { id: "automation", name: "업무자동화", type: "work", icon: "zap", sortOrder: 13, hideFromGrid: true },
 ]
 
 /** id로 카테고리 조회 (이름·아이콘 렌더링용) */

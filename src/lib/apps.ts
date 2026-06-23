@@ -1,4 +1,5 @@
 import { seedApps, type App } from "@/data/seed"
+import { getCategory, type CategoryType } from "@/config/categories"
 
 /**
  * 데이터 접근 일원화 지점.
@@ -20,4 +21,18 @@ export async function getApps(): Promise<App[]> {
 /** id 로 단일 앱. */
 export async function getApp(id: string): Promise<App | undefined> {
   return seedApps.find((a) => a.id === id)
+}
+
+/** 특정 카테고리(과목·업무 id)에 속한 앱만 (최신순). */
+export async function getAppsByCategory(categoryId: string): Promise<App[]> {
+  const apps = await getApps()
+  return apps.filter((a) => a.categoryIds.includes(categoryId))
+}
+
+/** 카테고리 타입('subject' | 'work')에 속한 앱만 (최신순). */
+export async function getAppsByType(type: CategoryType): Promise<App[]> {
+  const apps = await getApps()
+  return apps.filter((a) =>
+    a.categoryIds.some((id) => getCategory(id)?.type === type),
+  )
 }
