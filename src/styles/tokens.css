@@ -1,0 +1,53 @@
+/* ============================================================
+   디자인 토큰 — 색·폰트·반경의 "유일한" 정의처.
+   브랜드가 정해지면 이 파일만 바꾸면 전체가 바뀐다.
+   지금은 중립(화이트·블랙·그레이) + 시스템 폰트.
+
+   변수 이름은 shadcn/ui 규약을 따른다(컴포넌트 호환).
+   BUILD.md 토큰 대응:
+     --background        ← --color-bg        (페이지 배경)
+     --surface           ← --color-surface   (카드·영역 배경)
+     --border            ← --color-border
+     --foreground        ← --color-text
+     --muted-foreground  ← --color-text-muted
+     --primary           ← --color-primary   (브랜드 정해지면 여기부터)
+   ============================================================ */
+
+:root {
+  /* 타이포 */
+  --font-main: system-ui, -apple-system, "Pretendard", "Segoe UI", sans-serif;
+
+  /* 모양 */
+  --radius: 12px;
+
+  /* 색 — 중립(화이트·블랙·그레이) */
+  --background: #ffffff;
+  --foreground: #1a1a1a;
+
+  --surface: #f7f7f8; /* 카드·영역 배경 */
+
+  --card: #ffffff;
+  --card-foreground: #1a1a1a;
+
+  --popover: #ffffff;
+  --popover-foreground: #1a1a1a;
+
+  --primary: #1a1a1a; /* 브랜드 정해지면 여기부터 교체 */
+  --primary-foreground: #ffffff;
+
+  --secondary: #f7f7f8;
+  --secondary-foreground: #1a1a1a;
+
+  --muted: #f7f7f8;
+  --muted-foreground: #6b6b70;
+
+  --accent: #f1f1f3;
+  --accent-foreground: #1a1a1a;
+
+  --destructive: #b91c1c;
+  --destructive-foreground: #ffffff;
+
+  --border: #e5e5e8;
+  --input: #e5e5e8;
+  --ring: #1a1a1a;
+}
