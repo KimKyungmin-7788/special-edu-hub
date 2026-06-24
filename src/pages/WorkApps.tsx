@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { AppCardList } from "@/components/home/AppCardList"
 import { getAppsByType, type App } from "@/lib/apps"
+import { CONTAINER } from "@/config/layout"
 
 /** 업무혁신 카탈로그 — 'work' 타입 카테고리 앱을 카드 목록으로. */
 export function WorkApps() {
@@ -17,7 +18,7 @@ export function WorkApps() {
   }, [])
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
+    <div className={`${CONTAINER} py-8`}>
       <h1 className="text-2xl font-semibold tracking-tight">업무혁신</h1>
       <p className="mt-2 mb-8 text-sm text-muted-foreground">
         {apps.length}개 앱

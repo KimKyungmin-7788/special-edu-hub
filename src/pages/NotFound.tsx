@@ -1,9 +1,10 @@
 import { Link } from "react-router-dom"
+import { CONTAINER } from "@/config/layout"
 
 /** 잘못된 경로. */
 export function NotFound() {
   return (
-    <div className="mx-auto max-w-6xl px-4 py-24 text-center">
+    <div className={`${CONTAINER} py-24 text-center`}>
       <h1 className="text-2xl font-semibold tracking-tight">
         페이지를 찾을 수 없습니다
       </h1>

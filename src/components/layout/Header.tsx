@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom"
 import { site } from "@/config/site"
+import { CONTAINER } from "@/config/layout"
 import { Nav } from "@/components/layout/Nav"
 import { useAuth } from "@/lib/auth"
 
@@ -11,7 +12,7 @@ import { useAuth } from "@/lib/auth"
 export function Header() {
   return (
     <header className="sticky top-0 z-40 border-b bg-background">
-      <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4">
+      <div className={`${CONTAINER} flex h-14 items-center gap-4`}>
         <Link to="/" className="flex shrink-0 items-center gap-2">
           <span className="flex items-center rounded-md bg-muted px-2.5 py-1 text-sm font-semibold tracking-tight text-muted-foreground">
             {site.logoText}

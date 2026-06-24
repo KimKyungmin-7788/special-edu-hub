@@ -4,6 +4,7 @@ import { getCategory } from "@/config/categories"
 import { SubjectSidebar } from "@/components/app/SubjectSidebar"
 import { AppCardList } from "@/components/home/AppCardList"
 import { getAppsByCategory, getAppsByType, type App } from "@/lib/apps"
+import { CONTAINER } from "@/config/layout"
 
 /**
  * 과목별 카탈로그.
@@ -35,7 +36,7 @@ export function SubjectApps() {
   }, [categoryId, unknown])
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
+    <div className={`${CONTAINER} py-8`}>
       <div className="flex flex-col gap-8 lg:flex-row">
         <SubjectSidebar />
 

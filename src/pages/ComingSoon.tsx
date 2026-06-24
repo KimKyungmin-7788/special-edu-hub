@@ -1,10 +1,12 @@
+import { CONTAINER } from "@/config/layout"
+
 /**
  * "준비 중" 공용 페이지 — 수업실천사례 / 자유게시판 / 교사인증센터.
  * 자리만 존재하고 기능은 후속 단계(CLAUDE.md 규칙 4).
  */
 export function ComingSoon({ title }: { title: string }) {
   return (
-    <div className="mx-auto max-w-6xl px-4 py-24 text-center">
+    <div className={`${CONTAINER} py-24 text-center`}>
       <p className="text-xs font-medium tracking-wide text-muted-foreground">
         준비 중
       </p>
