@@ -43,12 +43,13 @@ function AuthArea() {
   if (user) {
     return (
       <div className="flex shrink-0 items-center gap-2">
-        <span
-          className="hidden max-w-[12rem] truncate text-sm text-muted-foreground sm:inline"
+        <Link
+          to="/mypage"
+          className="hidden max-w-[12rem] truncate text-sm text-muted-foreground hover:text-foreground sm:inline"
           title={user.email ?? undefined}
         >
           {user.email}
-        </span>
+        </Link>
         <button
           type="button"
           onClick={() => void signOut()}

@@ -11,6 +11,7 @@ import { AppDetail } from "@/pages/AppDetail"
 import { ComingSoon } from "@/pages/ComingSoon"
 import { Login } from "@/pages/Login"
 import { Signup } from "@/pages/Signup"
+import { MyPage } from "@/pages/MyPage"
 import { NotFound } from "@/pages/NotFound"
 
 function App() {
@@ -33,6 +34,7 @@ function App() {
             {/* 로그인 / 회원가입 (이메일+비번) */}
             <Route path="login" element={<Login />} />
             <Route path="signup" element={<Signup />} />
+            <Route path="mypage" element={<MyPage />} />
 
             {/* 자리만 / 준비 중 */}
             <Route
