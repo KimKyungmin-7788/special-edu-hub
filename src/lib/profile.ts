@@ -102,12 +102,28 @@ export async function updateProfile(
 /** 아바타 버킷(공개). 05_avatars.sql 에서 생성. */
 const AVATAR_BUCKET = "avatars"
 
+/** 공개 URL 에서 버킷 내부 경로(<uid>/<file>)만 뽑는다. 아니면 null. */
+function avatarPathFromUrl(url: string | null | undefined): string | null {
+  if (!url) return null
+  const marker = `/${AVATAR_BUCKET}/`
+  const i = url.indexOf(marker)
+  if (i === -1) return null
+  return url.slice(i + marker.length).split("?")[0]
+}
+
 /**
  * 아바타 이미지를 업로드하고 avatar_url 을 갱신한다.
  * 경로는 avatars/<uid>/<timestamp>.<ext> — 본인 폴더에만 쓰도록 RLS 가 강제.
  * 성공 시 새 공개 URL 을 돌려준다.
+ *
+ * prevUrl 을 주면, 교체 성공 후 이전 파일을 삭제한다(Storage 누적 방지).
+ * 삭제는 best-effort — 실패해도 교체 자체는 성공 처리한다.
  */
-export async function uploadAvatar(userId: string, file: File): Promise<string> {
+export async function uploadAvatar(
+  userId: string,
+  file: File,
+  prevUrl?: string | null,
+): Promise<string> {
   const ext = file.name.split(".").pop()?.toLowerCase() || "png"
   const path = `${userId}/${Date.now()}.${ext}`
 
@@ -125,6 +141,17 @@ export async function uploadAvatar(userId: string, file: File): Promise<string> 
     .update({ avatar_url: publicUrl })
     .eq("id", userId)
   if (updateError) throw updateError
+
+  // 교체 성공 후 이전 파일 정리(새 파일과 다를 때만).
+  const prevPath = avatarPathFromUrl(prevUrl)
+  if (prevPath && prevPath !== path) {
+    const { error: removeError } = await supabase.storage
+      .from(AVATAR_BUCKET)
+      .remove([prevPath])
+    if (removeError) {
+      console.warn("[profile] 이전 아바타 삭제 실패:", removeError.message)
+    }
+  }
 
   return publicUrl
 }

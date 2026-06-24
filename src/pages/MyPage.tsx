@@ -127,7 +127,7 @@ export function MyPage() {
 
     setUploadingAvatar(true)
     try {
-      const url = await uploadAvatar(user.id, file)
+      const url = await uploadAvatar(user.id, file, avatarUrl)
       setAvatarUrl(url)
     } catch (err) {
       setAvatarError(err instanceof Error ? err.message : "업로드에 실패했습니다.")
