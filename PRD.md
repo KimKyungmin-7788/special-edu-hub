@@ -287,6 +287,42 @@
 5. 인증 후 최초 로그인 축하 팝업
 6. 관리자 검토: Studio로 시작 → 나중에 `/admin`
 
+#### 11.2.E 묶음 E — 쪽지(1:1 메시지) *(합의 기록)*
+
+> 2단계 토대(Auth + profiles) 위에 얹는 첫 상호작용 기능. **MVP만.**
+
+**발신 권한**
+- **로그인한 모든 사용자**가 보낼 수 있다(인증교사 한정 아님).
+- ⚠️ 발신을 전체 개방했으므로, **공개 확대(이메일 인증 ON) 전에 차단(block)·신고(report)를 반드시 추가**한다.
+  이번 묶음은 구조만 차단/신고를 나중에 `blocks` 테이블만 얹으면 되게 설계하고, 동작은 만들지 않는다.
+
+**범위 (In Scope)**
+- 받은함 / 보낸함 목록, 쪽지 읽기, 보내기, 안 읽음 표시, 쪽지 삭제(소프트).
+
+**범위 밖 (후속)**
+- 차단·신고·실시간 알림·답장 스레드.
+
+**스키마 `messages`**
+- `id`, `sender_id`, `recipient_id`, `body`(1~2000자), `created_at`,
+  `read_at`(null = 안 읽음), `sender_deleted_at`, `recipient_deleted_at`
+  (소프트 삭제 — 한쪽이 지워도 상대 사본은 유지).
+- 제약: `sender_id <> recipient_id`(자기 자신에게 금지).
+
+**RLS(보안 핵심)**
+- **조회**: 내가 sender 이거나 recipient 인 행만. 또한 내 쪽에서 소프트 삭제한 행은 안 보인다.
+- **발신**: `sender_id = auth.uid()` 강제(발신자 위조 차단).
+- **수정**: 본문·상대는 불변. read_at·삭제표시만 바뀐다.
+  → 한 행에 sender·recipient 두 당사자가 **서로 다른 컬럼**만 만질 수 있어야 하므로,
+    profiles 의 단순 컬럼 GRANT 패턴으로는 당사자 구분이 안 된다.
+    따라서 수정은 **`security definer` RPC 함수**(`mark_message_read`, `delete_message`)로만 한다.
+    직접 UPDATE 는 회수(revoke)한다. (본문 불변·상대 불변을 확실히 보장)
+
+**UI — 3조각으로 쪼갠다**
+- **E-1**: 스키마 + RLS + RPC SQL(사용자가 적용) + 데이터 접근 일원화 `src/lib/messages.ts`
+  (`getInbox`/`getSent`/`getUnreadCount`/`sendMessage`/`markRead`/`deleteMessage`).
+- **E-2**: 마이페이지에 쪽지함(받은함/보낸함 탭 · 목록 · 읽기 · 안 읽음 뱃지 · 삭제).
+- **E-3**: 프로필 미리보기 모달(ProfilePreview)에 "쪽지 보내기" 작성 폼(본인에겐 안 보임).
+
 ### 11.3 3단계 — 앱 등록
 
 **흐름: 사전승인 없음**

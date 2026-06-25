@@ -1,11 +1,15 @@
-import type { ComponentType } from "react"
+import { useState, type ComponentType, type FormEvent } from "react"
+import { Link } from "react-router-dom"
 import { Rss, Link as LinkIcon, Mail } from "lucide-react"
 import { InstagramIcon, YoutubeIcon } from "@/components/profile/BrandIcons"
+import { useAuth } from "@/lib/auth"
+import { sendMessage, MESSAGE_MAX } from "@/lib/messages"
 import type { Profile } from "@/lib/profile"
 
 /**
- * 프로필 미리보기 내용 (2단계 묶음 C).
- * 아바타 · 닉네임 · 교사인증 배지 · (공개 시) 이메일 · 홍보 링크 · "프로필 전체 보기"(준비 중).
+ * 프로필 미리보기 내용 (2단계 묶음 C, E-3).
+ * 아바타 · 닉네임 · 교사인증 배지 · (공개 시) 이메일 · 홍보 링크 ·
+ * 쪽지 보내기(E-3, 본인·비로그인 제외) · "프로필 전체 보기"(준비 중).
  * 홍보 링크는 흑백 브랜드 로고 아이콘 버튼으로 표시(글자 없이, 종류는 aria/title).
  * 모달 동작은 Modal/ProfileTrigger 가 담당하고, 여기는 표시만 한다.
  */
@@ -34,6 +38,8 @@ function promoLinks(p: Profile): PromoLink[] {
 }
 
 export function ProfilePreview({ profile, loading, titleId }: ProfilePreviewProps) {
+  const { user } = useAuth()
+
   if (loading) {
     return (
       <div className="p-6">
@@ -55,6 +61,7 @@ export function ProfilePreview({ profile, loading, titleId }: ProfilePreviewProp
   const name = profile.nickname?.trim() || "이름 없음"
   const initial = name.charAt(0).toUpperCase()
   const links = promoLinks(profile)
+  const isSelf = !!user && user.id === profile.id
 
   return (
     <div className="p-6">
@@ -113,6 +120,23 @@ export function ProfilePreview({ profile, loading, titleId }: ProfilePreviewProp
         </ul>
       )}
 
+      {/* 쪽지 보내기 (E-3) — 본인 프로필엔 안 보인다. 비로그인은 로그인 안내. */}
+      {!isSelf && (
+        <div className="mt-6 border-t border-border pt-4">
+          {user ? (
+            <SendMessageForm recipientId={profile.id} recipientName={name} />
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              쪽지를 보내려면{" "}
+              <Link to="/login" className="underline underline-offset-2">
+                로그인
+              </Link>
+              하세요.
+            </p>
+          )}
+        </div>
+      )}
+
       {/* 프로필 전체 보기 — 자리만(준비 중). 공개 프로필 페이지는 후속 단계. */}
       <button
         type="button"
@@ -123,5 +147,93 @@ export function ProfilePreview({ profile, loading, titleId }: ProfilePreviewProp
         프로필 전체 보기 (준비 중)
       </button>
     </div>
+  )
+}
+
+/**
+ * 쪽지 작성 폼 (E-3). 자체 상태로 본문·전송 상태를 관리한다.
+ * 발신은 lib/messages.sendMessage 가 담당(sender_id 는 RLS 가 강제 → 위조 불가).
+ * 모달이 닫히면 언마운트되어 상태가 초기화된다.
+ */
+function SendMessageForm({
+  recipientId,
+  recipientName,
+}: {
+  recipientId: string
+  recipientName: string
+}) {
+  const [body, setBody] = useState("")
+  const [sending, setSending] = useState(false)
+  const [sent, setSent] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault()
+    if (body.trim() === "" || sending) return
+    setError(null)
+    setSending(true)
+    try {
+      await sendMessage(recipientId, body)
+      setSent(true)
+      setBody("")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "쪽지를 보내지 못했습니다.")
+    } finally {
+      setSending(false)
+    }
+  }
+
+  if (sent) {
+    return (
+      <div className="space-y-3">
+        <p role="status" className="text-sm text-foreground">
+          {recipientName} 님에게 쪽지를 보냈습니다.
+        </p>
+        <button
+          type="button"
+          onClick={() => setSent(false)}
+          className="text-sm text-muted-foreground underline underline-offset-2 hover:text-foreground"
+        >
+          한 통 더 보내기
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-2">
+      <label htmlFor="message-body" className="text-sm font-medium">
+        쪽지 보내기
+      </label>
+      <textarea
+        id="message-body"
+        value={body}
+        onChange={(e) => {
+          setBody(e.target.value)
+          if (error) setError(null)
+        }}
+        rows={3}
+        maxLength={MESSAGE_MAX}
+        placeholder={`${recipientName} 님에게 보낼 내용을 입력하세요.`}
+        className="w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+      />
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-xs text-muted-foreground">
+          {body.length}/{MESSAGE_MAX}
+        </span>
+        <button
+          type="submit"
+          disabled={sending || body.trim() === ""}
+          className="rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground disabled:opacity-60"
+        >
+          {sending ? "보내는 중…" : "보내기"}
+        </button>
+      </div>
+      {error && (
+        <p role="alert" className="text-sm text-destructive">
+          {error}
+        </p>
+      )}
+    </form>
   )
 }

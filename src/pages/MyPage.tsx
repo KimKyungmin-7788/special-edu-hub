@@ -17,6 +17,8 @@ import {
 } from "@/lib/profile"
 import { ProfileTrigger } from "@/components/profile/ProfileTrigger"
 import { InfoHint } from "@/components/ui/InfoHint"
+import { MessageBox } from "@/components/messages/MessageBox"
+import { getUnreadCount } from "@/lib/messages"
 
 /**
  * 마이페이지 (/mypage) — 2단계 묶음 B.
@@ -38,8 +40,14 @@ function emptyToNull(v: string): string | null {
   return t === "" ? null : t
 }
 
+type MyTab = "profile" | "activity" | "messages"
+
 export function MyPage() {
   const { user, loading } = useAuth()
+
+  // 상단 탭(내 프로필 · 내 활동 · 쪽지함). 라우트 없이 화면 내 전환.
+  const [tab, setTab] = useState<MyTab>("profile")
+  const [unread, setUnread] = useState(0)
 
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loadingProfile, setLoadingProfile] = useState(true)
@@ -79,6 +87,18 @@ export function MyPage() {
         setAvatarUrl(p.avatarUrl)
       }
       setLoadingProfile(false)
+    })
+    return () => {
+      active = false
+    }
+  }, [user])
+
+  // 쪽지함 탭 뱃지용 안 읽음 개수(첫 진입 시 1회). 쪽지함을 열면 MessageBox 가 최신값으로 갱신한다.
+  useEffect(() => {
+    if (!user) return
+    let active = true
+    getUnreadCount().then((n) => {
+      if (active) setUnread(n)
     })
     return () => {
       active = false
@@ -162,8 +182,39 @@ export function MyPage() {
         </ProfileTrigger>
       </div>
 
+      {/* 상단 탭 — 마이페이지/쪽지함을 섹션 탭으로 분리(레이아웃만 참고, 색은 중립 토큰). */}
+      <div
+        role="tablist"
+        aria-label="마이페이지 메뉴"
+        className="mt-6 grid grid-cols-3 divide-x divide-border overflow-hidden rounded-lg border border-border"
+      >
+        <MyTabButton selected={tab === "profile"} onClick={() => setTab("profile")}>
+          내 프로필
+        </MyTabButton>
+        <MyTabButton selected={tab === "activity"} onClick={() => setTab("activity")}>
+          내 활동
+        </MyTabButton>
+        <MyTabButton selected={tab === "messages"} onClick={() => setTab("messages")}>
+          쪽지함
+          {unread > 0 && (
+            <span
+              className={
+                "inline-flex min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-medium " +
+                (tab === "messages"
+                  ? "bg-primary-foreground text-primary"
+                  : "bg-primary text-primary-foreground")
+              }
+            >
+              {unread}
+            </span>
+          )}
+        </MyTabButton>
+      </div>
+
+      {tab === "profile" && (
+        <>
       {/* 계정 정보(읽기 전용) */}
-      <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+      <div className="mt-6 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
         <span>{user.email}</span>
         {profile?.isTeacherVerified ? (
           <span className="rounded-full border border-border bg-surface px-2 py-0.5 text-xs font-medium text-foreground">
@@ -342,14 +393,52 @@ export function MyPage() {
           </button>
         </form>
       )}
+        </>
+      )}
 
-      {/* 내 활동 모음 — 자리만 (3단계에서 채움) */}
-      <section className="mt-12 border-t border-border pt-8">
-        <h2 className="text-lg font-semibold tracking-tight">내가 등록한 앱</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          앱 등록 기능은 준비 중입니다. 교사 인증 후 등록한 앱이 여기에 모입니다.
-        </p>
-      </section>
+      {tab === "activity" && (
+        /* 내 활동 모음 — 자리만 (3단계에서 채움) */
+        <section className="mt-6">
+          <h2 className="text-lg font-semibold tracking-tight">내가 등록한 앱</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            앱 등록 기능은 준비 중입니다. 교사 인증 후 등록한 앱이 여기에 모입니다.
+          </p>
+        </section>
+      )}
+
+      {/* 쪽지함 (받은함/보낸함) — 묶음 E-2 */}
+      {tab === "messages" && (
+        <div className="mt-6">
+          <MessageBox onUnreadChange={setUnread} />
+        </div>
+      )}
     </div>
+  )
+}
+
+function MyTabButton({
+  selected,
+  onClick,
+  children,
+}: {
+  selected: boolean
+  onClick: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={selected}
+      onClick={onClick}
+      className={
+        "flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm transition-colors " +
+        (selected
+          ? "bg-primary font-medium text-primary-foreground"
+          : "bg-card text-muted-foreground hover:bg-accent")
+      }
+    >
+      {children}
+    </button>
   )
 }
