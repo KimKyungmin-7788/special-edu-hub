@@ -5,16 +5,18 @@ import {
   type ChangeEvent,
   type FormEvent,
 } from "react"
-import { Navigate } from "react-router-dom"
+import { Navigate, Link } from "react-router-dom"
 import { useAuth } from "@/lib/auth"
 import {
   getProfile,
   updateProfile,
+  updateEmailPublic,
   uploadAvatar,
   type Profile,
   type ProfileEditable,
 } from "@/lib/profile"
 import { ProfileTrigger } from "@/components/profile/ProfileTrigger"
+import { InfoHint } from "@/components/ui/InfoHint"
 
 /**
  * 마이페이지 (/mypage) — 2단계 묶음 B.
@@ -44,6 +46,7 @@ export function MyPage() {
 
   // 폼 입력 상태
   const [nickname, setNickname] = useState("")
+  const [emailPublic, setEmailPublic] = useState(false)
   const [blogUrl, setBlogUrl] = useState("")
   const [instagramUrl, setInstagramUrl] = useState("")
   const [youtubeUrl, setYoutubeUrl] = useState("")
@@ -68,6 +71,7 @@ export function MyPage() {
       if (p) {
         setProfile(p)
         setNickname(p.nickname ?? "")
+        setEmailPublic(p.emailPublic)
         setBlogUrl(p.blogUrl ?? "")
         setInstagramUrl(p.instagramUrl ?? "")
         setYoutubeUrl(p.youtubeUrl ?? "")
@@ -137,6 +141,17 @@ export function MyPage() {
     }
   }
 
+  // 이메일 공개 토글 — 즉시 저장(낙관적 업데이트, 실패 시 롤백)
+  async function handleEmailPublicToggle(next: boolean) {
+    if (!user) return
+    setEmailPublic(next)
+    try {
+      await updateEmailPublic(user.id, next)
+    } catch {
+      setEmailPublic(!next)
+    }
+  }
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-12">
       <div className="flex items-center justify-between gap-4">
@@ -159,7 +174,40 @@ export function MyPage() {
             미인증
           </span>
         )}
+
+        {/* 이메일 공개 토글 — 즉시 저장. 안내는 ? 팝업으로. */}
+        <div className="ml-auto inline-flex items-center gap-1.5">
+          <label className="inline-flex items-center gap-1.5">
+            <input
+              type="checkbox"
+              checked={emailPublic}
+              onChange={(e) => handleEmailPublicToggle(e.target.checked)}
+              disabled={loadingProfile}
+              className="size-4 accent-foreground"
+            />
+            <span className="text-foreground">이메일 공개</span>
+          </label>
+          <InfoHint label="이메일 공개 안내">
+            체크하면 내 프로필 미리보기에 이메일({user.email})이 보입니다. 기본은
+            비공개예요.
+          </InfoHint>
+        </div>
       </div>
+
+      {/* 미인증 안내 — 교사인증 유도(준비 중인 /verify 로) */}
+      {!loadingProfile && profile && !profile.isTeacherVerified && (
+        <div className="mt-6 rounded-lg border border-border bg-surface p-4">
+          <p className="text-sm font-medium text-foreground">
+            교사 인증을 마치면 앱 등록·글쓰기 권한이 부여됩니다.
+          </p>
+          <Link
+            to="/verify"
+            className="mt-3 inline-block rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+          >
+            교사인증센터 바로가기
+          </Link>
+        </div>
+      )}
 
       {loadingProfile ? (
         <p className="mt-8 text-sm text-muted-foreground">불러오는 중…</p>

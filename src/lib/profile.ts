@@ -11,6 +11,8 @@ export type Role = "member" | "teacher" | "admin"
 /** 프로필 한 건의 모양. DB 컬럼(snake_case)을 이 camelCase 모양으로 변환해 쓴다. */
 export type Profile = {
   id: string
+  email: string | null
+  emailPublic: boolean
   nickname: string | null
   avatarUrl: string | null
   blogUrl: string | null
@@ -24,6 +26,8 @@ export type Profile = {
 
 type ProfileRow = {
   id: string
+  email: string | null
+  email_public: boolean
   nickname: string | null
   avatar_url: string | null
   blog_url: string | null
@@ -38,6 +42,8 @@ type ProfileRow = {
 function mapRow(row: ProfileRow): Profile {
   return {
     id: row.id,
+    email: row.email,
+    emailPublic: row.email_public,
     nickname: row.nickname,
     avatarUrl: row.avatar_url,
     blogUrl: row.blog_url,
@@ -97,6 +103,21 @@ export async function updateProfile(
 
   if (error) throw error
   return mapRow(data as ProfileRow)
+}
+
+/**
+ * 이메일 공개 여부 토글(즉시 저장).
+ * 계정 정보 줄의 체크박스에서 켜고 끄는 즉시 반영용 — 폼 저장과 분리한다.
+ */
+export async function updateEmailPublic(
+  id: string,
+  value: boolean,
+): Promise<void> {
+  const { error } = await supabase
+    .from("profiles")
+    .update({ email_public: value })
+    .eq("id", id)
+  if (error) throw error
 }
 
 /** 아바타 버킷(공개). 05_avatars.sql 에서 생성. */
