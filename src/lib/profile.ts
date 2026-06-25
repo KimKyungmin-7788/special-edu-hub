@@ -13,9 +13,9 @@ export type Profile = {
   id: string
   nickname: string | null
   avatarUrl: string | null
-  bio: string | null
   blogUrl: string | null
   instagramUrl: string | null
+  youtubeUrl: string | null
   websiteUrl: string | null
   isTeacherVerified: boolean
   role: Role
@@ -26,9 +26,9 @@ type ProfileRow = {
   id: string
   nickname: string | null
   avatar_url: string | null
-  bio: string | null
   blog_url: string | null
   instagram_url: string | null
+  youtube_url: string | null
   website_url: string | null
   is_teacher_verified: boolean
   role: Role
@@ -40,9 +40,9 @@ function mapRow(row: ProfileRow): Profile {
     id: row.id,
     nickname: row.nickname,
     avatarUrl: row.avatar_url,
-    bio: row.bio,
     blogUrl: row.blog_url,
     instagramUrl: row.instagram_url,
+    youtubeUrl: row.youtube_url,
     websiteUrl: row.website_url,
     isTeacherVerified: row.is_teacher_verified,
     role: row.role,
@@ -71,9 +71,9 @@ export async function getProfile(id: string): Promise<Profile | undefined> {
  */
 export type ProfileEditable = {
   nickname: string | null
-  bio: string | null
   blogUrl: string | null
   instagramUrl: string | null
+  youtubeUrl: string | null
   websiteUrl: string | null
 }
 
@@ -86,9 +86,9 @@ export async function updateProfile(
     .from("profiles")
     .update({
       nickname: patch.nickname,
-      bio: patch.bio,
       blog_url: patch.blogUrl,
       instagram_url: patch.instagramUrl,
+      youtube_url: patch.youtubeUrl,
       website_url: patch.websiteUrl,
     })
     .eq("id", id)

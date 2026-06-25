@@ -14,6 +14,7 @@ import {
   type Profile,
   type ProfileEditable,
 } from "@/lib/profile"
+import { ProfileTrigger } from "@/components/profile/ProfileTrigger"
 
 /**
  * 마이페이지 (/mypage) — 2단계 묶음 B.
@@ -43,9 +44,9 @@ export function MyPage() {
 
   // 폼 입력 상태
   const [nickname, setNickname] = useState("")
-  const [bio, setBio] = useState("")
   const [blogUrl, setBlogUrl] = useState("")
   const [instagramUrl, setInstagramUrl] = useState("")
+  const [youtubeUrl, setYoutubeUrl] = useState("")
   const [websiteUrl, setWebsiteUrl] = useState("")
 
   const [saving, setSaving] = useState(false)
@@ -67,9 +68,9 @@ export function MyPage() {
       if (p) {
         setProfile(p)
         setNickname(p.nickname ?? "")
-        setBio(p.bio ?? "")
         setBlogUrl(p.blogUrl ?? "")
         setInstagramUrl(p.instagramUrl ?? "")
+        setYoutubeUrl(p.youtubeUrl ?? "")
         setWebsiteUrl(p.websiteUrl ?? "")
         setAvatarUrl(p.avatarUrl)
       }
@@ -93,9 +94,9 @@ export function MyPage() {
     setSaving(true)
     const patch: ProfileEditable = {
       nickname: emptyToNull(nickname),
-      bio: emptyToNull(bio),
       blogUrl: emptyToNull(blogUrl),
       instagramUrl: emptyToNull(instagramUrl),
+      youtubeUrl: emptyToNull(youtubeUrl),
       websiteUrl: emptyToNull(websiteUrl),
     }
     try {
@@ -138,7 +139,13 @@ export function MyPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-12">
-      <h1 className="text-2xl font-semibold tracking-tight">마이페이지</h1>
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="text-2xl font-semibold tracking-tight">마이페이지</h1>
+        {/* 내 프로필이 남에게 어떻게 보이는지 미리보기 (묶음 C 트리거) */}
+        <ProfileTrigger userId={user.id} className="text-sm text-muted-foreground">
+          내 프로필 미리보기
+        </ProfileTrigger>
+      </div>
 
       {/* 계정 정보(읽기 전용) */}
       <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
@@ -211,19 +218,6 @@ export function MyPage() {
             />
           </div>
 
-          <div className="space-y-1.5">
-            <label htmlFor="bio" className={labelClass}>
-              한 줄 소개
-            </label>
-            <textarea
-              id="bio"
-              rows={2}
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              className={inputClass}
-            />
-          </div>
-
           <fieldset className="space-y-3">
             <legend className={labelClass}>홍보 링크 (선택)</legend>
             <div className="space-y-1.5">
@@ -233,7 +227,7 @@ export function MyPage() {
               <input
                 id="blog"
                 type="url"
-                placeholder="https://blog.naver.com/…"
+                placeholder="https://…  (네이버·티스토리·브런치 등)"
                 value={blogUrl}
                 onChange={(e) => setBlogUrl(e.target.value)}
                 className={inputClass}
@@ -249,6 +243,19 @@ export function MyPage() {
                 placeholder="https://instagram.com/…"
                 value={instagramUrl}
                 onChange={(e) => setInstagramUrl(e.target.value)}
+                className={inputClass}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="youtube" className="text-xs text-muted-foreground">
+                유튜브
+              </label>
+              <input
+                id="youtube"
+                type="url"
+                placeholder="https://youtube.com/@…"
+                value={youtubeUrl}
+                onChange={(e) => setYoutubeUrl(e.target.value)}
                 className={inputClass}
               />
             </div>
