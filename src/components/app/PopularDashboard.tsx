@@ -13,7 +13,9 @@ const MAX_PER_BOX = 5
 
 export function PopularDashboard({ apps }: { apps: App[] }) {
   return (
-    <div className="grid grid-cols-1 gap-x-8 gap-y-6 lg:grid-cols-2">
+    // 그리드 stretch(빈 박스가 옆 박스 높이에 맞춰 늘어남)를 피하려고
+    // multi-column 으로 — 각 박스가 내용 높이만큼만 차곡차곡 쌓인다.
+    <div className="columns-1 lg:columns-2 lg:gap-x-8">
       {subjectCategories.map((cat) => {
         const items = apps
           .filter((a) => a.categoryIds.includes(cat.id))
@@ -46,7 +48,7 @@ function CategoryBox({
   items: App[]
 }) {
   return (
-    <section className="overflow-hidden rounded-lg border border-border">
+    <section className="mb-6 break-inside-avoid overflow-hidden rounded-lg border border-border">
       <div className="flex items-center justify-between border-b border-border bg-surface px-4 py-2.5">
         <h2 className="text-sm font-semibold tracking-tight">{name}</h2>
         <Link
