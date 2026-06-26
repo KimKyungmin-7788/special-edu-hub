@@ -181,6 +181,31 @@ export async function listPendingRequests(): Promise<AdminVerificationRequest[]>
   }))
 }
 
+/**
+ * 처리 완료(승인/반려) 신청 이력(처리일 최신순) — 관리자 큐의 "처리 내역" 탭.
+ * 09 의 verif_select_own_or_admin 이 admin 에게 전체 행을 열어주므로 SQL 불필요.
+ * 서류는 노출하지 않는다(처리 후 삭제 예정 + 민감정보 최소화) — 메타데이터만.
+ */
+export async function listReviewedRequests(): Promise<AdminVerificationRequest[]> {
+  const { data, error } = await supabase
+    .from("verification_requests")
+    .select(
+      "*, applicant:profiles!verification_requests_user_id_fkey(nickname, email)",
+    )
+    .in("status", ["approved", "rejected"])
+    .order("reviewed_at", { ascending: false })
+
+  if (error) {
+    console.error("[verification] listReviewedRequests 실패:", error.message)
+    return []
+  }
+  return (data as AdminVerificationRow[]).map((row) => ({
+    ...mapRow(row),
+    applicantNickname: row.applicant?.nickname ?? null,
+    applicantEmail: row.applicant?.email ?? null,
+  }))
+}
+
 /** 서류 열람용 서명 URL(기본 5분). 관리자만 발급됨(RLS). 새 탭으로 연다. */
 export async function createDocSignedUrl(
   documentPath: string,

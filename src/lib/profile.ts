@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase"
  * 화면은 이 함수들의 반환 모양(Profile)만 의존한다.
  */
 
-export type Role = "member" | "teacher" | "admin"
+export type Role = "member" | "teacher" | "manager" | "admin"
 
 /** 프로필 한 건의 모양. DB 컬럼(snake_case)을 이 camelCase 모양으로 변환해 쓴다. */
 export type Profile = {
@@ -73,6 +73,54 @@ export async function getProfile(id: string): Promise<Profile | undefined> {
     return undefined
   }
   return data ? mapRow(data as ProfileRow) : undefined
+}
+
+/** 관리자 회원 목록 한 줄 — 필요한 필드만. */
+export type Member = {
+  id: string
+  nickname: string | null
+  email: string | null
+  role: Role
+  isTeacherVerified: boolean
+  createdAt: string
+}
+
+/**
+ * 전체 회원 목록(가입 최신순) — 관리자 페이지(/admin)용.
+ * profiles 는 공개 읽기(04_profiles.sql) 라 별도 SQL 없이 조회된다(화면은 admin 게이트).
+ * 강제 탈퇴 등 처리 기능은 신고 시스템과 함께 후속 — 여기선 읽기만.
+ */
+export async function listMembers(): Promise<Member[]> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, nickname, email, role, is_teacher_verified, created_at")
+    .order("created_at", { ascending: false })
+
+  if (error) {
+    console.error("[profile] listMembers 실패:", error.message)
+    return []
+  }
+  return (data as ProfileRow[]).map((row) => ({
+    id: row.id,
+    nickname: row.nickname,
+    email: row.email,
+    role: row.role,
+    isTeacherVerified: row.is_teacher_verified,
+    createdAt: row.created_at,
+  }))
+}
+
+/**
+ * 회원 권한 변경 — 관리자 전용 (15_roles.sql 의 set_user_role RPC).
+ * role 컬럼은 클라 UPDATE 가 잠겨 있어 이 RPC 로만 바꾼다. 권한 확인·마지막 관리자
+ * 강등 방지는 DB 함수가 강제한다(실패 시 에러 throw).
+ */
+export async function setUserRole(targetId: string, role: Role): Promise<void> {
+  const { error } = await supabase.rpc("set_user_role", {
+    target_id: targetId,
+    new_role: role,
+  })
+  if (error) throw error
 }
 
 /**

@@ -30,7 +30,9 @@ type AuthContextValue = {
   user: User | null
   /** 로그인 사용자의 프로필(없으면 null). runPostLogin 에서 한 번 읽어 공유한다. */
   profile: Profile | null
-  /** profiles.role === 'admin'. 헤더 '관리' 링크·/admin 게이트에서 쓴다. */
+  /** 운영진 이상(role manager|admin). /admin 접근·모더레이션(앱 숨김·인증 심사). */
+  isStaff: boolean
+  /** 관리자(role admin). 권한 부여 등 admin 전용 기능. */
   isAdmin: boolean
   /** 최초 세션 확인이 끝났는지. true 동안은 "아직 모름"이라 깜빡임을 막는 데 쓴다. */
   loading: boolean
@@ -154,6 +156,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     session,
     user: session?.user ?? null,
     profile,
+    isStaff: profile?.role === "manager" || profile?.role === "admin",
     isAdmin: profile?.role === "admin",
     loading,
     signInWithPassword,

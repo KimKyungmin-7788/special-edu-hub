@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import {
   listPendingRequests,
+  listReviewedRequests,
   approveRequest,
   rejectRequest,
   createDocSignedUrl,
@@ -8,12 +9,56 @@ import {
 } from "@/lib/verification"
 
 /**
- * 관리자 "교사인증 큐" — pending 신청 목록 + 서류 열람 + 승인/반려 (묶음 A).
+ * 관리자 "교사인증 큐" — 대기(심사) / 처리 내역(이력) 두 화면 (묶음 A·B-1).
  * 14_admin.sql 의 verif_update_admin · verif_docs_read_admin 정책이 있어야 동작.
  * 승인 시 09 의 트리거가 신청자 is_teacher_verified 를 반영한다.
- * 처리한 행은 pending 에서 빠지므로 목록에서 제거한다.
  */
+type QueueView = "pending" | "reviewed"
+
 export function AdminVerifyQueue() {
+  const [view, setView] = useState<QueueView>("pending")
+  return (
+    <>
+      <div className="mb-3 inline-flex rounded-md border border-border p-0.5 text-sm">
+        <SegButton active={view === "pending"} onClick={() => setView("pending")}>
+          대기
+        </SegButton>
+        <SegButton active={view === "reviewed"} onClick={() => setView("reviewed")}>
+          처리 내역
+        </SegButton>
+      </div>
+      {view === "pending" ? <PendingList /> : <ReviewedList />}
+    </>
+  )
+}
+
+function SegButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean
+  onClick: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={
+        "rounded px-3 py-1 font-medium " +
+        (active
+          ? "bg-secondary text-secondary-foreground"
+          : "text-muted-foreground hover:text-foreground")
+      }
+    >
+      {children}
+    </button>
+  )
+}
+
+/** 대기(pending) — 서류 열람 + 승인/반려. 처리한 행은 목록에서 제거. */
+function PendingList() {
   const [items, setItems] = useState<AdminVerificationRequest[] | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -60,6 +105,90 @@ export function AdminVerifyQueue() {
         ))}
       </ul>
     </>
+  )
+}
+
+/** 처리 내역(approved/rejected) — 읽기 전용. 서류는 노출하지 않는다. */
+function ReviewedList() {
+  const [items, setItems] = useState<AdminVerificationRequest[] | null>(null)
+
+  useEffect(() => {
+    let active = true
+    listReviewedRequests().then((data) => {
+      if (active) setItems(data)
+    })
+    return () => {
+      active = false
+    }
+  }, [])
+
+  if (items === null) {
+    return <p className="mt-2 text-sm text-muted-foreground">불러오는 중…</p>
+  }
+
+  if (items.length === 0) {
+    return (
+      <p className="mt-2 rounded-lg border border-border bg-surface p-6 text-center text-sm text-muted-foreground">
+        처리한 인증 신청이 없습니다.
+      </p>
+    )
+  }
+
+  return (
+    <>
+      <p className="mb-2 text-sm text-muted-foreground">처리 {items.length}건</p>
+      <ul className="flex flex-col gap-3">
+        {items.map((req) => (
+          <ReviewedCard key={req.id} req={req} />
+        ))}
+      </ul>
+    </>
+  )
+}
+
+/** 처리 내역 카드 — 상태 배지 + 신청자·지역·학교 + 처리일 + (반려)사유. */
+function ReviewedCard({ req }: { req: AdminVerificationRequest }) {
+  const approved = req.status === "approved"
+  return (
+    <li className="rounded-lg border border-border bg-surface p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <span
+              className={
+                "rounded-full px-2 py-0.5 text-xs font-medium " +
+                (approved
+                  ? "border border-border text-muted-foreground"
+                  : "bg-destructive/10 text-destructive")
+              }
+            >
+              {approved ? "승인" : "반려"}
+            </span>
+            <span className="truncate text-sm font-medium">
+              {req.applicantNickname || "(닉네임 없음)"}
+            </span>
+          </div>
+          {req.applicantEmail && (
+            <p className="mt-0.5 truncate text-xs text-muted-foreground">
+              {req.applicantEmail}
+            </p>
+          )}
+        </div>
+        <span className="shrink-0 text-xs text-muted-foreground">
+          {req.reviewedAt ? formatDate(req.reviewedAt) : "—"}
+        </span>
+      </div>
+
+      <p className="mt-2 text-sm text-muted-foreground">
+        {req.region} · {req.school}
+      </p>
+
+      {!approved && req.rejectReason && (
+        <p className="mt-2 rounded-md bg-muted px-3 py-2 text-sm">
+          반려 사유: {req.rejectReason}
+        </p>
+      )}
+    </li>
   )
 }
 

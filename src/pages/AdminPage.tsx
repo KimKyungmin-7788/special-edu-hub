@@ -3,6 +3,7 @@ import { Link, Navigate } from "react-router-dom"
 import { useAuth } from "@/lib/auth"
 import { AdminAppList } from "@/components/admin/AdminAppList"
 import { AdminVerifyQueue } from "@/components/admin/AdminVerifyQueue"
+import { AdminMemberList } from "@/components/admin/AdminMemberList"
 
 /**
  * /admin — 관리자 운영 페이지 (묶음 A).
@@ -14,10 +15,10 @@ import { AdminVerifyQueue } from "@/components/admin/AdminVerifyQueue"
  * 권한 체크의 진짜 강제는 DB RLS(is_admin)다. 여기 가드는 화면 접근 차단일 뿐.
  */
 
-type AdminTab = "apps" | "verify"
+type AdminTab = "apps" | "verify" | "members"
 
 export function AdminPage() {
-  const { user, isAdmin, loading } = useAuth()
+  const { user, isStaff, loading } = useAuth()
   const [tab, setTab] = useState<AdminTab>("apps")
 
   // 최초 세션 확인 중에는 깜빡임 방지로 대기.
@@ -31,12 +32,12 @@ export function AdminPage() {
 
   if (!user) return <Navigate to="/login" replace />
 
-  if (!isAdmin) {
+  if (!isStaff) {
     return (
       <div className="mx-auto max-w-xl px-4 py-16 text-center">
         <h1 className="text-xl font-bold">접근 권한이 없습니다</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          이 페이지는 관리자만 이용할 수 있습니다.
+          이 페이지는 운영진만 이용할 수 있습니다.
         </p>
         <Link
           to="/"
@@ -62,9 +63,14 @@ export function AdminPage() {
         <TabButton active={tab === "verify"} onClick={() => setTab("verify")}>
           교사인증 큐
         </TabButton>
+        <TabButton active={tab === "members"} onClick={() => setTab("members")}>
+          회원
+        </TabButton>
       </div>
 
-      {tab === "apps" ? <AdminAppList /> : <AdminVerifyQueue />}
+      {tab === "apps" && <AdminAppList />}
+      {tab === "verify" && <AdminVerifyQueue />}
+      {tab === "members" && <AdminMemberList />}
     </div>
   )
 }
