@@ -20,6 +20,8 @@ export type Profile = {
   youtubeUrl: string | null
   websiteUrl: string | null
   isTeacherVerified: boolean
+  /** 사용자가 닉네임을 직접 확정했는지. false 면 첫 로그인 온보딩으로 묻는다. */
+  nicknameSet: boolean
   role: Role
   createdAt: string
 }
@@ -35,6 +37,7 @@ type ProfileRow = {
   youtube_url: string | null
   website_url: string | null
   is_teacher_verified: boolean
+  nickname_set: boolean
   role: Role
   created_at: string
 }
@@ -51,6 +54,7 @@ function mapRow(row: ProfileRow): Profile {
     youtubeUrl: row.youtube_url,
     websiteUrl: row.website_url,
     isTeacherVerified: row.is_teacher_verified,
+    nicknameSet: row.nickname_set,
     role: row.role,
     createdAt: row.created_at,
   }
@@ -103,6 +107,21 @@ export async function updateProfile(
 
   if (error) throw error
   return mapRow(data as ProfileRow)
+}
+
+/**
+ * 첫 로그인 닉네임 온보딩 완료 — 닉네임 저장 + nickname_set=true.
+ * 이후로는 온보딩 모달이 다시 뜨지 않는다(13_nickname_onboarding.sql).
+ */
+export async function completeNicknameOnboarding(
+  id: string,
+  nickname: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from("profiles")
+    .update({ nickname: nickname.trim(), nickname_set: true })
+    .eq("id", id)
+  if (error) throw error
 }
 
 /**

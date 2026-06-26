@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { AppCardList } from "@/components/home/AppCardList"
+import { WriteButton } from "@/components/app/WriteButton"
 import { getAppsByType, type App } from "@/lib/apps"
 import { CONTAINER } from "@/config/layout"
 
@@ -24,6 +25,9 @@ export function WorkApps() {
         {apps.length}개 앱
       </p>
       <AppCardList apps={apps} emptyText="업무혁신 앱이 아직 없습니다." />
+      <div className="mt-8 flex justify-end">
+        <WriteButton categoryId="work" />
+      </div>
     </div>
   )
 }

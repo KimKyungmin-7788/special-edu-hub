@@ -10,6 +10,7 @@ import type { Session, User } from "@supabase/supabase-js"
 import { supabase } from "@/lib/supabase"
 import { getProfile } from "@/lib/profile"
 import { VerifiedCelebrationDialog } from "@/components/verify/VerifiedCelebrationDialog"
+import { NicknameOnboardingDialog } from "@/components/auth/NicknameOnboardingDialog"
 
 /**
  * 로그인 세션 토대 (2단계 묶음 A-1).
@@ -41,17 +42,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   const [showCelebration, setShowCelebration] = useState(false)
+  // 닉네임 미확정(nickname_set=false) 사용자에게 띄울 온보딩.
+  const [onboarding, setOnboarding] = useState<{
+    userId: string
+    initial: string
+  } | null>(null)
 
-  /** 로그인된 uid 의 프로필을 확인해 축하 팝업 여부를 결정한다. */
-  const checkCelebration = useCallback(async (uid: string) => {
-    const key = popupShownKey(uid)
-    if (localStorage.getItem(key)) return // 이미 본 적 있음
-
+  /** uid 의 교사인증 축하(1회) 여부를 확인해 띄운다. */
+  const maybeCelebrate = useCallback(async (uid: string) => {
+    if (localStorage.getItem(popupShownKey(uid))) return // 이미 본 적 있음
     const profile = await getProfile(uid)
-    if (profile?.isTeacherVerified) {
-      setShowCelebration(true)
-    }
+    if (profile?.isTeacherVerified) setShowCelebration(true)
   }, [])
+
+  /**
+   * 로그인 직후 처리: 닉네임 미확정이면 온보딩 먼저(이름 있어도 항상),
+   * 확정된 사용자는 교사인증 축하 체크.
+   */
+  const runPostLogin = useCallback(
+    async (uid: string) => {
+      const profile = await getProfile(uid)
+      if (!profile) return
+      if (profile.nicknameSet === false) {
+        setOnboarding({ userId: uid, initial: profile.nickname ?? "" })
+        return // 닉네임 확정 후 축하는 onComplete 에서 이어서
+      }
+      maybeCelebrate(uid)
+    },
+    [maybeCelebrate],
+  )
 
   function handleCloseCelebration() {
     setShowCelebration(false)
@@ -62,13 +81,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
   }
 
+  function handleOnboardingComplete() {
+    const uid = onboarding?.userId
+    setOnboarding(null)
+    if (uid) maybeCelebrate(uid) // 닉네임 확정됐으니 이어서 축하 체크
+  }
+
+  function handleOnboardingClose() {
+    // 저장 없이 닫음 — nickname_set 그대로 false → 다음 로그인에 다시 묻는다.
+    setOnboarding(null)
+  }
+
   useEffect(() => {
     // 1) 새로고침 등으로 들어왔을 때 기존 세션을 한 번 읽는다.
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session)
       setLoading(false)
       if (data.session?.user.id) {
-        checkCelebration(data.session.user.id)
+        runPostLogin(data.session.user.id)
       }
     })
 
@@ -78,12 +108,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession)
       if (nextSession?.user.id) {
-        checkCelebration(nextSession.user.id)
+        runPostLogin(nextSession.user.id)
       }
     })
 
     return () => subscription.unsubscribe()
-  }, [checkCelebration])
+  }, [runPostLogin])
 
   const signInWithPassword = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
@@ -127,6 +157,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         open={showCelebration}
         onClose={handleCloseCelebration}
       />
+      {onboarding && (
+        <NicknameOnboardingDialog
+          userId={onboarding.userId}
+          initialNickname={onboarding.initial}
+          onComplete={handleOnboardingComplete}
+          onClose={handleOnboardingClose}
+        />
+      )}
     </AuthContext.Provider>
   )
 }

@@ -1,38 +1,6 @@
 import { Link } from "react-router-dom"
-import {
-  BookOpen,
-  Calculator,
-  Globe,
-  FlaskConical,
-  Music,
-  Palette,
-  Activity,
-  House,
-  Briefcase,
-  Sparkles,
-  Users,
-  Settings,
-  Zap,
-  type LucideIcon,
-} from "lucide-react"
 import { categories, type Category } from "@/config/categories"
-
-/** config 의 icon 문자열 → lucide 아이콘 컴포넌트 매핑. */
-const iconMap: Record<string, LucideIcon> = {
-  "book-open": BookOpen,
-  calculator: Calculator,
-  globe: Globe,
-  "flask-conical": FlaskConical,
-  music: Music,
-  palette: Palette,
-  activity: Activity,
-  house: House,
-  briefcase: Briefcase,
-  sparkles: Sparkles,
-  users: Users,
-  settings: Settings,
-  zap: Zap,
-}
+import { getCategoryIcon } from "@/components/categoryIcon"
 
 /** 카테고리는 과목→과목별 상세, 업무→업무혁신 페이지로 이동. */
 function categoryTo(c: Category): string {
@@ -48,7 +16,7 @@ export function CategoryGrid() {
         {categories
           .filter((c) => !c.hideFromGrid && !c.parentId)
           .map((c) => {
-          const Icon = iconMap[c.icon] ?? Sparkles
+          const Icon = getCategoryIcon(c.icon)
           return (
             <li key={c.id}>
               <Link

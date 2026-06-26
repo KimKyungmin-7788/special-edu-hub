@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom"
-import { Heart, Bookmark, ImageOff } from "lucide-react"
+import { Heart, Bookmark } from "lucide-react"
 import { getCategory } from "@/config/categories"
+import { AppThumbnail } from "@/components/app/AppThumbnail"
 import type { App } from "@/lib/apps"
 
 /**
@@ -19,17 +20,7 @@ export function AppCard({ app }: { app: App }) {
       className="group flex flex-col overflow-hidden rounded-lg border bg-card transition-colors hover:border-foreground/30"
     >
       <div className="relative aspect-video bg-surface">
-        {app.thumbnailUrl ? (
-          <img
-            src={app.thumbnailUrl}
-            alt={app.title}
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-            <ImageOff className="size-6" aria-hidden />
-          </div>
-        )}
+        <AppThumbnail app={app} iconClassName="size-7" />
 
         {/* 담기 버튼 — 모양만, 비작동 (준비 중) */}
         <span

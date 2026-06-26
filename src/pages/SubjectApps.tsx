@@ -3,6 +3,8 @@ import { useParams, useSearchParams } from "react-router-dom"
 import { getCategory, getSubcategories } from "@/config/categories"
 import { SubjectSidebar } from "@/components/app/SubjectSidebar"
 import { AppCardList } from "@/components/home/AppCardList"
+import { PopularDashboard } from "@/components/app/PopularDashboard"
+import { WriteButton } from "@/components/app/WriteButton"
 import { getAppsByCategory, getAppsByType, type App } from "@/lib/apps"
 import { CONTAINER } from "@/config/layout"
 import { cn } from "@/lib/utils"
@@ -63,16 +65,31 @@ export function SubjectApps() {
         <SubjectSidebar />
 
         <section className="min-w-0 flex-1">
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {category ? category.name : "전체 과목"}
-          </h1>
-
           {unknown ? (
-            <p className="mt-3 text-sm text-muted-foreground">
-              알 수 없는 과목입니다: {categoryId}
-            </p>
+            <>
+              <h1 className="text-2xl font-semibold tracking-tight">과목</h1>
+              <p className="mt-3 text-sm text-muted-foreground">
+                알 수 없는 과목입니다: {categoryId}
+              </p>
+            </>
+          ) : !category ? (
+            // 과목 미선택 = "인기" 대시보드
+            <>
+              <h1 className="text-2xl font-semibold tracking-tight">인기</h1>
+              <p className="mt-1 mb-8 text-sm text-muted-foreground">
+                인기있는 수업자료를 과목별로 보여줍니다.
+              </p>
+              <PopularDashboard apps={apps} />
+              <div className="mt-8 flex justify-end">
+                <WriteButton />
+              </div>
+            </>
           ) : (
             <>
+              <h1 className="text-2xl font-semibold tracking-tight">
+                {category.name}
+              </h1>
+
               {/* 하위 분류 칩 바 */}
               {subcategories.length > 0 && (
                 <div className="mt-4 flex flex-wrap gap-2">
@@ -112,6 +129,9 @@ export function SubjectApps() {
                 apps={shownApps}
                 emptyText="이 분류의 앱이 아직 없습니다."
               />
+              <div className="mt-8 flex justify-end">
+                <WriteButton categoryId={categoryId} />
+              </div>
             </>
           )}
         </section>

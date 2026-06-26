@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { AppCardList } from "@/components/home/AppCardList"
+import { WriteButton } from "@/components/app/WriteButton"
 import { getApps, type App } from "@/lib/apps"
 import { CONTAINER } from "@/config/layout"
 
@@ -24,6 +25,9 @@ export function AllApps() {
         전체 {apps.length}개 앱
       </p>
       <AppCardList apps={apps} />
+      <div className="mt-8 flex justify-end">
+        <WriteButton />
+      </div>
     </div>
   )
 }

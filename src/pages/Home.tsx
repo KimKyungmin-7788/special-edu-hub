@@ -2,6 +2,8 @@ import { useEffect, useState } from "react"
 import { Hero } from "@/components/home/Hero"
 import { CategoryGrid } from "@/components/home/CategoryGrid"
 import { AppCardList } from "@/components/home/AppCardList"
+import { RegisterCtaCard } from "@/components/app/RegisterCtaCard"
+import { registerCta } from "@/config/registerCta"
 import { getApps, type App } from "@/lib/apps"
 import { CONTAINER } from "@/config/layout"
 
@@ -23,7 +25,11 @@ export function Home() {
     <div className={`${CONTAINER} flex flex-col gap-12 py-8`}>
       <Hero />
       <CategoryGrid />
-      <AppCardList title="최신 앱" apps={apps} />
+      <AppCardList
+        title="최신 수업자료"
+        apps={apps}
+        leading={registerCta.showCardTile ? <RegisterCtaCard /> : undefined}
+      />
     </div>
   )
 }

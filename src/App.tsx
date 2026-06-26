@@ -8,6 +8,7 @@ import { AllApps } from "@/pages/AllApps"
 import { SubjectApps } from "@/pages/SubjectApps"
 import { WorkApps } from "@/pages/WorkApps"
 import { AppDetail } from "@/pages/AppDetail"
+import { WritePage } from "@/pages/WritePage"
 import { ComingSoon } from "@/pages/ComingSoon"
 import { Login } from "@/pages/Login"
 import { Signup } from "@/pages/Signup"
@@ -27,6 +28,7 @@ function App() {
           <Route element={<Layout />}>
             <Route index element={<Home />} />
             <Route path="apps" element={<AllApps />} />
+            <Route path="write/:categoryId" element={<WritePage />} />
             <Route path="apps/subject" element={<SubjectApps />} />
             <Route path="apps/subject/:categoryId" element={<SubjectApps />} />
             <Route path="apps/work" element={<WorkApps />} />

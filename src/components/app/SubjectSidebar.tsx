@@ -22,7 +22,7 @@ export function SubjectSidebar() {
       <p className="px-3 text-sm font-semibold">과목</p>
       <nav className="mt-2 flex gap-1 overflow-x-auto lg:flex-col lg:overflow-visible">
         <NavLink to="/apps/subject" end className={itemClass}>
-          전체
+          인기
         </NavLink>
         {subjectCategories.map((c) => (
           <NavLink

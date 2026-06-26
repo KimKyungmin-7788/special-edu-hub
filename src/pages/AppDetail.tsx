@@ -7,9 +7,9 @@ import {
   Heart,
   Bookmark,
   Share2,
-  ImageOff,
 } from "lucide-react"
 import { getCategory } from "@/config/categories"
+import { AppThumbnail } from "@/components/app/AppThumbnail"
 import { getApp, type App } from "@/lib/apps"
 
 /**
@@ -104,17 +104,7 @@ export function AppDetail() {
 
       {/* 썸네일 */}
       <div className="mt-6 aspect-video overflow-hidden rounded-lg border bg-surface">
-        {app.thumbnailUrl ? (
-          <img
-            src={app.thumbnailUrl}
-            alt={app.title}
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-            <ImageOff className="size-8" aria-hidden />
-          </div>
-        )}
+        <AppThumbnail app={app} />
       </div>
 
       {/* 액션: 앱 열기(작동) + 담기·공유(모양만) */}
