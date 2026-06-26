@@ -61,4 +61,63 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+
+  /* 블로그형 본문 콘텐츠 — 에디터(.ProseMirror)·뷰어 공용. 전부 중립 토큰. */
+  .richtext {
+    color: var(--foreground);
+    font-size: 0.95rem;
+    line-height: 1.7;
+    word-break: break-word;
+  }
+  .richtext :where(p) {
+    margin: 0.5em 0;
+  }
+  .richtext :where(h2) {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin: 1em 0 0.4em;
+  }
+  .richtext :where(h3) {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0.9em 0 0.3em;
+  }
+  .richtext :where(ul) {
+    list-style: disc;
+    padding-left: 1.4em;
+    margin: 0.5em 0;
+  }
+  .richtext :where(ol) {
+    list-style: decimal;
+    padding-left: 1.4em;
+    margin: 0.5em 0;
+  }
+  .richtext :where(li) {
+    margin: 0.2em 0;
+  }
+  .richtext :where(blockquote) {
+    border-left: 3px solid var(--border);
+    padding-left: 0.8em;
+    margin: 0.6em 0;
+    color: var(--muted-foreground);
+  }
+  .richtext :where(hr) {
+    border: 0;
+    border-top: 1px solid var(--border);
+    margin: 1em 0;
+  }
+  .richtext :where(a) {
+    color: var(--foreground);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .richtext :where(img) {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--radius);
+    margin: 0.5em 0;
+  }
+  .richtext :where(strong) {
+    font-weight: 600;
+  }
 }

@@ -10,7 +10,7 @@ import { ImagePlus, X } from "lucide-react"
 import { getCategory, getSubcategories } from "@/config/categories"
 import { createApp, uploadThumbnail, THUMBNAIL_MIME } from "@/lib/apps"
 import { SubcategorySelect } from "@/components/app/SubcategorySelect"
-import { MarkdownEditor } from "@/components/app/MarkdownEditor"
+import { RichTextEditor } from "@/components/app/RichTextEditor"
 
 const inputClass =
   "w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
@@ -272,10 +272,10 @@ export function WriteForm({
         />
       </div>
 
-      {/* 내용 — 블로그형 에디터(Markdown 저장) */}
+      {/* 내용 — 블로그형 에디터(HTML 저장) */}
       <div className="flex flex-col gap-1.5">
         <label className={labelClass}>내용</label>
-        <MarkdownEditor onChange={setContent} />
+        <RichTextEditor onChange={setContent} />
       </div>
 
       {/* 에러 */}

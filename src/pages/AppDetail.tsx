@@ -10,7 +10,7 @@ import {
 } from "lucide-react"
 import { getCategory } from "@/config/categories"
 import { AppThumbnail } from "@/components/app/AppThumbnail"
-import { MarkdownViewer } from "@/components/app/MarkdownViewer"
+import { RichTextViewer } from "@/components/app/RichTextViewer"
 import { ProfileTrigger } from "@/components/profile/ProfileTrigger"
 import { PromoLinks } from "@/components/profile/PromoLinks"
 import { getApp, type App } from "@/lib/apps"
@@ -187,12 +187,12 @@ export function AppDetail() {
         </button>
       </div>
 
-      {/* 개발자 소개 글(블로그형) — Markdown 렌더 */}
+      {/* 개발자 소개 글(블로그형) — HTML 정화 후 렌더 */}
       <section className="mt-10">
         <h2 className="text-lg font-semibold tracking-tight">소개</h2>
         {app.description.trim() ? (
           <div className="mt-3">
-            <MarkdownViewer content={app.description} />
+            <RichTextViewer html={app.description} />
           </div>
         ) : (
           <p className="mt-3 text-sm text-muted-foreground">
