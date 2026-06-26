@@ -1,7 +1,7 @@
-import { useState, type ComponentType, type FormEvent } from "react"
+import { useState, type FormEvent } from "react"
 import { Link } from "react-router-dom"
-import { Rss, Link as LinkIcon, Mail } from "lucide-react"
-import { InstagramIcon, YoutubeIcon } from "@/components/profile/BrandIcons"
+import { Mail } from "lucide-react"
+import { PromoLinks } from "@/components/profile/PromoLinks"
 import { useAuth } from "@/lib/auth"
 import { sendMessage, MESSAGE_MAX } from "@/lib/messages"
 import type { Profile } from "@/lib/profile"
@@ -19,22 +19,6 @@ type ProfilePreviewProps = {
   loading: boolean
   /** 제목 요소 id (모달 aria-labelledby 연결) */
   titleId?: string
-}
-
-type IconComp = ComponentType<{ className?: string }>
-type PromoLink = { href: string; label: string; Icon: IconComp }
-
-/** 입력된 홍보 링크만 골라 표시 순서대로. */
-function promoLinks(p: Profile): PromoLink[] {
-  const links: PromoLink[] = []
-  if (p.blogUrl) links.push({ href: p.blogUrl, label: "블로그", Icon: Rss })
-  if (p.instagramUrl)
-    links.push({ href: p.instagramUrl, label: "인스타그램", Icon: InstagramIcon })
-  if (p.youtubeUrl)
-    links.push({ href: p.youtubeUrl, label: "유튜브", Icon: YoutubeIcon })
-  if (p.websiteUrl)
-    links.push({ href: p.websiteUrl, label: "사이트", Icon: LinkIcon })
-  return links
 }
 
 export function ProfilePreview({ profile, loading, titleId }: ProfilePreviewProps) {
@@ -60,7 +44,6 @@ export function ProfilePreview({ profile, loading, titleId }: ProfilePreviewProp
 
   const name = profile.nickname?.trim() || "이름 없음"
   const initial = name.charAt(0).toUpperCase()
-  const links = promoLinks(profile)
   const isSelf = !!user && user.id === profile.id
 
   return (
@@ -101,24 +84,7 @@ export function ProfilePreview({ profile, loading, titleId }: ProfilePreviewProp
       )}
 
       {/* 홍보 링크 — 입력된 것만, 흑백 로고 버튼. 새 탭 + noopener noreferrer */}
-      {links.length > 0 && (
-        <ul className="mt-4 flex flex-wrap gap-2">
-          {links.map(({ href, label, Icon }) => (
-            <li key={href}>
-              <a
-                href={href}
-                target="_blank"
-                rel="noopener noreferrer"
-                title={label}
-                aria-label={label}
-                className="inline-flex size-9 items-center justify-center rounded-full border border-border text-foreground hover:bg-accent"
-              >
-                <Icon className="size-4" />
-              </a>
-            </li>
-          ))}
-        </ul>
-      )}
+      <PromoLinks profile={profile} className="mt-4" />
 
       {/* 쪽지 보내기 (E-3) — 본인 프로필엔 안 보인다. 비로그인은 로그인 안내. */}
       {!isSelf && (

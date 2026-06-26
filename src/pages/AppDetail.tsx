@@ -11,7 +11,10 @@ import {
 import { getCategory } from "@/config/categories"
 import { AppThumbnail } from "@/components/app/AppThumbnail"
 import { MarkdownViewer } from "@/components/app/MarkdownViewer"
+import { ProfileTrigger } from "@/components/profile/ProfileTrigger"
+import { PromoLinks } from "@/components/profile/PromoLinks"
 import { getApp, type App } from "@/lib/apps"
+import { getProfile, type Profile } from "@/lib/profile"
 
 /**
  * 앱 상세 — 제목·개발자·소개 본문·조회수·"앱 열기"(새 탭).
@@ -21,15 +24,23 @@ import { getApp, type App } from "@/lib/apps"
 export function AppDetail() {
   const { id } = useParams<{ id: string }>()
   const [app, setApp] = useState<App | undefined>()
+  const [owner, setOwner] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     let active = true
     setLoading(true)
+    setOwner(null)
     getApp(id ?? "").then((data) => {
       if (!active) return
       setApp(data)
       setLoading(false)
+      // 등록자(owner) 프로필 — 홍보 링크·프로필 모달용. 시드앱은 owner 없음.
+      if (data?.ownerId) {
+        getProfile(data.ownerId).then((p) => {
+          if (active) setOwner(p ?? null)
+        })
+      }
     })
     return () => {
       active = false
@@ -82,12 +93,26 @@ export function AppDetail() {
         <h1 className="text-3xl font-semibold tracking-tight">{app.title}</h1>
 
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-          <span>{app.authorName}</span>
+          {app.ownerId ? (
+            // 등록자 연결: 이름 클릭 → 프로필 미리보기 모달
+            <ProfileTrigger
+              userId={app.ownerId}
+              className="text-sm text-muted-foreground hover:text-foreground"
+            >
+              {app.authorName || owner?.nickname || "개발자"}
+            </ProfileTrigger>
+          ) : (
+            // 시드앱 등 owner 없는 경우는 텍스트만(의도된 동작)
+            <span>{app.authorName}</span>
+          )}
           <span className="inline-flex items-center gap-1">
             <Eye className="size-4" aria-hidden />
             조회 {app.viewCount}
           </span>
         </div>
+
+        {/* 개발자 홍보 링크 — 등록자가 입력한 것만(블로그·인스타·유튜브·사이트) */}
+        {owner && <PromoLinks profile={owner} className="mt-3" />}
 
         {tags.length > 0 && (
           <ul className="mt-3 flex flex-wrap gap-1">
