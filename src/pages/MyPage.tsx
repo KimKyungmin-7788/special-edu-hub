@@ -16,6 +16,7 @@ import {
   type ProfileEditable,
 } from "@/lib/profile"
 import { ProfileTrigger } from "@/components/profile/ProfileTrigger"
+import { MyAppList } from "@/components/app/MyAppList"
 import { InfoHint } from "@/components/ui/InfoHint"
 import { MessageBox } from "@/components/messages/MessageBox"
 import { getUnreadCount } from "@/lib/messages"
@@ -397,12 +398,9 @@ export function MyPage() {
       )}
 
       {tab === "activity" && (
-        /* 내 활동 모음 — 자리만 (3단계에서 채움) */
         <section className="mt-6">
           <h2 className="text-lg font-semibold tracking-tight">내가 등록한 앱</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            앱 등록 기능은 준비 중입니다. 교사 인증 후 등록한 앱이 여기에 모입니다.
-          </p>
+          <MyAppList />
         </section>
       )}
 
