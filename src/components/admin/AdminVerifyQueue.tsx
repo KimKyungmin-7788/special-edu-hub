@@ -89,10 +89,16 @@ function QueueCard({
 
   async function openDoc() {
     onError("")
+    // 새 탭은 클릭 제스처 안에서 즉시 연다(서명 URL 을 await 한 뒤 window.open 하면
+    // 팝업 차단기가 막는다). opener 를 끊어 noopener 와 같은 보안 효과를 낸다.
+    const win = window.open("about:blank", "_blank")
+    if (win) win.opener = null
     try {
       const url = await createDocSignedUrl(req.documentPath)
-      window.open(url, "_blank", "noopener,noreferrer")
+      if (win) win.location.href = url
+      else window.location.href = url // 팝업이 끝내 막히면 현재 탭으로 폴백
     } catch (err) {
+      if (win) win.close()
       onError(err instanceof Error ? err.message : "서류를 열 수 없습니다.")
     }
   }
