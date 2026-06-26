@@ -9,7 +9,11 @@
 
     /* Path alias */
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      // Toast UI Editor 의 package.json exports 에 types 조건이 없어 빌드(tsc)에서
+      // 타입을 못 찾는다. 실제 타입 파일로 매핑(런타임은 Vite 가 exports 로 별도 해석).
+      // index.d.ts 가 viewer 앰비언트 모듈도 등록해 ./dist/toastui-editor-viewer 도 함께 해결됨.
+      "@toast-ui/editor": ["./node_modules/@toast-ui/editor/types/index.d.ts"]
     },
 
     /* Bundler mode */
