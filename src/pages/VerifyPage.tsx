@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { useAuth } from "@/lib/auth"
-import { getProfile, type Profile } from "@/lib/profile"
+import { getProfile } from "@/lib/profile"
 import {
   getMyLatestRequest,
   type VerificationRequest,
