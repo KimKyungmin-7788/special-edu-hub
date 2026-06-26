@@ -8,7 +8,7 @@ import {
 } from "react"
 import type { Session, User } from "@supabase/supabase-js"
 import { supabase } from "@/lib/supabase"
-import { getProfile } from "@/lib/profile"
+import { getProfile, type Profile } from "@/lib/profile"
 import { VerifiedCelebrationDialog } from "@/components/verify/VerifiedCelebrationDialog"
 import { NicknameOnboardingDialog } from "@/components/auth/NicknameOnboardingDialog"
 
@@ -28,6 +28,10 @@ function popupShownKey(uid: string) {
 type AuthContextValue = {
   session: Session | null
   user: User | null
+  /** 로그인 사용자의 프로필(없으면 null). runPostLogin 에서 한 번 읽어 공유한다. */
+  profile: Profile | null
+  /** profiles.role === 'admin'. 헤더 '관리' 링크·/admin 게이트에서 쓴다. */
+  isAdmin: boolean
   /** 최초 세션 확인이 끝났는지. true 동안은 "아직 모름"이라 깜빡임을 막는 데 쓴다. */
   loading: boolean
   signInWithPassword: (email: string, password: string) => Promise<void>
@@ -40,6 +44,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
+  const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const [showCelebration, setShowCelebration] = useState(false)
   // 닉네임 미확정(nickname_set=false) 사용자에게 띄울 온보딩.
@@ -62,6 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const runPostLogin = useCallback(
     async (uid: string) => {
       const profile = await getProfile(uid)
+      setProfile(profile ?? null) // 헤더·/admin 게이트가 공유(role 포함)
       if (!profile) return
       if (profile.nicknameSet === false) {
         setOnboarding({ userId: uid, initial: profile.nickname ?? "" })
@@ -99,6 +105,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false)
       if (data.session?.user.id) {
         runPostLogin(data.session.user.id)
+      } else {
+        setProfile(null)
       }
     })
 
@@ -109,6 +117,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(nextSession)
       if (nextSession?.user.id) {
         runPostLogin(nextSession.user.id)
+      } else {
+        setProfile(null)
       }
     })
 
@@ -143,6 +153,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value: AuthContextValue = {
     session,
     user: session?.user ?? null,
+    profile,
+    isAdmin: profile?.role === "admin",
     loading,
     signInWithPassword,
     signUpWithPassword,

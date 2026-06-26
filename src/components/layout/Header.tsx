@@ -34,7 +34,7 @@ export function Header() {
 
 /** 헤더 우측 인증 영역 — 세션 상태로 분기. */
 function AuthArea() {
-  const { user, loading, signOut } = useAuth()
+  const { user, isAdmin, loading, signOut } = useAuth()
 
   // 최초 세션 확인 전에는 비워 둔다(로그인/로그아웃 깜빡임 방지).
   if (loading) {
@@ -44,6 +44,14 @@ function AuthArea() {
   if (user) {
     return (
       <div className="flex shrink-0 items-center gap-2">
+        {isAdmin && (
+          <Link
+            to="/admin"
+            className="rounded-md px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground"
+          >
+            관리
+          </Link>
+        )}
         <Link
           to="/mypage"
           className="hidden max-w-[12rem] truncate text-sm text-muted-foreground hover:text-foreground sm:inline"

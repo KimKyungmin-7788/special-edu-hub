@@ -14,6 +14,7 @@ import { Login } from "@/pages/Login"
 import { Signup } from "@/pages/Signup"
 import { MyPage } from "@/pages/MyPage"
 import { VerifyPage } from "@/pages/VerifyPage"
+import { AdminPage } from "@/pages/AdminPage"
 import { NotFound } from "@/pages/NotFound"
 
 function App() {
@@ -39,6 +40,7 @@ function App() {
             <Route path="login" element={<Login />} />
             <Route path="signup" element={<Signup />} />
             <Route path="mypage" element={<MyPage />} />
+            <Route path="admin" element={<AdminPage />} />
 
             {/* 자리만 / 준비 중 */}
             <Route

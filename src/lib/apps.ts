@@ -221,6 +221,24 @@ export async function setAppStatus(id: string, status: AppStatus): Promise<App> 
   return mapRow(data as AppRow)
 }
 
+/**
+ * 전체 앱(숨김 포함, 모든 등록자, 최신순) — 관리자 페이지(/admin)용.
+ * status 필터 없이 가져온다. RLS(12_apps_owner.sql)의 is_admin() SELECT 가
+ * 관리자에게만 숨김·타인 앱 조회를 허용하므로, 비관리자가 호출하면 published 만 온다.
+ */
+export async function getAllApps(): Promise<App[]> {
+  const { data, error } = await supabase
+    .from("apps")
+    .select("*")
+    .order("created_at", { ascending: false })
+
+  if (error) {
+    console.error("[apps] getAllApps 실패:", error.message)
+    return []
+  }
+  return (data as AppRow[]).map(mapRow)
+}
+
 /** 내가 등록한 앱(숨김 포함, 최신순) — 마이페이지용. */
 export async function getMyApps(): Promise<App[]> {
   const uid = await currentUserId()

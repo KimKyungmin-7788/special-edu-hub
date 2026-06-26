@@ -141,3 +141,107 @@ export async function submitVerification({
   }
   return mapRow(data as VerificationRow)
 }
+
+// ── 관리자 심사 — /admin 묶음 A (RLS 가 최종 강제) ─────────────
+// 14_admin.sql 의 verif_update_admin(UPDATE) + verif_docs_read_admin(서류 SELECT)
+// 정책이 있어야 동작. 승인 시 09 의 트리거가 is_teacher_verified 를 반영한다.
+
+/** 관리자 큐의 신청 한 건 — 신청자 표시 정보(닉네임·이메일)를 함께 묶는다. */
+export type AdminVerificationRequest = VerificationRequest & {
+  applicantNickname: string | null
+  applicantEmail: string | null
+}
+
+type AdminVerificationRow = VerificationRow & {
+  applicant: { nickname: string | null; email: string | null } | null
+}
+
+/**
+ * 심사 대기(pending) 신청 목록(오래된 순 — 먼저 신청한 걸 먼저 처리).
+ * 신청자 프로필(닉네임·이메일)을 user_id FK 로 임베드한다.
+ * reviewed_by 도 profiles 를 참조하므로 FK 이름으로 명시해 모호함을 없앤다.
+ */
+export async function listPendingRequests(): Promise<AdminVerificationRequest[]> {
+  const { data, error } = await supabase
+    .from("verification_requests")
+    .select(
+      "*, applicant:profiles!verification_requests_user_id_fkey(nickname, email)",
+    )
+    .eq("status", "pending")
+    .order("created_at", { ascending: true })
+
+  if (error) {
+    console.error("[verification] listPendingRequests 실패:", error.message)
+    return []
+  }
+  return (data as AdminVerificationRow[]).map((row) => ({
+    ...mapRow(row),
+    applicantNickname: row.applicant?.nickname ?? null,
+    applicantEmail: row.applicant?.email ?? null,
+  }))
+}
+
+/** 서류 열람용 서명 URL(기본 5분). 관리자만 발급됨(RLS). 새 탭으로 연다. */
+export async function createDocSignedUrl(
+  documentPath: string,
+  expiresInSec = 300,
+): Promise<string> {
+  const { data, error } = await supabase.storage
+    .from(VERIFICATION_BUCKET)
+    .createSignedUrl(documentPath, expiresInSec)
+  if (error) throw error
+  return data.signedUrl
+}
+
+/** 현재 로그인 관리자 id. 심사자(reviewed_by) 기록용. */
+async function adminUserId(): Promise<string> {
+  const uid = await currentUserId()
+  if (!uid) throw new Error("로그인이 필요합니다.")
+  return uid
+}
+
+/**
+ * 승인 — status='approved'. 트리거가 신청자 is_teacher_verified=true 로 올린다.
+ * reviewed_by=처리한 관리자, reviewed_at=now.
+ */
+export async function approveRequest(
+  id: string,
+): Promise<VerificationRequest> {
+  const reviewer = await adminUserId()
+  const { data, error } = await supabase
+    .from("verification_requests")
+    .update({
+      status: "approved",
+      reject_reason: null,
+      reviewed_by: reviewer,
+      reviewed_at: new Date().toISOString(),
+    })
+    .eq("id", id)
+    .select()
+    .single()
+  if (error) throw error
+  return mapRow(data as VerificationRow)
+}
+
+/** 반려 — status='rejected' + 사유. 신청자는 인증센터에서 사유 보고 재신청 가능. */
+export async function rejectRequest(
+  id: string,
+  reason: string,
+): Promise<VerificationRequest> {
+  const r = reason.trim()
+  if (r === "") throw new Error("반려 사유를 입력하세요.")
+  const reviewer = await adminUserId()
+  const { data, error } = await supabase
+    .from("verification_requests")
+    .update({
+      status: "rejected",
+      reject_reason: r,
+      reviewed_by: reviewer,
+      reviewed_at: new Date().toISOString(),
+    })
+    .eq("id", id)
+    .select()
+    .single()
+  if (error) throw error
+  return mapRow(data as VerificationRow)
+}
