@@ -12,6 +12,7 @@ import { ComingSoon } from "@/pages/ComingSoon"
 import { Login } from "@/pages/Login"
 import { Signup } from "@/pages/Signup"
 import { MyPage } from "@/pages/MyPage"
+import { VerifyPage } from "@/pages/VerifyPage"
 import { NotFound } from "@/pages/NotFound"
 
 function App() {
@@ -42,7 +43,7 @@ function App() {
               element={<ComingSoon title="수업실천사례" />}
             />
             <Route path="board" element={<ComingSoon title="자유게시판" />} />
-            <Route path="verify" element={<ComingSoon title="교사인증센터" />} />
+            <Route path="verify" element={<VerifyPage />} />
 
             <Route path="*" element={<NotFound />} />
           </Route>
