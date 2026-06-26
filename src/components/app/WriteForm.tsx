@@ -10,6 +10,7 @@ import { ImagePlus, X } from "lucide-react"
 import { getCategory, getSubcategories } from "@/config/categories"
 import { createApp, uploadThumbnail, THUMBNAIL_MIME } from "@/lib/apps"
 import { SubcategorySelect } from "@/components/app/SubcategorySelect"
+import { MarkdownEditor } from "@/components/app/MarkdownEditor"
 
 const inputClass =
   "w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
@@ -271,16 +272,10 @@ export function WriteForm({
         />
       </div>
 
-      {/* 내용 (G-2 에서 블로그형 에디터로 교체) */}
+      {/* 내용 — 블로그형 에디터(Markdown 저장) */}
       <div className="flex flex-col gap-1.5">
         <label className={labelClass}>내용</label>
-        <textarea
-          className={`${inputClass} min-h-40 resize-y`}
-          placeholder="이 앱이 무엇인지, 어떻게 쓰는지 자유롭게 적어주세요."
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          disabled={submitting}
-        />
+        <MarkdownEditor onChange={setContent} />
       </div>
 
       {/* 에러 */}
