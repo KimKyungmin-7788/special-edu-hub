@@ -1,4 +1,4 @@
-import { useRef } from "react"
+import { useRef, useState } from "react"
 import {
   useEditor,
   EditorContent,
@@ -24,6 +24,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { uploadThumbnail } from "@/lib/apps"
+import { downscaleImage } from "@/lib/image"
 
 /**
  * 블로그형 본문 에디터 (묶음 G-2b) — TipTap 미니멀 커스텀.
@@ -40,6 +41,8 @@ export function RichTextEditor({
   onChange: (html: string) => void
 }) {
   const fileRef = useRef<HTMLInputElement>(null)
+  const [imgBusy, setImgBusy] = useState(false)
+  const [imgError, setImgError] = useState<string | null>(null)
 
   const editor = useEditor({
     extensions: [
@@ -47,7 +50,8 @@ export function RichTextEditor({
         heading: { levels: [2, 3] },
         link: { openOnClick: false },
       }),
-      Image,
+      // 본문 이미지는 화면 폭에 맞춰 표시(.richtext img max-width). 지연 로딩.
+      Image.configure({ HTMLAttributes: { loading: "lazy" } }),
     ],
     content: value,
     onUpdate: ({ editor }) => onChange(editor.getHTML()),
@@ -58,11 +62,17 @@ export function RichTextEditor({
 
   async function pickImage(file?: File | null) {
     if (!file || !editor) return
+    setImgError(null)
+    setImgBusy(true)
     try {
-      const url = await uploadThumbnail(file)
+      // 업로드 전 다운스케일(긴 변 1600px·WebP) → 과대 해상도·2MB 초과 예방.
+      const resized = await downscaleImage(file)
+      const url = await uploadThumbnail(resized)
       editor.chain().focus().setImage({ src: url }).run()
     } catch (e) {
-      console.error("[editor] 본문 이미지 업로드 실패:", e)
+      setImgError(e instanceof Error ? e.message : "이미지를 넣지 못했습니다.")
+    } finally {
+      setImgBusy(false)
     }
   }
 
@@ -88,6 +98,15 @@ export function RichTextEditor({
         onImage={() => fileRef.current?.click()}
       />
       <EditorContent editor={editor} />
+      {(imgBusy || imgError) && (
+        <div className="border-t border-border px-3 py-1.5 text-xs">
+          {imgBusy ? (
+            <span className="text-muted-foreground">이미지 올리는 중…</span>
+          ) : (
+            <span className="text-destructive">{imgError}</span>
+          )}
+        </div>
+      )}
       <input
         ref={fileRef}
         type="file"
