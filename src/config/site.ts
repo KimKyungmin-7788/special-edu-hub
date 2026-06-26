@@ -15,7 +15,7 @@ export const site = {
   logoText: "로고",
 
   hero: {
-    title: "교과서만으로는 수업이 힘든\n특수교사가 직접 만든 디지털 교육자료",
+    title: "히어로 문구 (예정)",
     subtitle: "",
     ctaLabel: "자료 둘러보기",
   },
@@ -24,7 +24,7 @@ export const site = {
   heroSlides: [
     {
       type: "text",
-      title: "교과서만으로는 수업이 힘든\n특수교사가 직접 만든 디지털 교육자료",
+      title: "히어로 문구 (예정)",
       subtitle: "",
       ctaLabel: "자료 둘러보기",
     },
