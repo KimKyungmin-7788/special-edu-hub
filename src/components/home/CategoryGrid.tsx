@@ -46,7 +46,7 @@ export function CategoryGrid() {
       <h2 className="mb-4 text-lg font-semibold tracking-tight">카테고리</h2>
       <ul className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-6">
         {categories
-          .filter((c) => !c.hideFromGrid)
+          .filter((c) => !c.hideFromGrid && !c.parentId)
           .map((c) => {
           const Icon = iconMap[c.icon] ?? Sparkles
           return (
