@@ -260,9 +260,9 @@ export function WriteForm({
         {thumbError && <p className="text-xs text-destructive">{thumbError}</p>}
       </div>
 
-      {/* 개발자 표시명 */}
+      {/* 작성자 */}
       <div className="flex flex-col gap-1.5">
-        <label className={labelClass}>개발자 표시명</label>
+        <label className={labelClass}>작성자</label>
         <input
           className={inputClass}
           placeholder="앱 상세에 보일 이름"

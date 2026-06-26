@@ -1,14 +1,14 @@
 import { useEffect } from "react"
-import { BrowserRouter, Routes, Route } from "react-router-dom"
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import { site } from "@/config/site"
 import { AuthProvider } from "@/lib/auth"
 import { Layout } from "@/components/layout/Layout"
 import { Home } from "@/pages/Home"
-import { AllApps } from "@/pages/AllApps"
 import { SubjectApps } from "@/pages/SubjectApps"
 import { WorkApps } from "@/pages/WorkApps"
 import { AppDetail } from "@/pages/AppDetail"
 import { WritePage } from "@/pages/WritePage"
+// (전체 카탈로그 페이지는 제거 — 인기/과목별로 대체)
 import { ComingSoon } from "@/pages/ComingSoon"
 import { Login } from "@/pages/Login"
 import { Signup } from "@/pages/Signup"
@@ -27,7 +27,8 @@ function App() {
         <Routes>
           <Route element={<Layout />}>
             <Route index element={<Home />} />
-            <Route path="apps" element={<AllApps />} />
+            {/* 전체(/apps)는 없앰 — 인기로 리다이렉트(옛 링크·뒤로가기 대비) */}
+            <Route path="apps" element={<Navigate to="/apps/subject" replace />} />
             <Route path="write/:categoryId" element={<WritePage />} />
             <Route path="apps/subject" element={<SubjectApps />} />
             <Route path="apps/subject/:categoryId" element={<SubjectApps />} />

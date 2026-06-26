@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Link, useParams } from "react-router-dom"
+import { Link, useNavigate, useLocation, useParams } from "react-router-dom"
 import {
   ArrowLeft,
   ExternalLink,
@@ -23,9 +23,17 @@ import { getProfile, type Profile } from "@/lib/profile"
  */
 export function AppDetail() {
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
+  const location = useLocation()
   const [app, setApp] = useState<App | undefined>()
   const [owner, setOwner] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
+
+  // "목록으로" — 직전 페이지로. 직접 진입(앱 내 이력 없음)이면 인기로.
+  function goBack() {
+    if (location.key !== "default") navigate(-1)
+    else navigate("/apps/subject")
+  }
 
   useEffect(() => {
     let active = true
@@ -65,10 +73,10 @@ export function AppDetail() {
           요청한 앱(id: {id ?? "?"})이 존재하지 않습니다.
         </p>
         <Link
-          to="/apps"
+          to="/apps/subject"
           className="mt-4 inline-block rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
         >
-          전체 목록으로
+          인기 목록으로
         </Link>
       </div>
     )
@@ -80,13 +88,14 @@ export function AppDetail() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
-      <Link
-        to="/apps"
+      <button
+        type="button"
+        onClick={goBack}
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="size-4" aria-hidden />
         목록으로
-      </Link>
+      </button>
 
       {/* 헤더: 제목 · 개발자 · 조회수 · 태그 */}
       <div className="mt-6">
