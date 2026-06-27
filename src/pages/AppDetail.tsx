@@ -11,14 +11,15 @@ import {
 import { getCategory } from "@/config/categories"
 import { AppThumbnail } from "@/components/app/AppThumbnail"
 import { RichTextViewer } from "@/components/app/RichTextViewer"
+import { CommentSection } from "@/components/comment/CommentSection"
 import { ProfileTrigger } from "@/components/profile/ProfileTrigger"
 import { PromoLinks } from "@/components/profile/PromoLinks"
 import { getApp, type App } from "@/lib/apps"
 import { getProfile, type Profile } from "@/lib/profile"
 
 /**
- * 앱 상세 — 제목·개발자·소개 본문·조회수·"앱 열기"(새 탭).
- * 좋아요/담기/공유/댓글은 모양만(준비 중) — 동작 없음(CLAUDE.md 규칙 4).
+ * 앱 상세 — 제목·개발자·소개 본문·조회수·"앱 열기"(새 탭)·댓글(CommentSection).
+ * 좋아요/담기/공유는 모양만(준비 중) — 동작 없음(CLAUDE.md 규칙 4).
  * 앱 실행은 iframe 금지, 새 탭 링크(target="_blank" rel="noopener").
  */
 export function AppDetail() {
@@ -201,13 +202,8 @@ export function AppDetail() {
         )}
       </section>
 
-      {/* 댓글 — 자리만, 준비 중 */}
-      <section className="mt-10 border-t pt-6">
-        <h2 className="text-lg font-semibold tracking-tight">댓글</h2>
-        <p className="mt-3 text-sm text-muted-foreground">
-          댓글 기능은 준비 중입니다.
-        </p>
-      </section>
+      {/* 댓글 (PRD 4단계) */}
+      <CommentSection appId={app.id} />
     </div>
   )
 }

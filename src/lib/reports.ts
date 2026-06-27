@@ -50,6 +50,28 @@ export async function reportMessage(
   if (error) throw error
 }
 
+/**
+ * 댓글 신고. report_comment RPC 로만 보낸다(묶음 C-3).
+ * 본문 스냅샷·피신고자(작성자)는 DB 가 처리(위조 불가). 댓글은 공개라 누구나 신고 가능.
+ * 같은 댓글에 내 대기중 신고가 이미 있으면 DB 에서 조용히 무시된다.
+ */
+export async function reportComment(
+  commentId: string,
+  reason: string,
+  detail: string,
+): Promise<void> {
+  const trimmed = detail.trim()
+  if (trimmed.length > REPORT_DETAIL_MAX)
+    throw new Error(`상세 내용은 최대 ${REPORT_DETAIL_MAX}자까지 가능합니다.`)
+
+  const { error } = await supabase.rpc("report_comment", {
+    p_comment_id: commentId,
+    p_reason: reason,
+    p_detail: trimmed === "" ? null : trimmed,
+  })
+  if (error) throw error
+}
+
 // ── 운영진(staff)용 — 신고 큐 (R-3) ──────────────────────
 // 조회는 RLS 가 staff 만 전체를 보게 막는다. 처리는 handle_report RPC.
 
