@@ -9,8 +9,8 @@ export type HeroSlide =
   | { type: "banner"; imageUrl: string; alt?: string }
 
 export const site = {
-  /** 가칭 — 추후 교체 */
-  name: "(가칭)강원 특수교육 디지털 학습자료 누리집",
+  /** 가칭 — 정식 명칭 확정되면 교체(법적 페이지·푸터가 이 값을 참조한다). */
+  name: "(가칭) 특수교육 학습자료 누리집",
   /** 이미지 로고 들어오면 교체 */
   logoText: "로고",
 
@@ -31,7 +31,25 @@ export const site = {
     // { type: "banner", imageUrl: "...", alt: "..." } // 배너 추가 시
   ] satisfies HeroSlide[],
 
+  /**
+   * 운영 주체·연락처(법적 페이지·푸터의 단일 소스).
+   * 개인정보처리방침/이용약관은 이 값을 불러다 쓴다(직접 박지 않는다).
+   */
+  org: {
+    name: "강릉오성학교 AI하이터치 수업 연구회",
+    intro:
+      "특수교사 개발자들의 협력과 나눔을 위한 강릉오성학교 AI하이터치 수업 연구회의 프로젝트입니다.",
+    privacyOfficer: { name: "김경민", email: "themaniwant19@gmail.com" },
+    /** 법적 문서 시행일(개정 시 갱신). */
+    effectiveDate: "2026-06-28",
+  },
+
   footer: {
-    note: "특수교사가 만든 디지털 교육자료를 모아 보여주는 공개 카탈로그입니다.",
+    /** 푸터 링크. emphasis=강조(개인정보처리방침). */
+    links: [
+      { label: "소개", to: "/about" },
+      { label: "이용약관", to: "/terms" },
+      { label: "개인정보처리방침", to: "/privacy", emphasis: true },
+    ] as { label: string; to: string; emphasis?: boolean }[],
   },
 } as const

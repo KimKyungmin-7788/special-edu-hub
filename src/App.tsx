@@ -8,6 +8,8 @@ import { SubjectApps } from "@/pages/SubjectApps"
 import { WorkApps } from "@/pages/WorkApps"
 import { AppDetail } from "@/pages/AppDetail"
 import { WritePage } from "@/pages/WritePage"
+import { Privacy } from "@/pages/Privacy"
+import { Terms } from "@/pages/Terms"
 // (전체 카탈로그 페이지는 제거 — 인기/과목별로 대체)
 import { ComingSoon } from "@/pages/ComingSoon"
 import { Login } from "@/pages/Login"
@@ -49,6 +51,11 @@ function App() {
             />
             <Route path="board" element={<ComingSoon title="자유게시판" />} />
             <Route path="verify" element={<VerifyPage />} />
+
+            {/* 정적·법적 페이지 (트랙 A) — 소개는 준비 중 */}
+            <Route path="about" element={<ComingSoon title="소개" />} />
+            <Route path="privacy" element={<Privacy />} />
+            <Route path="terms" element={<Terms />} />
 
             <Route path="*" element={<NotFound />} />
           </Route>
