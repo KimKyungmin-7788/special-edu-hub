@@ -171,3 +171,93 @@ export async function deleteMessage(id: string): Promise<void> {
   const { error } = await supabase.rpc("delete_message", { p_id: id })
   if (error) throw error
 }
+
+// ── 대화방(스레드) — 메신저식 (사람별로 묶기) ─────────────
+// 조회는 기존 RLS(내 것 + 내 쪽 미삭제)로 충분 → 클라이언트에서 상대별로 묶는다.
+// 일괄 읽음/나가기만 RPC(18_messages_thread.sql).
+
+/** 대화 목록 한 줄: 상대 + 마지막 메시지 요약 + 안 읽음 수. */
+export type Conversation = {
+  other: MessageParty
+  lastBody: string
+  lastAt: string
+  /** 마지막 메시지를 내가 보냈는지(목록 미리보기에 "나: " 표시용). */
+  lastFromMe: boolean
+  unreadCount: number
+}
+
+/**
+ * 대화 목록: 내 모든 쪽지(보낸+받은, RLS 가 삭제분 제외)를 상대별로 묶는다.
+ * 최근 대화가 위로 온다. 안 읽음 수는 그 상대에게서 받은 미열람 쪽지 개수.
+ */
+export async function getConversations(): Promise<Conversation[]> {
+  const uid = await currentUserId()
+  if (!uid) return []
+
+  const { data, error } = await supabase
+    .from("messages")
+    .select(SELECT_WITH_PARTIES)
+    .order("created_at", { ascending: false })
+
+  if (error) {
+    console.error("[messages] getConversations 실패:", error.message)
+    return []
+  }
+
+  const rows = (data as unknown as MessageRow[]).map(mapRow)
+  // 행은 최신순 → 각 상대를 처음 만나는 순간이 그 대화의 최신. Map 삽입 순서가
+  // 곧 최신순 정렬이 된다.
+  const byOther = new Map<string, Conversation>()
+  for (const m of rows) {
+    const mine = m.sender.id === uid
+    const other = mine ? m.recipient : m.sender
+    if (!other.id) continue // 프로필이 지워진 예외 방어
+
+    let conv = byOther.get(other.id)
+    if (!conv) {
+      conv = {
+        other,
+        lastBody: m.body,
+        lastAt: m.createdAt,
+        lastFromMe: mine,
+        unreadCount: 0,
+      }
+      byOther.set(other.id, conv)
+    }
+    if (!mine && m.readAt === null) conv.unreadCount++
+  }
+  return Array.from(byOther.values())
+}
+
+/** 한 상대와 주고받은 모든 쪽지, 시간순(오래된 것부터 → 말풍선 위→아래). */
+export async function getThread(otherId: string): Promise<Message[]> {
+  const uid = await currentUserId()
+  if (!uid) return []
+
+  const { data, error } = await supabase
+    .from("messages")
+    .select(SELECT_WITH_PARTIES)
+    .or(
+      `and(sender_id.eq.${uid},recipient_id.eq.${otherId}),` +
+        `and(sender_id.eq.${otherId},recipient_id.eq.${uid})`,
+    )
+    .order("created_at", { ascending: true })
+
+  if (error) {
+    console.error("[messages] getThread 실패:", error.message)
+    return []
+  }
+  return (data as unknown as MessageRow[]).map(mapRow)
+}
+
+/** 대화방 열 때: 그 상대에게서 받은 안 읽은 쪽지를 한 번에 읽음(RPC). */
+export async function markThreadRead(otherId: string): Promise<void> {
+  const { error } = await supabase.rpc("mark_thread_read", { p_other: otherId })
+  if (error) throw error
+}
+
+/** 대화방 나가기: 그 상대와의 쪽지를 내 쪽에서만 소프트 삭제(RPC). 상대 사본 유지. */
+export async function deleteThread(otherId: string): Promise<void> {
+  const { error } = await supabase.rpc("delete_thread", { p_other: otherId })
+  if (error) throw error
+}

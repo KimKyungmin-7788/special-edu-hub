@@ -50,6 +50,15 @@
     border-color: var(--color-border);
   }
 
+  /* Tailwind v4 는 버튼 기본 커서를 default 로 바꿨다. 클릭 가능한 요소는
+     손가락(pointer) 커서로 — 호버 시 상호작용 가능함을 알리도록 전역 복구. */
+  button:not(:disabled),
+  [role="button"]:not(:disabled),
+  label:has(> input[type="checkbox"]:not(:disabled)),
+  label:has(> input[type="radio"]:not(:disabled)) {
+    cursor: pointer;
+  }
+
   html {
     font-family: var(--font-sans);
   }

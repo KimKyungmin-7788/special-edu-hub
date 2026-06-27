@@ -404,7 +404,7 @@ export function MyPage() {
         </section>
       )}
 
-      {/* 쪽지함 (받은함/보낸함) — 묶음 E-2 */}
+      {/* 쪽지함(대화방) — 묶음 E-2 개편. 차단 목록은 MessageBox 안(목록 화면)에. */}
       {tab === "messages" && (
         <div className="mt-6">
           <MessageBox onUnreadChange={setUnread} />
