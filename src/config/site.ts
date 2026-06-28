@@ -48,6 +48,7 @@ export const site = {
     /** 푸터 링크. emphasis=강조(개인정보처리방침). */
     links: [
       { label: "소개", to: "/about" },
+      { label: "운영진 문의", to: "/contact" },
       { label: "이용약관", to: "/terms" },
       { label: "개인정보처리방침", to: "/privacy", emphasis: true },
     ] as { label: string; to: string; emphasis?: boolean }[],

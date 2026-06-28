@@ -5,6 +5,7 @@ import { AdminAppList } from "@/components/admin/AdminAppList"
 import { AdminVerifyQueue } from "@/components/admin/AdminVerifyQueue"
 import { AdminMemberList } from "@/components/admin/AdminMemberList"
 import { AdminReportQueue } from "@/components/admin/AdminReportQueue"
+import { AdminInquiryQueue } from "@/components/admin/AdminInquiryQueue"
 
 /**
  * /admin — 관리자 운영 페이지 (묶음 A).
@@ -16,7 +17,7 @@ import { AdminReportQueue } from "@/components/admin/AdminReportQueue"
  * 권한 체크의 진짜 강제는 DB RLS(is_admin)다. 여기 가드는 화면 접근 차단일 뿐.
  */
 
-type AdminTab = "apps" | "verify" | "members" | "reports"
+type AdminTab = "apps" | "verify" | "members" | "reports" | "inquiries"
 
 export function AdminPage() {
   const { user, isStaff, loading } = useAuth()
@@ -54,7 +55,7 @@ export function AdminPage() {
     <div className="mx-auto max-w-3xl px-4 py-10">
       <h1 className="mb-1 text-2xl font-bold">관리</h1>
       <p className="mb-6 text-sm text-muted-foreground">
-        앱 공개 상태·교사인증 신청·회원·신고를 관리합니다.
+        앱 공개 상태·교사인증 신청·회원·신고·문의를 관리합니다.
       </p>
 
       <div className="mb-6 flex gap-1 border-b border-border">
@@ -70,12 +71,16 @@ export function AdminPage() {
         <TabButton active={tab === "reports"} onClick={() => setTab("reports")}>
           신고
         </TabButton>
+        <TabButton active={tab === "inquiries"} onClick={() => setTab("inquiries")}>
+          문의
+        </TabButton>
       </div>
 
       {tab === "apps" && <AdminAppList />}
       {tab === "verify" && <AdminVerifyQueue />}
       {tab === "members" && <AdminMemberList />}
       {tab === "reports" && <AdminReportQueue />}
+      {tab === "inquiries" && <AdminInquiryQueue />}
     </div>
   )
 }

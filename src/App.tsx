@@ -10,6 +10,7 @@ import { AppDetail } from "@/pages/AppDetail"
 import { WritePage } from "@/pages/WritePage"
 import { Privacy } from "@/pages/Privacy"
 import { Terms } from "@/pages/Terms"
+import { Contact } from "@/pages/Contact"
 // (전체 카탈로그 페이지는 제거 — 인기/과목별로 대체)
 import { ComingSoon } from "@/pages/ComingSoon"
 import { Login } from "@/pages/Login"
@@ -56,6 +57,7 @@ function App() {
             <Route path="about" element={<ComingSoon title="소개" />} />
             <Route path="privacy" element={<Privacy />} />
             <Route path="terms" element={<Terms />} />
+            <Route path="contact" element={<Contact />} />
 
             <Route path="*" element={<NotFound />} />
           </Route>
