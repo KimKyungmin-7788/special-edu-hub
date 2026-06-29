@@ -5,7 +5,13 @@ import { SubjectSidebar } from "@/components/app/SubjectSidebar"
 import { AppCardList } from "@/components/home/AppCardList"
 import { PopularDashboard } from "@/components/app/PopularDashboard"
 import { WriteButton } from "@/components/app/WriteButton"
-import { getAppsByCategory, getAppsByType, type App } from "@/lib/apps"
+import {
+  getAppsByCategory,
+  getAppsByType,
+  reorderApps,
+  type App,
+} from "@/lib/apps"
+import { useAuth } from "@/lib/auth"
 import { CONTAINER } from "@/config/layout"
 import { cn } from "@/lib/utils"
 
@@ -28,7 +34,9 @@ export function SubjectApps() {
   // 유효하지 않은 sub 값은 무시(전체로 취급).
   const activeSub = subcategories.some((s) => s.id === sub) ? sub : null
 
+  const { isStaff } = useAuth()
   const [apps, setApps] = useState<App[]>([])
+  const [reorderError, setReorderError] = useState<string | null>(null)
 
   useEffect(() => {
     if (unknown) {
@@ -57,6 +65,27 @@ export function SubjectApps() {
     if (next) params.set("sub", next)
     else params.delete("sub")
     setSearchParams(params, { replace: true })
+  }
+
+  // 순서 조정은 운영진 + 하위분류 필터가 없는(전체) 목록에서만(전역 순서를 다룬다).
+  const canReorder = isStaff && !activeSub
+
+  function moveApp(app: App, dir: "up" | "down") {
+    const idx = apps.findIndex((a) => a.id === app.id)
+    const j = dir === "up" ? idx - 1 : idx + 1
+    if (idx < 0 || j < 0 || j >= apps.length) return
+
+    const swapped = [...apps]
+    ;[swapped[idx], swapped[j]] = [swapped[j], swapped[idx]]
+    const prev = apps
+    // 낙관적 반영(로컬 sortOrder 도 인덱스로 갱신).
+    setApps(swapped.map((a, i) => ({ ...a, sortOrder: i })))
+    setReorderError(null)
+    // 저장은 옛 sortOrder 기준으로 바뀐 행만(swapped 는 옛 값 유지).
+    reorderApps(swapped).catch((err) => {
+      setApps(prev) // 실패 시 원복
+      setReorderError(err instanceof Error ? err.message : "순서 저장에 실패했습니다.")
+    })
   }
 
   return (
@@ -122,12 +151,28 @@ export function SubjectApps() {
                 </div>
               )}
 
-              <p className="mt-4 mb-8 text-sm text-muted-foreground">
+              <p className="mt-4 mb-2 text-sm text-muted-foreground">
                 {shownApps.length}개 앱
               </p>
+              {canReorder && (
+                <p className="mb-6 text-xs text-muted-foreground">
+                  운영진: 카드의 ▲▼ 로 노출 순서를 조정할 수 있어요. (전체 목록에서만)
+                </p>
+              )}
+              {reorderError && (
+                <p className="mb-4 text-sm text-destructive">{reorderError}</p>
+              )}
               <AppCardList
                 apps={shownApps}
                 emptyText="이 분류의 앱이 아직 없습니다."
+                reorder={
+                  canReorder
+                    ? {
+                        onMoveUp: (a) => moveApp(a, "up"),
+                        onMoveDown: (a) => moveApp(a, "down"),
+                      }
+                    : undefined
+                }
               />
               <div className="mt-8 flex justify-end">
                 <WriteButton categoryId={categoryId} />

@@ -25,6 +25,7 @@ export type App = {
   createdAt: string
   ownerId: string | null // 등록자(profiles.id). 시드앱은 null.
   status: AppStatus
+  sortOrder: number | null // 과목 페이지 수동 정렬값(미지정=null → 최신순으로 뒤)
 }
 
 /** DB row(snake_case) → App(camelCase) 변환. */
@@ -42,6 +43,7 @@ type AppRow = {
   created_at: string
   owner_id: string | null
   status: AppStatus
+  sort_order: number | null
 }
 
 function mapRow(row: AppRow): App {
@@ -59,7 +61,21 @@ function mapRow(row: AppRow): App {
     createdAt: row.created_at,
     ownerId: row.owner_id ?? null,
     status: row.status,
+    sortOrder: row.sort_order ?? null,
   }
+}
+
+/**
+ * 과목 페이지 정렬 비교자 — 수동 순서(sort_order) 우선, 미지정은 뒤로(최신순).
+ * 운영진이 정한 순서를 앞에 두고, 아직 순서 없는 앱은 created_at 내림차순으로 이어 붙인다.
+ */
+function byManualOrder(a: App, b: App): number {
+  const ao = a.sortOrder
+  const bo = b.sortOrder
+  if (ao != null && bo != null) return ao - bo
+  if (ao != null) return -1 // 순서 지정된 것이 앞
+  if (bo != null) return 1
+  return a.createdAt < b.createdAt ? 1 : -1 // 둘 다 미지정 → 최신순
 }
 
 /** 전체 앱 목록 (최신순). 공개(published)만 — RLS 와 별개로 명시적 이중 안전. */
@@ -92,18 +108,37 @@ export async function getApp(id: string): Promise<App | undefined> {
   return data ? mapRow(data as AppRow) : undefined
 }
 
-/** 특정 카테고리(과목·업무 id)에 속한 앱만 (최신순). */
+/** 특정 카테고리(과목·업무 id)에 속한 앱만 (수동 순서 → 최신순). */
 export async function getAppsByCategory(categoryId: string): Promise<App[]> {
   const apps = await getApps()
-  return apps.filter((a) => a.categoryIds.includes(categoryId))
+  return apps.filter((a) => a.categoryIds.includes(categoryId)).sort(byManualOrder)
 }
 
-/** 카테고리 타입('subject' | 'work')에 속한 앱만 (최신순). */
+/** 카테고리 타입('subject' | 'work')에 속한 앱만 (수동 순서 → 최신순). */
 export async function getAppsByType(type: CategoryType): Promise<App[]> {
   const apps = await getApps()
-  return apps.filter((a) =>
-    a.categoryIds.some((id) => getCategory(id)?.type === type),
+  return apps
+    .filter((a) => a.categoryIds.some((id) => getCategory(id)?.type === type))
+    .sort(byManualOrder)
+}
+
+/**
+ * 과목 목록 수동 재정렬(운영진). orderedIds 순서대로 sort_order 를 0,1,2… 로 저장한다.
+ * 현재 sort_order 와 다른 행만 갱신(불필요한 쓰기 최소화). 권한은 RLS(staff)가 강제.
+ * 전역 단일 순서 모델 — 같은 앱이 여러 과목에 속하면 마지막 정렬이 우선한다(드문 경우).
+ */
+export async function reorderApps(orderedApps: App[]): Promise<void> {
+  const changed = orderedApps
+    .map((app, i) => ({ app, i }))
+    .filter(({ app, i }) => app.sortOrder !== i)
+
+  const results = await Promise.all(
+    changed.map(({ app, i }) =>
+      supabase.from("apps").update({ sort_order: i }).eq("id", app.id),
+    ),
   )
+  const failed = results.find((r) => r.error)
+  if (failed?.error) throw failed.error
 }
 
 // ── 쓰기(등록) — 3단계 묶음 F-1 ─────────────────────────────
