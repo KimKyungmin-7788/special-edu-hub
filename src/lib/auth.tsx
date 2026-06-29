@@ -14,16 +14,11 @@ import { NicknameOnboardingDialog } from "@/components/auth/NicknameOnboardingDi
 
 /**
  * 로그인 세션 토대 (2단계 묶음 A-1).
- * D-3: @gw1.kr 자동인증 축하 팝업 추가.
+ * D-3: @gw1.kr 자동인증 축하 팝업 추가. (22: 노출 1회를 서버 플래그로 — 계정 기준)
  *
- * 팝업 노출 조건: 로그인 후 is_teacher_verified=true AND localStorage 플래그 없음.
- * 노출 후 localStorage("verified_popup_shown_<uid>") 에 플래그를 남겨 1회만 표시.
+ * 팝업 노출 조건: 로그인 후 is_teacher_verified=true AND profiles.verified_celebrated=false.
+ * 노출 후 본인 프로필의 verified_celebrated 를 true 로 올려 계정 기준 1회만 표시한다.
  */
-
-/** localStorage 키 헬퍼 */
-function popupShownKey(uid: string) {
-  return `verified_popup_shown_${uid}`
-}
 
 type AuthContextValue = {
   session: Session | null
@@ -55,11 +50,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     initial: string
   } | null>(null)
 
-  /** uid 의 교사인증 축하(1회) 여부를 확인해 띄운다. */
+  /** uid 의 교사인증 축하(계정 기준 1회) 여부를 확인해 띄운다. */
   const maybeCelebrate = useCallback(async (uid: string) => {
-    if (localStorage.getItem(popupShownKey(uid))) return // 이미 본 적 있음
     const profile = await getProfile(uid)
-    if (profile?.isTeacherVerified) setShowCelebration(true)
+    if (profile?.isTeacherVerified && !profile.verifiedCelebrated) {
+      setShowCelebration(true)
+    }
   }, [])
 
   /**
@@ -82,10 +78,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   function handleCloseCelebration() {
     setShowCelebration(false)
-    // 현재 세션 uid 로 플래그 저장
-    supabase.auth.getSession().then(({ data }) => {
+    // 본인 프로필에 "봤음" 플래그 저장(계정 기준 1회). 실패해도 화면은 닫힌다.
+    supabase.auth.getSession().then(async ({ data }) => {
       const uid = data.session?.user.id
-      if (uid) localStorage.setItem(popupShownKey(uid), "1")
+      if (!uid) return
+      const { error } = await supabase
+        .from("profiles")
+        .update({ verified_celebrated: true })
+        .eq("id", uid)
+      if (error) {
+        console.error("[auth] verified_celebrated 저장 실패:", error.message)
+        return
+      }
+      setProfile((p) => (p ? { ...p, verifiedCelebrated: true } : p))
     })
   }
 

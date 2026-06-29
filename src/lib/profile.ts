@@ -22,6 +22,8 @@ export type Profile = {
   isTeacherVerified: boolean
   /** 사용자가 닉네임을 직접 확정했는지. false 면 첫 로그인 온보딩으로 묻는다. */
   nicknameSet: boolean
+  /** 교사인증 축하 팝업을 이미 봤는지(계정 기준 1회). */
+  verifiedCelebrated: boolean
   role: Role
   createdAt: string
 }
@@ -38,6 +40,7 @@ type ProfileRow = {
   website_url: string | null
   is_teacher_verified: boolean
   nickname_set: boolean
+  verified_celebrated?: boolean
   role: Role
   created_at: string
 }
@@ -55,6 +58,8 @@ function mapRow(row: ProfileRow): Profile {
     websiteUrl: row.website_url,
     isTeacherVerified: row.is_teacher_verified,
     nicknameSet: row.nickname_set,
+    // 컬럼이 아직 없으면(마이그레이션 전) true 로 취급해 팝업을 띄우지 않는다(안전).
+    verifiedCelebrated: row.verified_celebrated ?? true,
     role: row.role,
     createdAt: row.created_at,
   }
