@@ -8,6 +8,7 @@ import {
   Bookmark,
   Share2,
   Pencil,
+  Trash2,
 } from "lucide-react"
 import { getCategory } from "@/config/categories"
 import { AppThumbnail } from "@/components/app/AppThumbnail"
@@ -15,7 +16,7 @@ import { RichTextViewer } from "@/components/app/RichTextViewer"
 import { CommentSection } from "@/components/comment/CommentSection"
 import { ProfileTrigger } from "@/components/profile/ProfileTrigger"
 import { PromoLinks } from "@/components/profile/PromoLinks"
-import { getApp, displayTitle, type App } from "@/lib/apps"
+import { getApp, setAppStatus, displayTitle, type App } from "@/lib/apps"
 import { getProfile, type Profile } from "@/lib/profile"
 import { useAuth } from "@/lib/auth"
 import {
@@ -45,6 +46,8 @@ export function AppDetail() {
   const [likeCount, setLikeCount] = useState(0)
   const [bookmarkCount, setBookmarkCount] = useState(0)
   const [busy, setBusy] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   // "목록으로" — 직전 페이지로. 직접 진입(앱 내 이력 없음)이면 인기로.
   function goBack() {
@@ -123,6 +126,26 @@ export function AppDetail() {
       setBookmarkCount((c) => c + (next ? -1 : 1))
     } finally {
       setBusy(false)
+    }
+  }
+
+  // 삭제 = 숨김(복구 가능) — 이 프로젝트는 하드 삭제 대신 status='hidden'.
+  async function handleDelete() {
+    if (!app || deleting) return
+    if (
+      !window.confirm(
+        "이 자료를 삭제할까요?\n목록에서 숨겨지며, 마이페이지 '내 활동'에서 다시 공개할 수 있어요.",
+      )
+    )
+      return
+    setDeleteError(null)
+    setDeleting(true)
+    try {
+      await setAppStatus(app.id, "hidden")
+      navigate("/mypage")
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : "삭제에 실패했습니다.")
+      setDeleting(false)
     }
   }
 
@@ -312,6 +335,36 @@ export function AppDetail() {
           </p>
         )}
       </section>
+
+      {/* 작성자(또는 관리자) 전용 — 글 하단 수정·삭제 */}
+      {canEdit && (
+        <div className="mt-8 border-t pt-6">
+          <div className="flex items-center justify-end gap-2">
+            <Link
+              to={`/edit/${app.id}`}
+              replace
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium hover:bg-accent"
+            >
+              <Pencil className="size-4" aria-hidden />
+              수정
+            </Link>
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={deleting}
+              className="inline-flex items-center gap-1.5 rounded-md border border-destructive/40 bg-card px-4 py-2 text-sm font-medium text-destructive hover:bg-destructive/10 disabled:opacity-60"
+            >
+              <Trash2 className="size-4" aria-hidden />
+              {deleting ? "삭제 중…" : "삭제"}
+            </button>
+          </div>
+          {deleteError && (
+            <p role="alert" className="mt-2 text-right text-sm text-destructive">
+              {deleteError}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* 댓글 (PRD 4단계) */}
       <CommentSection appId={app.id} />
