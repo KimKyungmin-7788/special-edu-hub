@@ -1,6 +1,6 @@
 import { getCategory } from "@/config/categories"
 import { getCategoryIcon } from "@/components/categoryIcon"
-import type { App } from "@/lib/apps"
+import { displayTitle, type App } from "@/lib/apps"
 
 /**
  * 앱 썸네일 — 부모 컨테이너(relative + aspect 지정)를 꽉 채운다.
@@ -36,7 +36,7 @@ export function AppThumbnail({
   return (
     <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-surface px-3 text-muted-foreground">
       <Icon className={iconClassName} aria-hidden />
-      <span className="line-clamp-2 text-center text-xs">{app.title}</span>
+      <span className="line-clamp-2 text-center text-xs">{displayTitle(app)}</span>
     </div>
   )
 }

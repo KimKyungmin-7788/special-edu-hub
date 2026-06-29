@@ -2,7 +2,7 @@ import { Link } from "react-router-dom"
 import { Heart, Bookmark, ChevronUp, ChevronDown } from "lucide-react"
 import { getCategory } from "@/config/categories"
 import { AppThumbnail } from "@/components/app/AppThumbnail"
-import type { App } from "@/lib/apps"
+import { displayTitle, type App } from "@/lib/apps"
 
 /** 운영진 순서 조정 컨트롤(있으면 카드에 ▲▼ 노출). */
 export type CardMove = {
@@ -82,7 +82,7 @@ export function AppCard({
       </div>
 
       <div className="flex flex-1 flex-col gap-2 p-3">
-        <h3 className="font-medium tracking-tight">{app.title}</h3>
+        <h3 className="font-medium tracking-tight">{displayTitle(app)}</h3>
 
         {tags.length > 0 && (
           <ul className="flex flex-wrap gap-1">

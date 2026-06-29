@@ -15,7 +15,7 @@ import { RichTextViewer } from "@/components/app/RichTextViewer"
 import { CommentSection } from "@/components/comment/CommentSection"
 import { ProfileTrigger } from "@/components/profile/ProfileTrigger"
 import { PromoLinks } from "@/components/profile/PromoLinks"
-import { getApp, type App } from "@/lib/apps"
+import { getApp, displayTitle, type App } from "@/lib/apps"
 import { getProfile, type Profile } from "@/lib/profile"
 import { useAuth } from "@/lib/auth"
 import {
@@ -173,7 +173,7 @@ export function AppDetail() {
 
       {/* 헤더: 제목 · 개발자 · 조회수 · 태그 */}
       <div className="mt-6">
-        <h1 className="text-3xl font-semibold tracking-tight">{app.title}</h1>
+        <h1 className="text-3xl font-semibold tracking-tight">{displayTitle(app)}</h1>
 
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
           {app.ownerId ? (

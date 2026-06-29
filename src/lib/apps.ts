@@ -109,6 +109,15 @@ export async function getApp(id: string): Promise<App | undefined> {
 }
 
 /**
+ * 표시용 제목 — 샘플(시드) 앱은 제목 앞에 "(샘플)" 을 붙인다.
+ * 샘플 판별 = 등록자(owner) 없음(시드앱만 owner_id=null). 실제 등록 앱은 그대로.
+ * DB 제목은 건드리지 않는다(편집 시 이중 접두어 방지).
+ */
+export function displayTitle(app: App): string {
+  return app.ownerId === null ? `(샘플) ${app.title}` : app.title
+}
+
+/**
  * 인기 점수 — 담기(2) + 좋아요(1) 가중합 (트랙 B-4).
  * 담기가 더 강한 관심 신호라 가중치를 높게. (조회수는 어뷰징 여지가 커 제외)
  * 현재 카운트는 시드값 + 실제 누적이 섞여 있다.

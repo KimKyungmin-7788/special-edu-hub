@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom"
 import { Heart } from "lucide-react"
 import { subjectCategories, getCategory } from "@/config/categories"
-import { popularityScore, type App } from "@/lib/apps"
+import { popularityScore, displayTitle, type App } from "@/lib/apps"
 
 /**
  * 과목별 "인기" 대시보드 (묶음 I).
@@ -92,7 +92,7 @@ function Row({ app, categoryId }: { app: App; categoryId: string }) {
             {sub.name}
           </span>
         )}
-        <span className="min-w-0 flex-1 truncate">{app.title}</span>
+        <span className="min-w-0 flex-1 truncate">{displayTitle(app)}</span>
         <span className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
           <Heart className="size-3" aria-hidden />
           {app.likeCount}
