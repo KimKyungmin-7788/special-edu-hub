@@ -108,6 +108,15 @@ export async function getApp(id: string): Promise<App | undefined> {
   return data ? mapRow(data as AppRow) : undefined
 }
 
+/**
+ * 인기 점수 — 담기(2) + 좋아요(1) 가중합 (트랙 B-4).
+ * 담기가 더 강한 관심 신호라 가중치를 높게. (조회수는 어뷰징 여지가 커 제외)
+ * 현재 카운트는 시드값 + 실제 누적이 섞여 있다.
+ */
+export function popularityScore(a: App): number {
+  return a.bookmarkCount * 2 + a.likeCount
+}
+
 /** 특정 카테고리(과목·업무 id)에 속한 앱만 (수동 순서 → 최신순). */
 export async function getAppsByCategory(categoryId: string): Promise<App[]> {
   const apps = await getApps()

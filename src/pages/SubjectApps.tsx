@@ -165,6 +165,7 @@ export function SubjectApps() {
               <AppCardList
                 apps={shownApps}
                 emptyText="이 분류의 앱이 아직 없습니다."
+                bookmarkable
                 reorder={
                   canReorder
                     ? {

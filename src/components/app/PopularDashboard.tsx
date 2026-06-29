@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom"
 import { Heart } from "lucide-react"
 import { subjectCategories, getCategory } from "@/config/categories"
-import type { App } from "@/lib/apps"
+import { popularityScore, type App } from "@/lib/apps"
 
 /**
  * 과목별 "인기" 대시보드 (묶음 I).
@@ -21,7 +21,7 @@ export function PopularDashboard({ apps }: { apps: App[] }) {
           .filter((a) => a.categoryIds.includes(cat.id))
           .sort(
             (a, b) =>
-              b.likeCount - a.likeCount ||
+              popularityScore(b) - popularityScore(a) ||
               (a.createdAt < b.createdAt ? 1 : -1), // 동점은 최신순
           )
           .slice(0, MAX_PER_BOX)

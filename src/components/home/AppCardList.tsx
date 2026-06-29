@@ -1,7 +1,9 @@
-import type { ReactNode } from "react"
-import { Link } from "react-router-dom"
+import { useEffect, useState, type ReactNode } from "react"
+import { Link, useNavigate } from "react-router-dom"
 import { ChevronRight } from "lucide-react"
 import { AppCard } from "@/components/app/AppCard"
+import { useAuth } from "@/lib/auth"
+import { getMyBookmarkedIds, toggleBookmark } from "@/lib/engagement"
 import type { App } from "@/lib/apps"
 
 /**
@@ -17,6 +19,7 @@ export function AppCardList({
   reorder,
   columns = 4,
   moreHref,
+  bookmarkable,
 }: {
   title?: string
   apps: App[]
@@ -25,9 +28,47 @@ export function AppCardList({
   reorder?: { onMoveUp: (app: App) => void; onMoveDown: (app: App) => void }
   /** 큰 화면에서의 열 수. 기본 4(목록), 랜딩 섹션은 2. */
   columns?: 2 | 4
-  /** 주어지면 헤더 오른쪽에 "더보기" + 버튼(해당 전체 목록으로). */
+  /** 주어지면 헤더 오른쪽에 "더보기" 링크(해당 전체 목록으로). */
   moreHref?: string
+  /** true 면 각 카드에 담기(북마크) 토글을 단다(내 담기 상태를 직접 로드·관리). */
+  bookmarkable?: boolean
 }) {
+  const { user } = useAuth()
+  const navigate = useNavigate()
+  const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    if (!bookmarkable) return
+    let active = true
+    getMyBookmarkedIds().then((ids) => {
+      if (active) setBookmarkedIds(ids)
+    })
+    return () => {
+      active = false
+    }
+  }, [bookmarkable, user])
+
+  async function onToggleBookmark(appId: string) {
+    if (!user) return navigate("/login")
+    const has = bookmarkedIds.has(appId)
+    setBookmarkedIds((prev) => {
+      const n = new Set(prev)
+      if (has) n.delete(appId)
+      else n.add(appId)
+      return n
+    })
+    try {
+      await toggleBookmark(appId)
+    } catch {
+      // 실패 시 원복
+      setBookmarkedIds((prev) => {
+        const n = new Set(prev)
+        if (has) n.add(appId)
+        else n.delete(appId)
+        return n
+      })
+    }
+  }
   const hasContent = apps.length > 0 || leading != null
   const gridCols =
     columns === 2
@@ -68,6 +109,14 @@ export function AppCardList({
                     canUp: i > 0,
                     canDown: i < apps.length - 1,
                   }
+                }
+                bookmark={
+                  bookmarkable
+                    ? {
+                        active: bookmarkedIds.has(app.id),
+                        onToggle: () => onToggleBookmark(app.id),
+                      }
+                    : undefined
                 }
               />
             </li>

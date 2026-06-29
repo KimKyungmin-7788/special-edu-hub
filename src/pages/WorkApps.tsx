@@ -24,7 +24,7 @@ export function WorkApps() {
       <p className="mt-2 mb-8 text-sm text-muted-foreground">
         {apps.length}개 앱
       </p>
-      <AppCardList apps={apps} emptyText="업무혁신 앱이 아직 없습니다." />
+      <AppCardList apps={apps} emptyText="업무혁신 앱이 아직 없습니다." bookmarkable />
       <div className="mt-8 flex justify-end">
         <WriteButton categoryId="work" />
       </div>

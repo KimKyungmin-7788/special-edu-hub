@@ -17,6 +17,8 @@ import {
 } from "@/lib/profile"
 import { ProfileTrigger } from "@/components/profile/ProfileTrigger"
 import { MyAppList } from "@/components/app/MyAppList"
+import { SavedAppList } from "@/components/app/SavedAppList"
+import { getMyBookmarkedApps, getMyLikedApps } from "@/lib/engagement"
 import { InfoHint } from "@/components/ui/InfoHint"
 import { MessageBox } from "@/components/messages/MessageBox"
 import { getUnreadCount } from "@/lib/messages"
@@ -41,13 +43,13 @@ function emptyToNull(v: string): string | null {
   return t === "" ? null : t
 }
 
-type MyTab = "profile" | "activity" | "messages"
+type MyTab = "bookmarks" | "profile" | "activity" | "messages"
 
 export function MyPage() {
   const { user, loading } = useAuth()
 
-  // 상단 탭(내 프로필 · 내 활동 · 쪽지함). 라우트 없이 화면 내 전환.
-  const [tab, setTab] = useState<MyTab>("profile")
+  // 상단 탭(즐겨찾기 · 내 프로필 · 내 활동 · 쪽지함). 즐겨찾기가 기본.
+  const [tab, setTab] = useState<MyTab>("bookmarks")
   const [unread, setUnread] = useState(0)
 
   const [profile, setProfile] = useState<Profile | null>(null)
@@ -187,8 +189,11 @@ export function MyPage() {
       <div
         role="tablist"
         aria-label="마이페이지 메뉴"
-        className="mt-6 grid grid-cols-3 divide-x divide-border overflow-hidden rounded-lg border border-border"
+        className="mt-6 grid grid-cols-4 divide-x divide-border overflow-hidden rounded-lg border border-border"
       >
+        <MyTabButton selected={tab === "bookmarks"} onClick={() => setTab("bookmarks")}>
+          즐겨찾기
+        </MyTabButton>
         <MyTabButton selected={tab === "profile"} onClick={() => setTab("profile")}>
           내 프로필
         </MyTabButton>
@@ -211,6 +216,16 @@ export function MyPage() {
           )}
         </MyTabButton>
       </div>
+
+      {tab === "bookmarks" && (
+        <section className="mt-6">
+          <h2 className="mb-4 text-lg font-semibold tracking-tight">즐겨찾기</h2>
+          <SavedAppList
+            load={getMyBookmarkedApps}
+            emptyText="담아둔 자료가 아직 없어요. 자료 카드의 담기 버튼으로 저장하세요."
+          />
+        </section>
+      )}
 
       {tab === "profile" && (
         <>
@@ -398,10 +413,23 @@ export function MyPage() {
       )}
 
       {tab === "activity" && (
-        <section className="mt-6">
-          <h2 className="text-lg font-semibold tracking-tight">내가 등록한 앱</h2>
-          <MyAppList />
-        </section>
+        <div className="mt-6 space-y-10">
+          <section>
+            <h2 className="mb-2 text-lg font-semibold tracking-tight">
+              내가 등록한 앱
+            </h2>
+            <MyAppList />
+          </section>
+          <section>
+            <h2 className="mb-4 text-lg font-semibold tracking-tight">
+              내가 좋아요한 앱
+            </h2>
+            <SavedAppList
+              load={getMyLikedApps}
+              emptyText="좋아요한 자료가 아직 없어요."
+            />
+          </section>
+        </div>
       )}
 
       {/* 쪽지함(대화방) — 묶음 E-2 개편. 차단 목록은 MessageBox 안(목록 화면)에. */}

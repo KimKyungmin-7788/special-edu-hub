@@ -18,6 +18,13 @@ import { PromoLinks } from "@/components/profile/PromoLinks"
 import { getApp, type App } from "@/lib/apps"
 import { getProfile, type Profile } from "@/lib/profile"
 import { useAuth } from "@/lib/auth"
+import {
+  toggleLike,
+  toggleBookmark,
+  getMyLikedIds,
+  getMyBookmarkedIds,
+  incrementView,
+} from "@/lib/engagement"
 
 /**
  * 앱 상세 — 제목·개발자·소개 본문·조회수·"앱 열기"(새 탭)·댓글(CommentSection).
@@ -32,6 +39,12 @@ export function AppDetail() {
   const [app, setApp] = useState<App | undefined>()
   const [owner, setOwner] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
+  // 좋아요·담기 상태/카운트(로컬). app 로드 시 초기화.
+  const [liked, setLiked] = useState(false)
+  const [bookmarked, setBookmarked] = useState(false)
+  const [likeCount, setLikeCount] = useState(0)
+  const [bookmarkCount, setBookmarkCount] = useState(0)
+  const [busy, setBusy] = useState(false)
 
   // "목록으로" — 직전 페이지로. 직접 진입(앱 내 이력 없음)이면 인기로.
   function goBack() {
@@ -58,6 +71,60 @@ export function AppDetail() {
       active = false
     }
   }, [id])
+
+  // 좋아요·담기 카운트/내 상태 초기화 + 조회수 누적(앱 바뀔 때).
+  useEffect(() => {
+    if (!app) return
+    setLikeCount(app.likeCount)
+    setBookmarkCount(app.bookmarkCount)
+    setLiked(false)
+    setBookmarked(false)
+    incrementView(app.id)
+    let active = true
+    Promise.all([getMyLikedIds(), getMyBookmarkedIds()]).then(([likes, bms]) => {
+      if (!active) return
+      setLiked(likes.has(app.id))
+      setBookmarked(bms.has(app.id))
+    })
+    return () => {
+      active = false
+    }
+  }, [app?.id])
+
+  // 좋아요/담기 토글 — 낙관적 반영 후 실패 시 원복. 비로그인은 로그인으로.
+  async function handleToggleLike() {
+    if (!app || busy) return
+    if (!user) return navigate("/login")
+    const next = !liked
+    setLiked(next)
+    setLikeCount((c) => c + (next ? 1 : -1))
+    setBusy(true)
+    try {
+      await toggleLike(app.id)
+    } catch {
+      setLiked(!next)
+      setLikeCount((c) => c + (next ? -1 : 1))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function handleToggleBookmark() {
+    if (!app || busy) return
+    if (!user) return navigate("/login")
+    const next = !bookmarked
+    setBookmarked(next)
+    setBookmarkCount((c) => c + (next ? 1 : -1))
+    setBusy(true)
+    try {
+      await toggleBookmark(app.id)
+    } catch {
+      setBookmarked(!next)
+      setBookmarkCount((c) => c + (next ? -1 : 1))
+    } finally {
+      setBusy(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -172,26 +239,43 @@ export function AppDetail() {
           </Link>
         )}
 
-        {/* 좋아요 — 모양만, 비작동(준비 중) */}
+        {/* 좋아요 — 토글(로그인 필요) */}
         <button
           type="button"
-          disabled
-          title="준비 중"
-          className="inline-flex cursor-not-allowed items-center gap-2 rounded-md border bg-card px-4 py-2 text-sm text-muted-foreground"
+          onClick={handleToggleLike}
+          disabled={busy}
+          aria-pressed={liked}
+          title={user ? "좋아요" : "로그인이 필요합니다"}
+          className={
+            "inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm transition-colors disabled:opacity-60 " +
+            (liked
+              ? "border-foreground/30 bg-accent text-foreground"
+              : "bg-card text-muted-foreground hover:bg-accent")
+          }
         >
-          <Heart className="size-4" aria-hidden />
-          {app.likeCount}
+          <Heart className={"size-4" + (liked ? " fill-current" : "")} aria-hidden />
+          {likeCount}
         </button>
 
-        {/* 담기 — 모양만, 비작동(준비 중) */}
+        {/* 담기(북마크) — 토글(로그인 필요) */}
         <button
           type="button"
-          disabled
-          title="준비 중"
-          className="inline-flex cursor-not-allowed items-center gap-2 rounded-md border bg-card px-4 py-2 text-sm text-muted-foreground"
+          onClick={handleToggleBookmark}
+          disabled={busy}
+          aria-pressed={bookmarked}
+          title={user ? "담기" : "로그인이 필요합니다"}
+          className={
+            "inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm transition-colors disabled:opacity-60 " +
+            (bookmarked
+              ? "border-foreground/30 bg-accent text-foreground"
+              : "bg-card text-muted-foreground hover:bg-accent")
+          }
         >
-          <Bookmark className="size-4" aria-hidden />
-          {app.bookmarkCount}
+          <Bookmark
+            className={"size-4" + (bookmarked ? " fill-current" : "")}
+            aria-hidden
+          />
+          {bookmarkCount}
         </button>
 
         {/* 공유 — 모양만, 비작동(준비 중) */}

@@ -21,7 +21,7 @@ export function LatestApps() {
     <div className={`${CONTAINER} py-8`}>
       <h1 className="text-2xl font-semibold tracking-tight">최신 수업자료</h1>
       <p className="mt-2 mb-8 text-sm text-muted-foreground">{apps.length}개 앱</p>
-      <AppCardList apps={apps} emptyText="등록된 수업자료가 아직 없습니다." />
+      <AppCardList apps={apps} emptyText="등록된 수업자료가 아직 없습니다." bookmarkable />
     </div>
   )
 }

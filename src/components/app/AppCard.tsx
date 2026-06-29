@@ -12,13 +12,25 @@ export type CardMove = {
   canDown: boolean
 }
 
+/** 카드 담기(북마크) 토글 컨트롤(있으면 우상단 버튼 활성). */
+export type CardBookmark = {
+  active: boolean
+  onToggle: () => void
+}
+
 /**
  * 앱 목록 카드 — 썸네일 / 제목 / 카테고리 태그 / 좋아요·담기 수.
- * 좋아요·담기 수는 시드값 "표시만"(누적·토글 없음 — CLAUDE.md 규칙 4).
- * 담기(북마크) 버튼은 모양만, 비작동.
- * move 가 주어지면(운영진) 카드 좌상단에 순서 ▲▼ 버튼을 띄운다.
+ * move 가 주어지면(운영진) 좌상단 순서 ▲▼. bookmark 가 주어지면 우상단 담기 토글.
  */
-export function AppCard({ app, move }: { app: App; move?: CardMove }) {
+export function AppCard({
+  app,
+  move,
+  bookmark,
+}: {
+  app: App
+  move?: CardMove
+  bookmark?: CardBookmark
+}) {
   const tags = app.categoryIds
     .map((id) => getCategory(id)?.name)
     .filter(Boolean) as string[]
@@ -47,14 +59,26 @@ export function AppCard({ app, move }: { app: App; move?: CardMove }) {
           </div>
         )}
 
-        {/* 담기 버튼 — 모양만, 비작동 (준비 중) */}
-        <span
-          aria-disabled="true"
-          title="준비 중"
-          className="absolute right-2 top-2 rounded-md bg-background/90 p-1.5 text-muted-foreground"
-        >
-          <Bookmark className="size-4" aria-hidden />
-        </span>
+        {/* 담기(북마크) 토글 — bookmark 있을 때만. Link 내부라 기본동작 차단. */}
+        {bookmark && (
+          <button
+            type="button"
+            aria-label="담기"
+            aria-pressed={bookmark.active}
+            title="담기"
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              bookmark.onToggle()
+            }}
+            className="absolute right-2 top-2 rounded-md bg-background/90 p-1.5 text-muted-foreground shadow-sm hover:text-foreground"
+          >
+            <Bookmark
+              className={"size-4" + (bookmark.active ? " fill-current text-foreground" : "")}
+              aria-hidden
+            />
+          </button>
+        )}
       </div>
 
       <div className="flex flex-1 flex-col gap-2 p-3">
