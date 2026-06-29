@@ -6,6 +6,7 @@ import { Layout } from "@/components/layout/Layout"
 import { Home } from "@/pages/Home"
 import { SubjectApps } from "@/pages/SubjectApps"
 import { WorkApps } from "@/pages/WorkApps"
+import { LatestApps } from "@/pages/LatestApps"
 import { AppDetail } from "@/pages/AppDetail"
 import { WritePage } from "@/pages/WritePage"
 import { EditPage } from "@/pages/EditPage"
@@ -34,6 +35,7 @@ function App() {
             <Route index element={<Home />} />
             {/* 전체(/apps)는 없앰 — 인기로 리다이렉트(옛 링크·뒤로가기 대비) */}
             <Route path="apps" element={<Navigate to="/apps/subject" replace />} />
+            <Route path="apps/latest" element={<LatestApps />} />
             <Route path="write/:categoryId" element={<WritePage />} />
             <Route path="edit/:appId" element={<EditPage />} />
             <Route path="apps/subject" element={<SubjectApps />} />

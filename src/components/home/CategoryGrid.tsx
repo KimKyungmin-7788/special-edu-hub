@@ -11,7 +11,9 @@ function categoryTo(c: Category): string {
 export function CategoryGrid() {
   return (
     <section>
-      <h2 className="mb-4 text-lg font-semibold tracking-tight">카테고리</h2>
+      <h2 className="mb-4 border-b border-border pb-3 text-xl font-semibold tracking-tight">
+        카테고리
+      </h2>
       <ul className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-6">
         {categories
           .filter((c) => !c.hideFromGrid && !c.parentId)
