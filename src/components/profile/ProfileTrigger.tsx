@@ -51,7 +51,12 @@ export function ProfileTrigger({ userId, children, className }: ProfileTriggerPr
         {children}
       </button>
       <Modal open={open} onClose={() => setOpen(false)} labelledBy={titleId}>
-        <ProfilePreview profile={profile} loading={loading} titleId={titleId} />
+        <ProfilePreview
+          profile={profile}
+          loading={loading}
+          titleId={titleId}
+          onClose={() => setOpen(false)}
+        />
       </Modal>
     </>
   )

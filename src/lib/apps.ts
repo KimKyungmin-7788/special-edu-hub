@@ -123,6 +123,15 @@ export async function getAppsByCategory(categoryId: string): Promise<App[]> {
   return apps.filter((a) => a.categoryIds.includes(categoryId)).sort(byManualOrder)
 }
 
+/**
+ * 특정 등록자(owner)의 공개 앱 목록 (최신순) — 프로필 모달 "작성 글 보기"용.
+ * getApps 가 published 만 돌려주므로 남의 숨김앱은 노출되지 않는다.
+ */
+export async function getAppsByOwner(ownerId: string): Promise<App[]> {
+  const apps = await getApps()
+  return apps.filter((a) => a.ownerId === ownerId)
+}
+
 /** 카테고리 타입('subject' | 'work')에 속한 앱만 (수동 순서 → 최신순). */
 export async function getAppsByType(type: CategoryType): Promise<App[]> {
   const apps = await getApps()

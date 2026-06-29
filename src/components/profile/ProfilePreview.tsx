@@ -1,9 +1,11 @@
-import { useState, type FormEvent } from "react"
+import { useEffect, useState, type FormEvent } from "react"
 import { Link } from "react-router-dom"
-import { Mail } from "lucide-react"
+import { Mail, ChevronLeft, ChevronRight } from "lucide-react"
 import { PromoLinks } from "@/components/profile/PromoLinks"
+import { AppThumbnail } from "@/components/app/AppThumbnail"
 import { useAuth } from "@/lib/auth"
 import { sendMessage, MESSAGE_MAX } from "@/lib/messages"
+import { getAppsByOwner, type App } from "@/lib/apps"
 import type { Profile } from "@/lib/profile"
 
 /**
@@ -19,10 +21,14 @@ type ProfilePreviewProps = {
   loading: boolean
   /** 제목 요소 id (모달 aria-labelledby 연결) */
   titleId?: string
+  /** 모달 닫기 — "작성 글" 항목 클릭 시 모달 닫고 상세로 이동하는 데 쓴다. */
+  onClose?: () => void
 }
 
-export function ProfilePreview({ profile, loading, titleId }: ProfilePreviewProps) {
+export function ProfilePreview({ profile, loading, titleId, onClose }: ProfilePreviewProps) {
   const { user } = useAuth()
+  // 같은 모달 안에서 화면 전환: 프로필 ↔ 작성 글 목록(중첩 모달 대신).
+  const [view, setView] = useState<"profile" | "posts">("profile")
 
   if (loading) {
     return (
@@ -45,6 +51,19 @@ export function ProfilePreview({ profile, loading, titleId }: ProfilePreviewProp
   const name = profile.nickname?.trim() || "이름 없음"
   const initial = name.charAt(0).toUpperCase()
   const isSelf = !!user && user.id === profile.id
+
+  // 작성 글 목록 화면(같은 모달 안).
+  if (view === "posts") {
+    return (
+      <AuthorPosts
+        ownerId={profile.id}
+        ownerName={name}
+        titleId={titleId}
+        onBack={() => setView("profile")}
+        onClose={onClose}
+      />
+    )
+  }
 
   return (
     <div className="p-6">
@@ -103,15 +122,92 @@ export function ProfilePreview({ profile, loading, titleId }: ProfilePreviewProp
         </div>
       )}
 
-      {/* 프로필 전체 보기 — 자리만(준비 중). 공개 프로필 페이지는 후속 단계. */}
+      {/* 작성 글 보기 — 같은 모달 안에서 작성한 수업자료 목록으로 전환 */}
       <button
         type="button"
-        disabled
-        title="준비 중"
-        className="mt-6 w-full cursor-not-allowed rounded-md border border-border bg-card px-4 py-2 text-sm text-muted-foreground"
+        onClick={() => setView("posts")}
+        className="mt-6 flex w-full items-center justify-between rounded-md border border-border bg-card px-4 py-2 text-sm font-medium hover:bg-accent"
       >
-        프로필 전체 보기 (준비 중)
+        작성한 수업자료 보기
+        <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
       </button>
+    </div>
+  )
+}
+
+/**
+ * 작성 글 목록 화면(프로필 모달 내부 전환). 등록자의 공개 앱을 컴팩트 행으로.
+ * 항목 클릭 → 모달 닫고 해당 상세로 이동(같은 탭). 후속(게시판) 도입 시 글도 합칠 수 있음.
+ */
+function AuthorPosts({
+  ownerId,
+  ownerName,
+  titleId,
+  onBack,
+  onClose,
+}: {
+  ownerId: string
+  ownerName: string
+  titleId?: string
+  onBack: () => void
+  onClose?: () => void
+}) {
+  const [apps, setApps] = useState<App[] | null>(null)
+
+  useEffect(() => {
+    let active = true
+    getAppsByOwner(ownerId).then((data) => {
+      if (active) setApps(data)
+    })
+    return () => {
+      active = false
+    }
+  }, [ownerId])
+
+  return (
+    <div className="p-6">
+      <div className="flex items-center gap-2 pr-8">
+        <button
+          type="button"
+          onClick={onBack}
+          aria-label="프로필로 돌아가기"
+          className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
+        >
+          <ChevronLeft className="size-4" aria-hidden />
+        </button>
+        <h2 id={titleId} className="truncate text-base font-semibold tracking-tight">
+          {ownerName} 님의 수업자료
+        </h2>
+      </div>
+
+      <div className="mt-4">
+        {apps === null ? (
+          <p className="text-sm text-muted-foreground">불러오는 중…</p>
+        ) : apps.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            아직 작성한 수업자료가 없어요.
+          </p>
+        ) : (
+          <ul className="-mx-2 max-h-80 space-y-1 overflow-y-auto">
+            {apps.map((app) => (
+              <li key={app.id}>
+                <Link
+                  to={`/app/${app.id}`}
+                  onClick={onClose}
+                  className="flex items-center gap-3 rounded-md px-2 py-2 hover:bg-accent"
+                >
+                  <span className="relative aspect-video w-16 shrink-0 overflow-hidden rounded border border-border bg-surface">
+                    <AppThumbnail app={app} iconClassName="size-4" />
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-sm text-foreground">
+                    {app.title}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   )
 }
