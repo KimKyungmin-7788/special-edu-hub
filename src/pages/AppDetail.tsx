@@ -177,16 +177,23 @@ export function AppDetail() {
 
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
           {app.ownerId ? (
-            // 등록자 연결: 이름 클릭 → 프로필 미리보기 모달
+            // 등록자 연결: 아바타+이름 클릭 → 프로필 미리보기 모달
             <ProfileTrigger
               userId={app.ownerId}
-              className="text-sm text-muted-foreground hover:text-foreground"
+              className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
             >
+              <AuthorAvatar
+                name={app.authorName || owner?.nickname || "개발자"}
+                avatarUrl={owner?.avatarUrl ?? null}
+              />
               {app.authorName || owner?.nickname || "개발자"}
             </ProfileTrigger>
           ) : (
-            // 시드앱 등 owner 없는 경우는 텍스트만(의도된 동작)
-            <span>{app.authorName}</span>
+            // 시드앱 등 owner 없는 경우는 아바타(이니셜)+텍스트만(의도된 동작)
+            <span className="inline-flex items-center gap-1.5">
+              <AuthorAvatar name={app.authorName} avatarUrl={null} />
+              {app.authorName}
+            </span>
           )}
           <span className="inline-flex items-center gap-1">
             <Eye className="size-4" aria-hidden />
@@ -309,5 +316,25 @@ export function AppDetail() {
       {/* 댓글 (PRD 4단계) */}
       <CommentSection appId={app.id} />
     </div>
+  )
+}
+
+/** 작성자 원형 아바타 — 이미지 있으면 사진, 없으면 이름 이니셜. */
+function AuthorAvatar({
+  name,
+  avatarUrl,
+}: {
+  name: string
+  avatarUrl: string | null
+}) {
+  const initial = (name || "?").charAt(0).toUpperCase()
+  return (
+    <span className="flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-surface text-[10px] font-medium text-muted-foreground">
+      {avatarUrl ? (
+        <img src={avatarUrl} alt="" className="size-full object-cover" />
+      ) : (
+        initial
+      )}
+    </span>
   )
 }
