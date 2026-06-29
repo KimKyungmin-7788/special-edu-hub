@@ -81,6 +81,12 @@
   .richtext :where(p) {
     margin: 0.5em 0;
   }
+  /* 빈 단락(사용자가 일부러 넣은 빈 줄)이 사라지지 않도록 한 줄 높이를 준다.
+     빈 <p> 는 내용이 없어 높이가 0 으로 접히는데, nbsp 를 끼워 한 줄을 차지하게 함.
+     에디터·뷰어 공용(.richtext). */
+  .richtext :where(p):empty::before {
+    content: "\00A0";
+  }
   .richtext :where(h2) {
     font-size: 1.3rem;
     font-weight: 600;

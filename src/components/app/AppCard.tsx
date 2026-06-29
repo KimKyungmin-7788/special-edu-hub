@@ -17,7 +17,7 @@ export function AppCard({ app }: { app: App }) {
   return (
     <Link
       to={`/app/${app.id}`}
-      className="group flex flex-col overflow-hidden rounded-lg border bg-card transition-colors hover:border-foreground/30"
+      className="group flex h-full flex-col overflow-hidden rounded-lg border bg-card transition-colors hover:border-foreground/30"
     >
       <div className="relative aspect-video bg-surface">
         <AppThumbnail app={app} iconClassName="size-7" />

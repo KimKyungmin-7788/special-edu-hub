@@ -164,6 +164,7 @@ export function AppDetail() {
         {canEdit && (
           <Link
             to={`/edit/${app.id}`}
+            replace
             className="inline-flex items-center gap-2 rounded-md border bg-card px-4 py-2 text-sm font-medium hover:bg-accent"
           >
             <Pencil className="size-4" aria-hidden />
@@ -206,8 +207,10 @@ export function AppDetail() {
       </div>
 
       {/* 개발자 소개 글(블로그형) — HTML 정화 후 렌더 */}
-      <section className="mt-10">
-        <h2 className="text-lg font-semibold tracking-tight">소개</h2>
+      <section className="mt-8 border-t pt-8">
+        <h2 className="text-xs font-semibold tracking-wide text-muted-foreground">
+          이런 학습자료에요.
+        </h2>
         {app.description.trim() ? (
           <div className="mt-3">
             <RichTextViewer html={app.description} />

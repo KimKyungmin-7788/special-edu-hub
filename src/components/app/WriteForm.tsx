@@ -163,7 +163,9 @@ export function WriteForm({
       const saved = app
         ? await updateApp(app.id, payload)
         : await createApp(payload)
-      navigate(`/app/${saved.id}`)
+      // replace: 폼(글쓰기/수정) 페이지를 히스토리에서 치워, 상세에서 "목록으로"가
+      // 폼 페이지로 되돌아가지 않게 한다.
+      navigate(`/app/${saved.id}`, { replace: true })
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "오류가 발생했습니다.")
       setSubmitting(false)
@@ -312,6 +314,7 @@ export function WriteForm({
       <div className="flex items-center justify-between">
         <Link
           to={listTo}
+          replace
           className="rounded-md border border-border px-5 py-2 text-sm font-medium text-foreground hover:bg-accent"
         >
           {isEdit ? "취소" : "목록"}

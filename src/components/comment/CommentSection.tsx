@@ -96,7 +96,7 @@ export function CommentSection({ appId }: { appId: string }) {
 
   return (
     <section className="mt-10 border-t pt-6">
-      <h2 className="text-lg font-semibold tracking-tight">
+      <h2 className="text-xs font-semibold tracking-wide text-muted-foreground">
         댓글{comments.length > 0 && ` ${comments.length}`}
       </h2>
 
