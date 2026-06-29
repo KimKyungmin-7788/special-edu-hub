@@ -7,6 +7,7 @@ import {
   Heart,
   Bookmark,
   Share2,
+  Pencil,
 } from "lucide-react"
 import { getCategory } from "@/config/categories"
 import { AppThumbnail } from "@/components/app/AppThumbnail"
@@ -16,6 +17,7 @@ import { ProfileTrigger } from "@/components/profile/ProfileTrigger"
 import { PromoLinks } from "@/components/profile/PromoLinks"
 import { getApp, type App } from "@/lib/apps"
 import { getProfile, type Profile } from "@/lib/profile"
+import { useAuth } from "@/lib/auth"
 
 /**
  * 앱 상세 — 제목·개발자·소개 본문·조회수·"앱 열기"(새 탭)·댓글(CommentSection).
@@ -26,6 +28,7 @@ export function AppDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const location = useLocation()
+  const { user, isAdmin } = useAuth()
   const [app, setApp] = useState<App | undefined>()
   const [owner, setOwner] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
@@ -87,6 +90,9 @@ export function AppDetail() {
     .map((cid) => getCategory(cid)?.name)
     .filter(Boolean) as string[]
 
+  // 작성자 본인 또는 관리자만 수정 진입(최종 강제는 RLS).
+  const canEdit = !!user && (app.ownerId === user.id || isAdmin)
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
       <button
@@ -139,7 +145,7 @@ export function AppDetail() {
       </div>
 
       {/* 썸네일 */}
-      <div className="mt-6 aspect-video overflow-hidden rounded-lg border bg-surface">
+      <div className="relative mt-6 aspect-video overflow-hidden rounded-lg border bg-surface">
         <AppThumbnail app={app} />
       </div>
 
@@ -153,6 +159,17 @@ export function AppDetail() {
         >
           <ExternalLink className="size-4" aria-hidden />앱 열기
         </a>
+
+        {/* 수정 — 작성자 본인·관리자만 */}
+        {canEdit && (
+          <Link
+            to={`/edit/${app.id}`}
+            className="inline-flex items-center gap-2 rounded-md border bg-card px-4 py-2 text-sm font-medium hover:bg-accent"
+          >
+            <Pencil className="size-4" aria-hidden />
+            수정
+          </Link>
+        )}
 
         {/* 좋아요 — 모양만, 비작동(준비 중) */}
         <button
