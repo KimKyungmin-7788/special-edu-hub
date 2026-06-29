@@ -8,7 +8,13 @@ import {
 import { Link, useNavigate } from "react-router-dom"
 import { ImagePlus, X } from "lucide-react"
 import { getCategory, getSubcategories } from "@/config/categories"
-import { createApp, uploadThumbnail, THUMBNAIL_MIME } from "@/lib/apps"
+import {
+  createApp,
+  updateApp,
+  uploadThumbnail,
+  THUMBNAIL_MIME,
+  type App,
+} from "@/lib/apps"
 import { SubcategorySelect } from "@/components/app/SubcategorySelect"
 import { RichTextEditor } from "@/components/app/RichTextEditor"
 
@@ -19,34 +25,44 @@ const labelClass = "text-sm font-medium"
 const THUMB_MAX_BYTES = 2 * 1024 * 1024 // 2MB (버킷·lib 와 동일)
 
 /**
- * 글쓰기 폼 (3단계 묶음 G-1).
+ * 글쓰기/수정 폼 (3단계 묶음 G-1, 수정은 5단계 추가).
  * 상위 분류(categoryId)는 진입 시 정해져 생략 — 세부 분류만 제목 다음에 고른다.
  * 저장되는 category_ids = [categoryId, ...선택한 세부분류].
- * 내용은 G-1 에선 textarea, G-2 에서 블로그형 에디터로 교체 예정.
- * 제출 성공 시 방금 만든 글(/app/:id)로 이동.
+ * app 이 주어지면 수정 모드(기존 값 프리필 + updateApp). 없으면 등록 모드(createApp).
+ * 제출 성공 시 해당 글(/app/:id)로 이동.
  */
 export function WriteForm({
   categoryId,
-  defaultAuthorName,
+  defaultAuthorName = "",
+  app,
 }: {
   categoryId: string
-  defaultAuthorName: string
+  defaultAuthorName?: string
+  /** 주어지면 수정 모드. */
+  app?: App
 }) {
   const navigate = useNavigate()
+  const isEdit = app != null
   const hasSubs = getSubcategories(categoryId).length > 0
-  // "목록" → 이 카테고리의 목록 페이지로 돌아가기.
-  const listTo =
-    getCategory(categoryId)?.type === "work"
+  // "목록"/"취소" → 수정이면 해당 글로, 등록이면 카테고리 목록으로.
+  const listTo = isEdit
+    ? `/app/${app.id}`
+    : getCategory(categoryId)?.type === "work"
       ? "/apps/work"
       : `/apps/subject/${categoryId}`
 
-  const [title, setTitle] = useState("")
-  const [subIds, setSubIds] = useState<string[]>([])
-  const [appUrl, setAppUrl] = useState("")
-  const [authorName, setAuthorName] = useState(defaultAuthorName)
-  const [content, setContent] = useState("")
+  const [title, setTitle] = useState(app?.title ?? "")
+  const [subIds, setSubIds] = useState<string[]>(
+    app ? app.categoryIds.filter((id) => id !== categoryId) : [],
+  )
+  const [appUrl, setAppUrl] = useState(app?.appUrl ?? "")
+  const [authorName, setAuthorName] = useState(app?.authorName ?? defaultAuthorName)
+  const [content, setContent] = useState(app?.description ?? "")
   const [thumbFile, setThumbFile] = useState<File | null>(null)
-  const [thumbPreview, setThumbPreview] = useState<string | null>(null)
+  // 수정 모드 초기 미리보기 = 기존 썸네일(원격 URL). blob: 이 아니면 "유지"로 본다.
+  const [thumbPreview, setThumbPreview] = useState<string | null>(
+    app?.thumbnailUrl ? app.thumbnailUrl : null,
+  )
   const [thumbError, setThumbError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -130,17 +146,24 @@ export function WriteForm({
 
     setSubmitting(true)
     try {
+      // 썸네일: 새 파일이면 업로드 / 기존 원격 URL 이면 유지 / 비웠으면 "".
       let thumbnailUrl = ""
       if (thumbFile) thumbnailUrl = await uploadThumbnail(thumbFile)
-      const app = await createApp({
+      else if (thumbPreview && !thumbPreview.startsWith("blob:"))
+        thumbnailUrl = thumbPreview
+
+      const payload = {
         title,
         appUrl,
         thumbnailUrl,
         authorName,
         description: content,
         categoryIds: [categoryId, ...subIds],
-      })
-      navigate(`/app/${app.id}`)
+      }
+      const saved = app
+        ? await updateApp(app.id, payload)
+        : await createApp(payload)
+      navigate(`/app/${saved.id}`)
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "오류가 발생했습니다.")
       setSubmitting(false)
@@ -275,7 +298,7 @@ export function WriteForm({
       {/* 내용 — 블로그형 에디터(HTML 저장) */}
       <div className="flex flex-col gap-1.5">
         <label className={labelClass}>내용</label>
-        <RichTextEditor onChange={setContent} />
+        <RichTextEditor value={content} onChange={setContent} />
       </div>
 
       {/* 에러 */}
@@ -291,14 +314,20 @@ export function WriteForm({
           to={listTo}
           className="rounded-md border border-border px-5 py-2 text-sm font-medium text-foreground hover:bg-accent"
         >
-          목록
+          {isEdit ? "취소" : "목록"}
         </Link>
         <button
           type="submit"
           disabled={submitting}
           className="rounded-md bg-primary px-6 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
         >
-          {submitting ? "등록 중…" : "글쓰기"}
+          {submitting
+            ? isEdit
+              ? "저장 중…"
+              : "등록 중…"
+            : isEdit
+              ? "수정 저장"
+              : "글쓰기"}
         </button>
       </div>
     </form>

@@ -8,6 +8,7 @@ import { SubjectApps } from "@/pages/SubjectApps"
 import { WorkApps } from "@/pages/WorkApps"
 import { AppDetail } from "@/pages/AppDetail"
 import { WritePage } from "@/pages/WritePage"
+import { EditPage } from "@/pages/EditPage"
 import { Privacy } from "@/pages/Privacy"
 import { Terms } from "@/pages/Terms"
 import { Contact } from "@/pages/Contact"
@@ -34,6 +35,7 @@ function App() {
             {/* 전체(/apps)는 없앰 — 인기로 리다이렉트(옛 링크·뒤로가기 대비) */}
             <Route path="apps" element={<Navigate to="/apps/subject" replace />} />
             <Route path="write/:categoryId" element={<WritePage />} />
+            <Route path="edit/:appId" element={<EditPage />} />
             <Route path="apps/subject" element={<SubjectApps />} />
             <Route path="apps/subject/:categoryId" element={<SubjectApps />} />
             <Route path="apps/work" element={<WorkApps />} />

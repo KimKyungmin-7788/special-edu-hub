@@ -74,7 +74,7 @@ export function MyAppList() {
               {/* 썸네일 */}
               <Link
                 to={`/app/${app.id}`}
-                className="aspect-video w-24 shrink-0 overflow-hidden rounded border border-border bg-surface"
+                className="relative aspect-video w-24 shrink-0 overflow-hidden rounded border border-border bg-surface"
               >
                 <AppThumbnail app={app} iconClassName="size-5" />
               </Link>
@@ -109,15 +109,23 @@ export function MyAppList() {
                 </div>
               </div>
 
-              {/* 토글 */}
-              <button
-                type="button"
-                onClick={() => toggle(app)}
-                disabled={busyId === app.id}
-                className="shrink-0 rounded-md border border-border px-3 py-1.5 text-sm font-medium hover:bg-accent disabled:opacity-50"
-              >
-                {busyId === app.id ? "처리 중…" : hidden ? "공개로" : "숨기기"}
-              </button>
+              {/* 수정 · 숨김토글 */}
+              <div className="flex shrink-0 items-center gap-2">
+                <Link
+                  to={`/edit/${app.id}`}
+                  className="rounded-md border border-border px-3 py-1.5 text-sm font-medium hover:bg-accent"
+                >
+                  수정
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => toggle(app)}
+                  disabled={busyId === app.id}
+                  className="rounded-md border border-border px-3 py-1.5 text-sm font-medium hover:bg-accent disabled:opacity-50"
+                >
+                  {busyId === app.id ? "처리 중…" : hidden ? "공개로" : "숨기기"}
+                </button>
+              </div>
             </li>
           )
         })}
