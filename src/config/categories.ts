@@ -42,7 +42,7 @@ export const categories: Category[] = [
   { id: "automation", name: "업무자동화", type: "work", icon: "zap", sortOrder: 10, hideFromGrid: true },
 
   // ── 국어 하위 분류 (과목 페이지 안에서 칩 필터로만 사용) ──
-  { id: "ko-tracing", name: "선긋기,색칠", type: "subject", icon: "", sortOrder: 101, parentId: "korean" },
+  { id: "ko-tracing", name: "소근육, 선긋기", type: "subject", icon: "", sortOrder: 101, parentId: "korean" },
   { id: "ko-jamo", name: "자모음", type: "subject", icon: "", sortOrder: 102, parentId: "korean" },
   { id: "ko-word", name: "낱말", type: "subject", icon: "", sortOrder: 103, parentId: "korean" },
   { id: "ko-sentence", name: "문장구성", type: "subject", icon: "", sortOrder: 105, parentId: "korean" },
