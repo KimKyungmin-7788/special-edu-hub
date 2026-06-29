@@ -9,6 +9,7 @@ import {
   Share2,
   Pencil,
   Trash2,
+  Check,
 } from "lucide-react"
 import { getCategory } from "@/config/categories"
 import { AppThumbnail } from "@/components/app/AppThumbnail"
@@ -48,6 +49,7 @@ export function AppDetail() {
   const [busy, setBusy] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [shareCopied, setShareCopied] = useState(false)
 
   // "목록으로" — 직전 페이지로. 직접 진입(앱 내 이력 없음)이면 인기로.
   function goBack() {
@@ -126,6 +128,28 @@ export function AppDetail() {
       setBookmarkCount((c) => c + (next ? -1 : 1))
     } finally {
       setBusy(false)
+    }
+  }
+
+  // 공유 — 지원 브라우저는 네이티브 공유 시트, 아니면 링크 클립보드 복사.
+  async function handleShare() {
+    if (!app) return
+    const url = window.location.href
+    const title = displayTitle(app)
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, url })
+      } catch {
+        // 사용자가 취소한 경우 등 — 무시
+      }
+      return
+    }
+    try {
+      await navigator.clipboard.writeText(url)
+      setShareCopied(true)
+      setTimeout(() => setShareCopied(false), 2000)
+    } catch {
+      // 클립보드 불가 환경 — 무시
     }
   }
 
@@ -308,15 +332,19 @@ export function AppDetail() {
           {bookmarkCount}
         </button>
 
-        {/* 공유 — 모양만, 비작동(준비 중) */}
+        {/* 공유 — 네이티브 공유 시트 / 미지원 시 링크 복사 */}
         <button
           type="button"
-          disabled
-          title="준비 중"
-          className="inline-flex cursor-not-allowed items-center gap-2 rounded-md border bg-card px-4 py-2 text-sm text-muted-foreground"
+          onClick={handleShare}
+          title="공유"
+          className="inline-flex items-center gap-2 rounded-md border bg-card px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
         >
-          <Share2 className="size-4" aria-hidden />
-          공유
+          {shareCopied ? (
+            <Check className="size-4" aria-hidden />
+          ) : (
+            <Share2 className="size-4" aria-hidden />
+          )}
+          {shareCopied ? "링크 복사됨" : "공유"}
         </button>
       </div>
 
