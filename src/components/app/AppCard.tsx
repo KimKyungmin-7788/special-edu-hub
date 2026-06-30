@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom"
-import { Heart, Bookmark, ChevronUp, ChevronDown } from "lucide-react"
+import { Eye, Heart, Bookmark, ChevronUp, ChevronDown } from "lucide-react"
 import { getCategory } from "@/config/categories"
 import { AppThumbnail } from "@/components/app/AppThumbnail"
 import { displayTitle, type App } from "@/lib/apps"
@@ -98,11 +98,15 @@ export function AppCard({
         )}
 
         <div className="mt-auto flex items-center gap-3 pt-1 text-xs text-muted-foreground">
-          <span className="inline-flex items-center gap-1">
+          <span className="inline-flex items-center gap-1" title="조회수">
+            <Eye className="size-3.5" aria-hidden />
+            {app.viewCount}
+          </span>
+          <span className="inline-flex items-center gap-1" title="좋아요">
             <Heart className="size-3.5" aria-hidden />
             {app.likeCount}
           </span>
-          <span className="inline-flex items-center gap-1">
+          <span className="inline-flex items-center gap-1" title="담기">
             <Bookmark className="size-3.5" aria-hidden />
             {app.bookmarkCount}
           </span>
