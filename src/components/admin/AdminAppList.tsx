@@ -69,7 +69,7 @@ export function AdminAppList() {
             <li key={app.id} className="flex items-center gap-3 p-3">
               <Link
                 to={`/app/${app.id}`}
-                className="aspect-video w-24 shrink-0 overflow-hidden rounded border border-border bg-surface"
+                className="relative aspect-video w-24 shrink-0 overflow-hidden rounded border border-border bg-surface"
               >
                 <AppThumbnail app={app} iconClassName="size-5" />
               </Link>
