@@ -29,7 +29,8 @@ export type CardBookmark = {
 /**
  * 앱 목록 카드 — 썸네일 / 제목 / 카테고리 태그 / 좋아요·담기 수.
  * 썸네일 좌상단 = 대표 분류 뱃지(1개). 하단 좌 = 작성자 사진·이름 / 우 = 조회·좋아요·댓글 수. move 가 주어지면(운영진) 좌하단 순서 ▲▼. bookmark 가 주어지면 우상단 담기 토글.
- * 교사 전용 자료는 "교사 전용" 배지, 볼 권한이 없으면(locked) 썸네일 잠금 + 담기 숨김.
+ * 교사 전용 자료는 썸네일 좌상단에 "교사 전용" 칩, 볼 권한이 없으면(locked) 썸네일 잠금 + 담기 숨김.
+ * 카드 높이 통일: 제목·한줄 소개 각 2줄 고정 높이(태그 줄 없음).
  */
 export function AppCard({
   app,
@@ -45,8 +46,8 @@ export function AppCard({
   // 여러 과목에 걸친 자료도 카드엔 대표만 — 실제 분류 지정은 그대로 여러 개.
   const main = cats.find((c) => !c.parentId)
   const mainLabel = main ? (main.shortName ?? main.name) : null
-  // 세부 분류 = 제목 아래 태그
-  const tags = cats.filter((c) => c.parentId).map((c) => c.name)
+  // 잠긴 카드는 가운데 "인증교사 전용" 오버레이가 있으므로 칩 생략
+  const teachersOnly = app.visibility === "teachers" && !app.locked
 
   return (
     <Link
@@ -66,11 +67,21 @@ export function AppCard({
           </div>
         )}
 
-        {/* 대표 분류 뱃지 — 썸네일 좌상단 */}
-        {mainLabel && (
-          <span className="absolute left-2 top-2 max-w-[calc(100%-3.5rem)] truncate rounded-full bg-foreground/85 px-2.5 py-0.5 text-xs font-medium text-background shadow-sm">
-            {mainLabel}
-          </span>
+        {/* 썸네일 좌상단 — 대표 분류 뱃지 + (교사 전용이면) 교사 전용 칩 */}
+        {(mainLabel || teachersOnly) && (
+          <div className="absolute left-2 top-2 flex max-w-[calc(100%-3.5rem)] items-center gap-1">
+            {mainLabel && (
+              <span className="truncate rounded-full bg-foreground/85 px-2.5 py-0.5 text-xs font-medium text-background shadow-sm">
+                {mainLabel}
+              </span>
+            )}
+            {teachersOnly && (
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-background/90 px-2 py-0.5 text-xs font-medium text-foreground shadow-sm">
+                <Lock className="size-3" aria-hidden />
+                교사 전용
+              </span>
+            )}
+          </div>
         )}
 
         {/* 순서 조정 ▲▼ — 운영진에게만(move 있을 때). 좌하단. Link 내부라 기본동작 차단. */}
@@ -112,36 +123,13 @@ export function AppCard({
       </div>
 
       <div className="flex flex-1 flex-col gap-2 px-4 pt-3.5 pb-3">
-        {/* 제목 — 2줄까지, 넘치면 … */}
-        <h3 className="line-clamp-2 text-base font-semibold leading-snug tracking-tight">
+        {/* 카드 높이 통일 — 제목·한줄 소개 모두 항상 2줄 높이를 확보하고 넘치면 … */}
+        <h3 className="line-clamp-2 min-h-[2lh] text-base font-semibold leading-snug tracking-tight">
           {displayTitle(app)}
         </h3>
-
-        {/* 한줄 소개 — 2줄까지 */}
-        {app.summary && (
-          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-            {app.summary}
-          </p>
-        )}
-
-        {(tags.length > 0 || app.visibility === "teachers") && (
-          <ul className="flex flex-wrap gap-1">
-            {app.visibility === "teachers" && (
-              <li className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-0.5 text-xs text-foreground">
-                <Lock className="size-3" aria-hidden />
-                교사 전용
-              </li>
-            )}
-            {tags.map((t) => (
-              <li
-                key={t}
-                className="rounded-md bg-secondary px-2 py-0.5 text-xs text-secondary-foreground"
-              >
-                {t}
-              </li>
-            ))}
-          </ul>
-        )}
+        <p className="line-clamp-2 min-h-[2lh] text-sm leading-snug text-muted-foreground">
+          {app.summary}
+        </p>
 
         {/* 하단 — 구분선 아래 좌: 작성자 / 우: 수치 */}
         <div className="mt-auto flex items-center justify-between gap-3 border-t border-border pt-3 text-xs text-muted-foreground">
