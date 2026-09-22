@@ -223,6 +223,9 @@ export function AppDetail() {
       {/* 헤더: 제목 · 개발자 · 조회수 · 태그 */}
       <div className="mt-6">
         <h1 className="text-3xl font-semibold tracking-tight">{displayTitle(app)}</h1>
+        {app.summary && (
+          <p className="mt-2 text-base text-muted-foreground">{app.summary}</p>
+        )}
 
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
           {app.ownerId ? (

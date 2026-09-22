@@ -8,9 +8,12 @@ export type HeroSlide =
   | { type: "text"; title: string; subtitle?: string; ctaLabel?: string }
   | { type: "banner"; imageUrl: string; alt?: string }
 
+/** 누리집 이름 — 헤더·푸터·탭 제목·법적 페이지·인증 메일이 모두 이 값을 따른다. */
+const SITE_NAME = "특수교육 디지털 학습자료 누리집"
+
 export const site = {
-  /** 가칭 — 정식 명칭 확정되면 교체(법적 페이지·푸터가 이 값을 참조한다). */
-  name: "(가칭) 특수교육 학습자료 누리집",
+  /** 누리집 이름(index.html <title> 도 같은 값으로 맞춰 둔다 — 첫 로딩 순간 표시용). */
+  name: SITE_NAME,
   /** 이미지 로고 들어오면 교체 */
   logoText: "로고",
 
@@ -51,9 +54,9 @@ export const site = {
   verification: {
     email: "themaniwant19@gmail.com",
     /** 템플릿 첫 줄이자 메일 제목. */
-    title: "[특수교육 디지털 학습자료 누리집 교사 인증]",
+    title: `[${SITE_NAME} 교사 인증]`,
     /** 템플릿의 '가입 플랫폼' 값. */
-    platformName: "특수교육 디지털 학습자료 누리집",
+    platformName: SITE_NAME,
   },
 
   footer: {

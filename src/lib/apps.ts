@@ -38,6 +38,9 @@ export type App = {
   sortOrder: number | null // 과목 페이지 수동 정렬값(미지정=null → 최신순으로 뒤)
   visibility: AppVisibility
   locked: boolean // true = 교사 전용인데 볼 권한 없음(appUrl·description 이 비어 있음)
+  ownerAvatarUrl: string | null // 작성자 프로필 사진(뷰에서 조인, 28). 없으면 null
+  summary: string // 한줄 소개(최대 SUMMARY_MAX 자, 29). 잠긴 자료에서도 공개
+  commentCount: number // 삭제 안 된 댓글 수(트리거 집계, 30)
 }
 
 /** DB row(snake_case) → App(camelCase) 변환. */
@@ -58,6 +61,9 @@ export type AppRow = {
   sort_order: number | null
   visibility?: AppVisibility // 26 미적용 DB 대비 optional
   locked?: boolean // 뷰에만 있음(원본 테이블 쓰기 결과엔 없음 → false)
+  owner_avatar_url?: string | null // 뷰에만 있음(28)
+  summary?: string // 29 미적용 DB 대비 optional
+  comment_count?: number // 30 미적용 DB 대비 optional
 }
 
 export function mapRow(row: AppRow): App {
@@ -78,6 +84,9 @@ export function mapRow(row: AppRow): App {
     sortOrder: row.sort_order ?? null,
     visibility: row.visibility ?? "public",
     locked: row.locked ?? false,
+    ownerAvatarUrl: row.owner_avatar_url ?? null,
+    summary: row.summary ?? "",
+    commentCount: row.comment_count ?? 0,
   }
 }
 
@@ -213,6 +222,21 @@ async function currentUserId(): Promise<string | null> {
   return data.session?.user.id ?? null
 }
 
+/** 한줄 소개 최대 글자 수 — DB check(29_app_summary.sql)와 같은 값. */
+export const SUMMARY_MAX = 40
+
+/** 글자 수(DB char_length 와 같은 기준 — 유니코드 코드포인트). */
+export function charCount(text: string): number {
+  return Array.from(text).length
+}
+
+function cleanSummary(text: string): string {
+  const s = text.trim()
+  if (charCount(s) > SUMMARY_MAX)
+    throw new Error(`한줄 소개는 ${SUMMARY_MAX}자 이내로 입력하세요.`)
+  return s
+}
+
 /** 등록/수정 입력. id·owner_id·status·집계수는 코드/RLS 가 정한다. */
 export type AppInput = {
   title: string
@@ -222,6 +246,7 @@ export type AppInput = {
   description: string
   categoryIds: string[] // 상위+하위 분류 id 를 함께 넣는다
   visibility: AppVisibility
+  summary: string
 }
 
 /**
@@ -271,6 +296,7 @@ export async function createApp(input: AppInput): Promise<App> {
       description: input.description,
       category_ids: input.categoryIds,
       visibility: input.visibility,
+      summary: cleanSummary(input.summary),
       owner_id: uid,
       status: "published",
     })
@@ -294,6 +320,7 @@ export async function updateApp(
   if (patch.description !== undefined) row.description = patch.description
   if (patch.categoryIds !== undefined) row.category_ids = patch.categoryIds
   if (patch.visibility !== undefined) row.visibility = patch.visibility
+  if (patch.summary !== undefined) row.summary = cleanSummary(patch.summary)
 
   const { data, error } = await supabase
     .from("apps")

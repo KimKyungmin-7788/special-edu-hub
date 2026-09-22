@@ -15,6 +15,8 @@ import {
   THUMBNAIL_MIME,
   type App,
   type AppVisibility,
+  SUMMARY_MAX,
+  charCount,
 } from "@/lib/apps"
 import { SubcategorySelect } from "@/components/app/SubcategorySelect"
 import { RichTextEditor } from "@/components/app/RichTextEditor"
@@ -58,6 +60,7 @@ export function WriteForm({
       : `/apps/subject/${categoryId}`
 
   const [title, setTitle] = useState(app?.title ?? "")
+  const [summary, setSummary] = useState(app?.summary ?? "")
   const [subIds, setSubIds] = useState<string[]>(
     app ? app.categoryIds.filter((id) => id !== categoryId) : [],
   )
@@ -161,6 +164,7 @@ export function WriteForm({
 
       const payload = {
         title,
+        summary,
         appUrl,
         thumbnailUrl,
         authorName,
@@ -195,6 +199,29 @@ export function WriteForm({
           required
           disabled={submitting}
         />
+      </div>
+
+      {/* 한줄 소개 — 카드·상세 제목 아래 표시. 최대 SUMMARY_MAX 자(초과 입력은 잘라냄) */}
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="app-summary" className={labelClass}>
+          한줄 소개
+        </label>
+        <input
+          id="app-summary"
+          className={inputClass}
+          placeholder="예: 고양이를 세며 1부터 10까지 수 개념을 익히는 터치 게임"
+          value={summary}
+          onChange={(e) =>
+            setSummary(Array.from(e.target.value).slice(0, SUMMARY_MAX).join(""))
+          }
+          disabled={submitting}
+        />
+        <div className="flex justify-between text-xs text-muted-foreground">
+          <span>목록 카드에서 제목 아래에 보여요. 비워 두어도 됩니다.</span>
+          <span className="shrink-0 tabular-nums">
+            {charCount(summary)} / {SUMMARY_MAX}
+          </span>
+        </div>
       </div>
 
       {/* 세부 분류 (제목 다음) */}

@@ -27,6 +27,8 @@ export type Category = {
    * (예: 사회/과학에서 사회 칩과 과학 칩 사이 구분)
    */
   group?: string
+  /** 카드 뱃지처럼 좁은 자리에 쓰는 짧은 이름. 없으면 name. */
+  shortName?: string
 }
 
 export const categories: Category[] = [
@@ -34,7 +36,7 @@ export const categories: Category[] = [
   { id: "math", name: "수학", type: "subject", icon: "calculator", sortOrder: 2 },
   { id: "social-science", name: "사회/과학", type: "subject", icon: "globe", sortOrder: 3 },
   { id: "arts", name: "음악/미술/체육", type: "subject", icon: "music", sortOrder: 4 },
-  { id: "career", name: "진로와직업/전환", type: "subject", icon: "briefcase", sortOrder: 5 },
+  { id: "career", name: "진로와직업/전환", shortName: "진로/전환", type: "subject", icon: "briefcase", sortOrder: 5 },
   { id: "life", name: "일상생활", type: "subject", icon: "house", sortOrder: 6 },
   { id: "creative", name: "창체", type: "subject", icon: "sparkles", sortOrder: 7 },
   { id: "class", name: "학급경영", type: "subject", icon: "users", sortOrder: 8 },
