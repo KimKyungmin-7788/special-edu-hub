@@ -20,7 +20,7 @@ export function VerifyRejected({
         </p>
       </div>
       <p className="text-sm text-muted-foreground">
-        서류를 다시 준비한 후 재신청할 수 있습니다.
+        사유를 확인하고 서류를 다시 준비해 재신청할 수 있습니다.
       </p>
       <button
         type="button"

@@ -10,6 +10,7 @@ import {
   Pencil,
   Trash2,
   Check,
+  Lock,
 } from "lucide-react"
 import { getCategory } from "@/config/categories"
 import { AppThumbnail } from "@/components/app/AppThumbnail"
@@ -84,6 +85,7 @@ export function AppDetail() {
     setBookmarkCount(app.bookmarkCount)
     setLiked(false)
     setBookmarked(false)
+    if (app.locked) return // 잠긴 자료는 조회수·내 상태 불필요
     incrementView(app.id)
     let active = true
     Promise.all([getMyLikedIds(), getMyBookmarkedIds()]).then(([likes, bms]) => {
@@ -251,8 +253,14 @@ export function AppDetail() {
         {/* 개발자 홍보 링크 — 등록자가 입력한 것만(블로그·인스타·유튜브·사이트) */}
         {owner && <PromoLinks profile={owner} className="mt-3" />}
 
-        {tags.length > 0 && (
+        {(tags.length > 0 || app.visibility === "teachers") && (
           <ul className="mt-3 flex flex-wrap gap-1">
+            {app.visibility === "teachers" && (
+              <li className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-0.5 text-xs text-foreground">
+                <Lock className="size-3" aria-hidden />
+                교사 전용
+              </li>
+            )}
             {tags.map((t) => (
               <li
                 key={t}
@@ -272,14 +280,16 @@ export function AppDetail() {
 
       {/* 액션: 앱 열기(작동) + 담기·공유(모양만) */}
       <div className="mt-6 flex flex-wrap items-center gap-2">
-        <a
-          href={app.appUrl}
-          target="_blank"
-          rel="noopener"
-          className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
-        >
-          <ExternalLink className="size-4" aria-hidden />앱 열기
-        </a>
+        {!app.locked && (
+          <a
+            href={app.appUrl}
+            target="_blank"
+            rel="noopener"
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+          >
+            <ExternalLink className="size-4" aria-hidden />앱 열기
+          </a>
+        )}
 
         {/* 수정 — 작성자 본인·관리자만 */}
         {canEdit && (
@@ -293,44 +303,49 @@ export function AppDetail() {
           </Link>
         )}
 
-        {/* 좋아요 — 토글(로그인 필요) */}
-        <button
-          type="button"
-          onClick={handleToggleLike}
-          disabled={busy}
-          aria-pressed={liked}
-          title={user ? "좋아요" : "로그인이 필요합니다"}
-          className={
-            "inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm transition-colors disabled:opacity-60 " +
-            (liked
-              ? "border-foreground/30 bg-accent text-foreground"
-              : "bg-card text-muted-foreground hover:bg-accent")
-          }
-        >
-          <Heart className={"size-4" + (liked ? " fill-current" : "")} aria-hidden />
-          {likeCount}
-        </button>
+        {/* 좋아요·담기 — 잠긴 자료에선 숨김 */}
+        {!app.locked && (
+          <>
+            {/* 좋아요 — 토글(로그인 필요) */}
+            <button
+              type="button"
+              onClick={handleToggleLike}
+              disabled={busy}
+              aria-pressed={liked}
+              title={user ? "좋아요" : "로그인이 필요합니다"}
+              className={
+                "inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm transition-colors disabled:opacity-60 " +
+                (liked
+                  ? "border-foreground/30 bg-accent text-foreground"
+                  : "bg-card text-muted-foreground hover:bg-accent")
+              }
+            >
+              <Heart className={"size-4" + (liked ? " fill-current" : "")} aria-hidden />
+              {likeCount}
+            </button>
 
-        {/* 담기(북마크) — 토글(로그인 필요) */}
-        <button
-          type="button"
-          onClick={handleToggleBookmark}
-          disabled={busy}
-          aria-pressed={bookmarked}
-          title={user ? "담기" : "로그인이 필요합니다"}
-          className={
-            "inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm transition-colors disabled:opacity-60 " +
-            (bookmarked
-              ? "border-foreground/30 bg-accent text-foreground"
-              : "bg-card text-muted-foreground hover:bg-accent")
-          }
-        >
-          <Bookmark
-            className={"size-4" + (bookmarked ? " fill-current" : "")}
-            aria-hidden
-          />
-          {bookmarkCount}
-        </button>
+            {/* 담기(북마크) — 토글(로그인 필요) */}
+            <button
+              type="button"
+              onClick={handleToggleBookmark}
+              disabled={busy}
+              aria-pressed={bookmarked}
+              title={user ? "담기" : "로그인이 필요합니다"}
+              className={
+                "inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm transition-colors disabled:opacity-60 " +
+                (bookmarked
+                  ? "border-foreground/30 bg-accent text-foreground"
+                  : "bg-card text-muted-foreground hover:bg-accent")
+              }
+            >
+              <Bookmark
+                className={"size-4" + (bookmarked ? " fill-current" : "")}
+                aria-hidden
+              />
+              {bookmarkCount}
+            </button>
+          </>
+        )}
 
         {/* 공유 — 네이티브 공유 시트 / 미지원 시 링크 복사 */}
         <button
@@ -348,55 +363,95 @@ export function AppDetail() {
         </button>
       </div>
 
-      {/* 개발자 소개 글(블로그형) — HTML 정화 후 렌더 */}
-      <section className="mt-8 border-t pt-8">
-        <h2 className="text-xs font-semibold tracking-wide text-muted-foreground">
-          이런 학습자료에요.
-        </h2>
-        {app.description.trim() ? (
-          <div className="mt-3">
-            <RichTextViewer html={app.description} />
-          </div>
-        ) : (
-          <p className="mt-3 text-sm text-muted-foreground">
-            소개 내용이 없습니다.
-          </p>
-        )}
-      </section>
+      {/* 잠금 안내 — 교사 전용인데 볼 권한 없음 (본문·댓글 대신) */}
+      {app.locked ? (
+        <LockedNotice loggedIn={!!user} from={location.pathname} />
+      ) : (
+        <>
+          {/* 개발자 소개 글(블로그형) — HTML 정화 후 렌더 */}
+          <section className="mt-8 border-t pt-8">
+            <h2 className="text-xs font-semibold tracking-wide text-muted-foreground">
+              이런 학습자료에요.
+            </h2>
+            {app.description.trim() ? (
+              <div className="mt-3">
+                <RichTextViewer html={app.description} />
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-muted-foreground">
+                소개 내용이 없습니다.
+              </p>
+            )}
+          </section>
 
-      {/* 작성자(또는 관리자) 전용 — 글 하단 수정·삭제 */}
-      {canEdit && (
-        <div className="mt-8 border-t pt-6">
-          <div className="flex items-center justify-end gap-2">
-            <Link
-              to={`/edit/${app.id}`}
-              replace
-              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium hover:bg-accent"
-            >
-              <Pencil className="size-4" aria-hidden />
-              수정
-            </Link>
-            <button
-              type="button"
-              onClick={handleDelete}
-              disabled={deleting}
-              className="inline-flex items-center gap-1.5 rounded-md border border-destructive/40 bg-card px-4 py-2 text-sm font-medium text-destructive hover:bg-destructive/10 disabled:opacity-60"
-            >
-              <Trash2 className="size-4" aria-hidden />
-              {deleting ? "삭제 중…" : "삭제"}
-            </button>
-          </div>
-          {deleteError && (
-            <p role="alert" className="mt-2 text-right text-sm text-destructive">
-              {deleteError}
-            </p>
+          {/* 작성자(또는 관리자) 전용 — 글 하단 수정·삭제 */}
+          {canEdit && (
+            <div className="mt-8 border-t pt-6">
+              <div className="flex items-center justify-end gap-2">
+                <Link
+                  to={`/edit/${app.id}`}
+                  replace
+                  className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium hover:bg-accent"
+                >
+                  <Pencil className="size-4" aria-hidden />
+                  수정
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-destructive/40 bg-card px-4 py-2 text-sm font-medium text-destructive hover:bg-destructive/10 disabled:opacity-60"
+                >
+                  <Trash2 className="size-4" aria-hidden />
+                  {deleting ? "삭제 중…" : "삭제"}
+                </button>
+              </div>
+              {deleteError && (
+                <p role="alert" className="mt-2 text-right text-sm text-destructive">
+                  {deleteError}
+                </p>
+              )}
+            </div>
           )}
-        </div>
-      )}
 
-      {/* 댓글 (PRD 4단계) */}
-      <CommentSection appId={app.id} />
+          {/* 댓글 (PRD 4단계) */}
+          <CommentSection appId={app.id} />
+        </>
+      )}
     </div>
+  )
+}
+
+/** 교사 전용 자료 잠금 안내 — 비로그인은 로그인, 로그인했으면 교사인증센터로. */
+function LockedNotice({ loggedIn, from }: { loggedIn: boolean; from: string }) {
+  return (
+    <section className="mt-8 border-t pt-8">
+      <div className="flex flex-col items-center gap-3 rounded-lg border border-border bg-surface px-6 py-10 text-center">
+        <Lock className="size-6 text-muted-foreground" aria-hidden />
+        <p className="text-base font-semibold">인증교사만 열람할 수 있는 자료입니다</p>
+        <p className="text-sm text-muted-foreground">
+          {loggedIn
+            ? "교사인증을 받으면 앱 열기·소개 글·댓글을 이용할 수 있어요."
+            : "로그인 후 교사인증을 받으면 앱 열기·소개 글·댓글을 이용할 수 있어요."}
+        </p>
+        {loggedIn ? (
+          <Link
+            to="/verify"
+            className="mt-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+          >
+            교사인증센터로 가기
+          </Link>
+        ) : (
+          <Link
+            to="/login"
+            state={{ from }}
+            className="mt-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+          >
+            로그인하기
+          </Link>
+        )}
+      </div>
+    </section>
   )
 }
 

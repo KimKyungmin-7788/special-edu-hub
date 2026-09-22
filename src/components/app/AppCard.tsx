@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom"
-import { Eye, Heart, Bookmark, ChevronUp, ChevronDown } from "lucide-react"
+import { Eye, Heart, Bookmark, ChevronUp, ChevronDown, Lock } from "lucide-react"
 import { getCategory } from "@/config/categories"
 import { AppThumbnail } from "@/components/app/AppThumbnail"
 import { displayTitle, type App } from "@/lib/apps"
@@ -21,6 +21,7 @@ export type CardBookmark = {
 /**
  * 앱 목록 카드 — 썸네일 / 제목 / 카테고리 태그 / 좋아요·담기 수.
  * move 가 주어지면(운영진) 좌상단 순서 ▲▼. bookmark 가 주어지면 우상단 담기 토글.
+ * 교사 전용 자료는 "교사 전용" 배지, 볼 권한이 없으면(locked) 썸네일 잠금 + 담기 숨김.
  */
 export function AppCard({
   app,
@@ -43,6 +44,16 @@ export function AppCard({
       <div className="relative aspect-video bg-surface">
         <AppThumbnail app={app} iconClassName="size-7" />
 
+        {/* 잠금 — 교사 전용인데 볼 권한 없음. 제목·썸네일만 보여준다. */}
+        {app.locked && (
+          <div className="absolute inset-0 flex items-center justify-center bg-background/50">
+            <span className="inline-flex items-center gap-1.5 rounded-md bg-background/90 px-2.5 py-1 text-xs font-medium text-foreground shadow-sm">
+              <Lock className="size-3.5" aria-hidden />
+              인증교사 전용
+            </span>
+          </div>
+        )}
+
         {/* 순서 조정 ▲▼ — 운영진에게만(move 있을 때). Link 내부라 기본동작 차단. */}
         {move && (
           <div className="absolute left-2 top-2 flex flex-col gap-1">
@@ -60,7 +71,7 @@ export function AppCard({
         )}
 
         {/* 담기(북마크) 토글 — bookmark 있을 때만. Link 내부라 기본동작 차단. */}
-        {bookmark && (
+        {bookmark && !app.locked && (
           <button
             type="button"
             aria-label="담기"
@@ -84,8 +95,14 @@ export function AppCard({
       <div className="flex flex-1 flex-col gap-2 p-3">
         <h3 className="font-medium tracking-tight">{displayTitle(app)}</h3>
 
-        {tags.length > 0 && (
+        {(tags.length > 0 || app.visibility === "teachers") && (
           <ul className="flex flex-wrap gap-1">
+            {app.visibility === "teachers" && (
+              <li className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-0.5 text-xs text-foreground">
+                <Lock className="size-3" aria-hidden />
+                교사 전용
+              </li>
+            )}
             {tags.map((t) => (
               <li
                 key={t}

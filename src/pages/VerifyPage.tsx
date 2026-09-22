@@ -20,7 +20,8 @@ import { VerifyForm } from "@/components/verify/VerifyForm"
  *   최신 신청 없음(미신청)   → VerifyForm(mode="new")
  *   pending                 → VerifyPending
  *   rejected                → VerifyRejected + VerifyForm(mode="reapply")
- *   approved(트리거로 verified됨) → VerifyAlreadyCertified (위에서 처리)
+ *   approved 인데 현재 미인증     → 운영진이 인증을 회수한 경우. 안내 + 재신청 폼
+ *   (인증 여부의 기준은 항상 profile.isTeacherVerified — 신청 기록은 이력일 뿐)
  */
 
 type PageState =
@@ -31,6 +32,7 @@ type PageState =
   | { kind: "pending"; request: VerificationRequest }
   | { kind: "rejected"; request: VerificationRequest }
   | { kind: "reapply"; request: VerificationRequest } // 반려 후 재신청 폼 표시
+  | { kind: "revoked" } // 승인 이력은 있지만 인증이 회수됨
 
 export function VerifyPage() {
   const { user, loading: authLoading } = useAuth()
@@ -68,8 +70,8 @@ export function VerifyPage() {
       } else if (latestReq.status === "rejected") {
         setPageState({ kind: "rejected", request: latestReq })
       } else {
-        // approved 인데 isTeacherVerified가 아직 안 반영된 경우 (트리거 지연 극히 드묾)
-        setPageState({ kind: "certified" })
+        // approved 인데 isTeacherVerified=false → 운영진이 회수한 경우(트리거는 즉시 반영됨)
+        setPageState({ kind: "revoked" })
       }
     }
 
@@ -84,7 +86,7 @@ export function VerifyPage() {
     <div className="mx-auto max-w-xl px-4 py-10">
       <h1 className="mb-1 text-2xl font-bold">교사인증센터</h1>
       <p className="mb-8 text-sm text-muted-foreground">
-        교사인증을 받으면 앱 등록 등 교사 전용 기능을 이용할 수 있습니다.
+        교사인증을 받으면 자료 등록 등 교사 전용 기능을 이용할 수 있습니다.
       </p>
 
       <Content
@@ -93,6 +95,7 @@ export function VerifyPage() {
           setPageState({ kind: "pending", request: req })
         }
         onReapply={(req) => setPageState({ kind: "reapply", request: req })}
+        email={user?.email ?? ""}
       />
     </div>
   )
@@ -103,10 +106,12 @@ function Content({
   state,
   onFormSuccess,
   onReapply,
+  email,
 }: {
   state: PageState
   onFormSuccess: (req: VerificationRequest) => void
   onReapply: (req: VerificationRequest) => void
+  email: string
 }) {
   switch (state.kind) {
     case "loading":
@@ -126,7 +131,7 @@ function Content({
       return <VerifyForm mode="new" onSuccess={onFormSuccess} />
 
     case "pending":
-      return <VerifyPending createdAt={state.request.createdAt} />
+      return <VerifyPending request={state.request} email={email} />
 
     case "rejected":
       return (
@@ -135,6 +140,19 @@ function Content({
             rejectReason={state.request.rejectReason}
             onReapply={() => onReapply(state.request)}
           />
+        </div>
+      )
+
+    case "revoked":
+      return (
+        <div className="flex flex-col gap-6">
+          <div className="rounded-md border border-border bg-muted/40 p-4">
+            <p className="text-sm font-semibold">교사인증이 해제된 계정입니다</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              다시 인증이 필요하면 아래에서 새로 신청해 주세요. 궁금한 점은 운영진 문의로 알려 주세요.
+            </p>
+          </div>
+          <VerifyForm mode="reapply" onSuccess={onFormSuccess} />
         </div>
       )
 

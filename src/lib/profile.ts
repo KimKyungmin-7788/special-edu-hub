@@ -129,6 +129,22 @@ export async function setUserRole(targetId: string, role: Role): Promise<void> {
 }
 
 /**
+ * 교사인증 부여/회수 — 운영진 전용 (25_verify_by_email.sql 의 set_teacher_verified RPC).
+ * is_teacher_verified 는 클라 UPDATE 가 잠겨 있어 이 RPC 로만 바꾼다.
+ * 부여 시 그 회원의 심사중 신청도 DB 가 함께 승인 처리한다.
+ */
+export async function setTeacherVerified(
+  targetId: string,
+  verified: boolean,
+): Promise<void> {
+  const { error } = await supabase.rpc("set_teacher_verified", {
+    target_id: targetId,
+    verified,
+  })
+  if (error) throw error
+}
+
+/**
  * 본인이 수정 가능한 프로필 필드.
  * role / is_teacher_verified 는 일부러 제외 — DB 컬럼 GRANT 로도 잠겨 있다(04_profiles.sql).
  */

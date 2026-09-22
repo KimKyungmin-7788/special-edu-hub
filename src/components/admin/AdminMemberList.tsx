@@ -1,16 +1,25 @@
 import { useEffect, useState } from "react"
 import { useAuth } from "@/lib/auth"
-import { listMembers, setUserRole, type Member, type Role } from "@/lib/profile"
+import {
+  listMembers,
+  setTeacherVerified,
+  setUserRole,
+  type Member,
+  type Role,
+} from "@/lib/profile"
 
 /**
  * 관리자 "회원" — 전체 회원 목록 + (관리자 전용) 권한 부여 (묶음 B-2 · 운영진 등급).
  * 조회는 운영진(staff) 가능, 권한 변경은 관리자(admin)만(select 노출 + DB RPC 가 강제).
+ * 교사인증 부여/회수는 운영진 가능(25 의 set_teacher_verified RPC). 인증 메일을 받으면
+ * 이메일로 검색해 [인증] 을 누른다.
  * 강제 탈퇴 등 처리는 신고 시스템과 함께 후속.
  */
 export function AdminMemberList() {
-  const { isAdmin, user } = useAuth()
+  const { isAdmin, isStaff, user } = useAuth()
   const [members, setMembers] = useState<Member[] | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [query, setQuery] = useState("")
 
   useEffect(() => {
     let active = true
@@ -24,6 +33,12 @@ export function AdminMemberList() {
 
   function applyRole(id: string, role: Role) {
     setMembers((list) => list?.map((m) => (m.id === id ? { ...m, role } : m)) ?? null)
+  }
+
+  function applyVerified(id: string, isTeacherVerified: boolean) {
+    setMembers(
+      (list) => list?.map((m) => (m.id === id ? { ...m, isTeacherVerified } : m)) ?? null,
+    )
   }
 
   if (members === null) {
@@ -43,11 +58,26 @@ export function AdminMemberList() {
     (m) => m.role === "manager" || m.role === "admin",
   ).length
 
+  const q = query.trim().toLowerCase()
+  const shown = q
+    ? members.filter(
+        (m) =>
+          m.email?.toLowerCase().includes(q) || m.nickname?.toLowerCase().includes(q),
+      )
+    : members
+
   return (
     <>
       <p className="mb-2 text-sm text-muted-foreground">
         전체 {members.length}명 · 인증교사 {verified}명 · 운영진 {staff}명
       </p>
+      <input
+        type="search"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="이메일 또는 닉네임 검색"
+        className="mb-3 w-full max-w-xs rounded-md border border-input bg-background px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring"
+      />
       {error && <p className="mb-2 text-sm text-destructive">{error}</p>}
       <div className="overflow-x-auto rounded-lg border border-border">
         <table className="w-full text-sm">
@@ -61,7 +91,7 @@ export function AdminMemberList() {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {members.map((m) => (
+            {shown.map((m) => (
               <tr key={m.id}>
                 <td className="px-3 py-2">
                   {m.nickname || (
@@ -86,7 +116,13 @@ export function AdminMemberList() {
                   )}
                 </td>
                 <td className="px-3 py-2">
-                  {m.isTeacherVerified ? (
+                  {isStaff ? (
+                    <VerifiedToggle
+                      member={m}
+                      onChanged={(v) => applyVerified(m.id, v)}
+                      onError={setError}
+                    />
+                  ) : m.isTeacherVerified ? (
                     <span className="text-foreground">✓</span>
                   ) : (
                     <span className="text-muted-foreground">—</span>
@@ -102,7 +138,7 @@ export function AdminMemberList() {
       </div>
       {isAdmin && (
         <p className="mt-2 text-xs text-muted-foreground">
-          운영진은 앱 숨김·교사인증 심사를 할 수 있어요. 권한 부여는 관리자만 가능합니다.
+          운영진은 앱 숨김·교사인증 부여/회수를 할 수 있어요. 권한 부여는 관리자만 가능합니다.
         </p>
       )}
     </>
@@ -169,6 +205,61 @@ function RoleSelect({
         </option>
       ))}
     </select>
+  )
+}
+
+/** 운영진 전용 교사인증 부여/회수 버튼. 확인 후 RPC 호출. */
+function VerifiedToggle({
+  member,
+  onChanged,
+  onError,
+}: {
+  member: Member
+  onChanged: (verified: boolean) => void
+  onError: (msg: string) => void
+}) {
+  const [busy, setBusy] = useState(false)
+  const verified = member.isTeacherVerified
+
+  async function toggle() {
+    const name = member.nickname || member.email || "이 회원"
+    const ok = window.confirm(
+      verified
+        ? `${name} 의 교사인증을 회수할까요? 자료 등록 등 교사 전용 기능이 막힙니다.`
+        : `${name} (${member.email ?? "이메일 없음"}) 에게 교사인증을 부여할까요?`,
+    )
+    if (!ok) return
+    setBusy(true)
+    onError("")
+    try {
+      await setTeacherVerified(member.id, !verified)
+      onChanged(!verified)
+    } catch (err) {
+      onError(err instanceof Error ? err.message : "인증 변경에 실패했습니다.")
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-2 whitespace-nowrap">
+      <span className={verified ? "text-foreground" : "text-muted-foreground"}>
+        {verified ? "✓" : "—"}
+      </span>
+      <button
+        type="button"
+        onClick={toggle}
+        disabled={busy}
+        className={
+          "rounded-md border px-2 py-0.5 text-xs font-medium disabled:opacity-50 " +
+          (verified
+            ? "border-destructive/40 text-destructive hover:bg-destructive/5"
+            : "border-border hover:bg-muted")
+        }
+      >
+        {busy ? "처리 중…" : verified ? "회수" : "인증"}
+      </button>
+    </div>
   )
 }
 

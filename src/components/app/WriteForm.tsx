@@ -14,6 +14,7 @@ import {
   uploadThumbnail,
   THUMBNAIL_MIME,
   type App,
+  type AppVisibility,
 } from "@/lib/apps"
 import { SubcategorySelect } from "@/components/app/SubcategorySelect"
 import { RichTextEditor } from "@/components/app/RichTextEditor"
@@ -21,6 +22,11 @@ import { RichTextEditor } from "@/components/app/RichTextEditor"
 const inputClass =
   "w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
 const labelClass = "text-sm font-medium"
+
+const VISIBILITY_OPTIONS: { value: AppVisibility; label: string }[] = [
+  { value: "public", label: "전체 공개" },
+  { value: "teachers", label: "인증교사만" },
+]
 
 const THUMB_MAX_BYTES = 2 * 1024 * 1024 // 2MB (버킷·lib 와 동일)
 
@@ -58,6 +64,7 @@ export function WriteForm({
   const [appUrl, setAppUrl] = useState(app?.appUrl ?? "")
   const [authorName, setAuthorName] = useState(app?.authorName ?? defaultAuthorName)
   const [content, setContent] = useState(app?.description ?? "")
+  const [visibility, setVisibility] = useState<AppVisibility>(app?.visibility ?? "public")
   const [thumbFile, setThumbFile] = useState<File | null>(null)
   // 수정 모드 초기 미리보기 = 기존 썸네일(원격 URL). blob: 이 아니면 "유지"로 본다.
   const [thumbPreview, setThumbPreview] = useState<string | null>(
@@ -159,6 +166,7 @@ export function WriteForm({
         authorName,
         description: content,
         categoryIds: [categoryId, ...subIds],
+        visibility,
       }
       const saved = app
         ? await updateApp(app.id, payload)
@@ -302,6 +310,29 @@ export function WriteForm({
         <label className={labelClass}>내용</label>
         <RichTextEditor value={content} onChange={setContent} />
       </div>
+
+      {/* 공개 범위 — 인증교사만: 비인증자에겐 제목·썸네일만 보이는 잠금 카드 */}
+      <fieldset className="flex flex-col gap-1.5">
+        <legend className={labelClass}>공개 범위</legend>
+        <div className="mt-1.5 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+          {VISIBILITY_OPTIONS.map((opt) => (
+            <label key={opt.value} className="inline-flex items-center gap-2">
+              <input
+                type="radio"
+                name="visibility"
+                value={opt.value}
+                checked={visibility === opt.value}
+                onChange={() => setVisibility(opt.value)}
+                disabled={submitting}
+              />
+              {opt.label}
+            </label>
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          '인증교사만'으로 하면 인증 안 한 방문자에게는 제목·썸네일만 보이고, 앱 열기·본문·댓글은 잠깁니다.
+        </p>
+      </fieldset>
 
       {/* 에러 */}
       {submitError && (

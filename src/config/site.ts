@@ -44,6 +44,18 @@ export const site = {
     effectiveDate: "2026-06-28",
   },
 
+  /**
+   * 교사인증(이메일 제출 방식) — 받는 주소·메일 제목·템플릿 문구.
+   * 인증센터(/verify)가 이 값으로 메일 본문을 만든다.
+   */
+  verification: {
+    email: "themaniwant19@gmail.com",
+    /** 템플릿 첫 줄이자 메일 제목. */
+    title: "[특수교육 디지털 학습자료 누리집 교사 인증]",
+    /** 템플릿의 '가입 플랫폼' 값. */
+    platformName: "특수교육 디지털 학습자료 누리집",
+  },
+
   footer: {
     /** 푸터 링크. emphasis=강조(개인정보처리방침). */
     links: [

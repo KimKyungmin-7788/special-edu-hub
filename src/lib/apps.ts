@@ -3,12 +3,22 @@ import { getCategory, type CategoryType } from "@/config/categories"
 
 /**
  * 데이터 접근 일원화 지점.
- * 1단계: Supabase `apps` 테이블에서 읽는다(공개 읽기 RLS).
+ * 읽기는 뷰 apps_catalog(잠금 마스킹), 쓰기는 apps 테이블(RLS).
  * 화면·컴포넌트는 이 함수들의 반환 모양(App)만 의존하므로 그대로 둔다(BUILD.md 7).
  */
 
 /** 앱 공개 상태. 'hidden' 은 삭제 대신 숨김(본인·관리자만 조회). */
 export type AppStatus = "published" | "hidden"
+
+/** 공개 범위. 'teachers' = 인증교사(·작성자·운영진)만 내용 열람 (26_app_visibility.sql). */
+export type AppVisibility = "public" | "teachers"
+
+/**
+ * 읽기 대상 — 뷰 apps_catalog. 권한 없는 사람에게 교사 전용 자료의
+ * app_url·description 을 비워서 주고 locked=true 를 붙인다(잠금 카드).
+ * 쓰기(insert/update)는 원본 apps 테이블로 한다.
+ */
+const CATALOG = "apps_catalog"
 
 /** 앱 한 건의 모양. DB 컬럼(snake_case)을 이 camelCase 모양으로 변환해 쓴다. */
 export type App = {
@@ -26,10 +36,12 @@ export type App = {
   ownerId: string | null // 등록자(profiles.id). 시드앱은 null.
   status: AppStatus
   sortOrder: number | null // 과목 페이지 수동 정렬값(미지정=null → 최신순으로 뒤)
+  visibility: AppVisibility
+  locked: boolean // true = 교사 전용인데 볼 권한 없음(appUrl·description 이 비어 있음)
 }
 
 /** DB row(snake_case) → App(camelCase) 변환. */
-type AppRow = {
+export type AppRow = {
   id: string
   title: string
   app_url: string
@@ -44,9 +56,11 @@ type AppRow = {
   owner_id: string | null
   status: AppStatus
   sort_order: number | null
+  visibility?: AppVisibility // 26 미적용 DB 대비 optional
+  locked?: boolean // 뷰에만 있음(원본 테이블 쓰기 결과엔 없음 → false)
 }
 
-function mapRow(row: AppRow): App {
+export function mapRow(row: AppRow): App {
   return {
     id: row.id,
     title: row.title,
@@ -62,6 +76,8 @@ function mapRow(row: AppRow): App {
     ownerId: row.owner_id ?? null,
     status: row.status,
     sortOrder: row.sort_order ?? null,
+    visibility: row.visibility ?? "public",
+    locked: row.locked ?? false,
   }
 }
 
@@ -81,7 +97,7 @@ function byManualOrder(a: App, b: App): number {
 /** 전체 앱 목록 (최신순). 공개(published)만 — RLS 와 별개로 명시적 이중 안전. */
 export async function getApps(): Promise<App[]> {
   const { data, error } = await supabase
-    .from("apps")
+    .from(CATALOG)
     .select("*")
     .eq("status", "published")
     .order("created_at", { ascending: false })
@@ -96,7 +112,7 @@ export async function getApps(): Promise<App[]> {
 /** id 로 단일 앱. */
 export async function getApp(id: string): Promise<App | undefined> {
   const { data, error } = await supabase
-    .from("apps")
+    .from(CATALOG)
     .select("*")
     .eq("id", id)
     .maybeSingle()
@@ -106,6 +122,23 @@ export async function getApp(id: string): Promise<App | undefined> {
     return undefined
   }
   return data ? mapRow(data as AppRow) : undefined
+}
+
+/** 여러 id 의 앱(주어진 id 순서 유지) — 마이페이지 담기/좋아요 목록용. 공개 상태만. */
+export async function getAppsByIds(ids: string[]): Promise<App[]> {
+  if (ids.length === 0) return []
+  const { data, error } = await supabase
+    .from(CATALOG)
+    .select("*")
+    .in("id", ids)
+    .eq("status", "published")
+
+  if (error) {
+    console.error("[apps] getAppsByIds 실패:", error.message)
+    return []
+  }
+  const byId = new Map((data as AppRow[]).map((r) => [r.id, mapRow(r)]))
+  return ids.map((id) => byId.get(id)).filter((a): a is App => !!a)
 }
 
 /**
@@ -188,6 +221,7 @@ export type AppInput = {
   authorName: string
   description: string
   categoryIds: string[] // 상위+하위 분류 id 를 함께 넣는다
+  visibility: AppVisibility
 }
 
 /**
@@ -236,6 +270,7 @@ export async function createApp(input: AppInput): Promise<App> {
       author_name: input.authorName.trim(),
       description: input.description,
       category_ids: input.categoryIds,
+      visibility: input.visibility,
       owner_id: uid,
       status: "published",
     })
@@ -258,6 +293,7 @@ export async function updateApp(
   if (patch.authorName !== undefined) row.author_name = patch.authorName.trim()
   if (patch.description !== undefined) row.description = patch.description
   if (patch.categoryIds !== undefined) row.category_ids = patch.categoryIds
+  if (patch.visibility !== undefined) row.visibility = patch.visibility
 
   const { data, error } = await supabase
     .from("apps")
@@ -290,7 +326,7 @@ export async function setAppStatus(id: string, status: AppStatus): Promise<App> 
  */
 export async function getAllApps(): Promise<App[]> {
   const { data, error } = await supabase
-    .from("apps")
+    .from(CATALOG)
     .select("*")
     .order("created_at", { ascending: false })
 
@@ -307,7 +343,7 @@ export async function getMyApps(): Promise<App[]> {
   if (!uid) return []
 
   const { data, error } = await supabase
-    .from("apps")
+    .from(CATALOG)
     .select("*")
     .eq("owner_id", uid)
     .order("created_at", { ascending: false })

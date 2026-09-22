@@ -1,10 +1,12 @@
 import { supabase } from "@/lib/supabase"
+import { site } from "@/config/site"
 
 /**
  * 교사인증 신청 데이터 접근 일원화 지점 (2단계 묶음 D-1).
  * 스키마·RLS·버킷은 supabase/09_verification.sql 참고.
  *
- *  - 서류는 비공개 버킷 verification-docs/<uid>/<file> 에만(RLS 가 본인 폴더 강제).
+ *  - 25 부터 서류는 이메일로 받는다(사이트 업로드 없음). 신청 행은 기록용.
+ *    예전 업로드 방식 행은 document_path 가 남아 있어 관리자가 열람할 수 있다.
  *  - 신청은 status=pending 으로만 insert(RLS with check). 제출 후 사용자 수정 불가.
  *  - 인증 여부(is_teacher_verified)는 profiles 에 있고 lib/profile.getProfile 로 읽는다.
  *  - 페이지 상태(미신청/심사중/반려)는 getMyLatestRequest 의 결과로 판별한다.
@@ -16,9 +18,10 @@ export type VerificationStatus = "pending" | "approved" | "rejected"
 export type VerificationRequest = {
   id: string
   userId: string
-  documentPath: string
-  region: string
+  documentPath: string | null
+  region: string | null
   school: string
+  applicantName: string | null
   status: VerificationStatus
   rejectReason: string | null
   reviewedAt: string | null
@@ -28,9 +31,10 @@ export type VerificationRequest = {
 type VerificationRow = {
   id: string
   user_id: string
-  document_path: string
-  region: string
+  document_path: string | null
+  region: string | null
   school: string
+  applicant_name: string | null
   status: VerificationStatus
   reject_reason: string | null
   reviewed_at: string | null
@@ -44,6 +48,7 @@ function mapRow(row: VerificationRow): VerificationRequest {
     documentPath: row.document_path,
     region: row.region,
     school: row.school,
+    applicantName: row.applicant_name,
     status: row.status,
     rejectReason: row.reject_reason,
     reviewedAt: row.reviewed_at,
@@ -80,66 +85,74 @@ export async function getMyLatestRequest(): Promise<VerificationRequest | null> 
   return data ? mapRow(data as VerificationRow) : null
 }
 
-/** 서류 파일 제한 — 09_verification.sql 버킷 설정과 일치. */
-export const VERIFICATION_DOC_MAX_BYTES = 5 * 1024 * 1024 // 5MB
-export const VERIFICATION_DOC_MIME = [
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "application/pdf",
-]
-
-const VERIFICATION_BUCKET = "verification-docs"
-
 export type VerificationInput = {
-  file: File
-  region: string
   school: string
+  name: string
 }
 
 /**
- * 교사인증 신청.
- *  1) 서류를 verification-docs/<uid>/<ts>.<ext> 에 업로드(본인 폴더 RLS 강제).
- *  2) verification_requests insert(status=pending; user_id 는 RLS 가 강제).
+ * 교사인증 신청 기록(25_verify_by_email.sql).
+ * 서류는 사이트에 올리지 않고 신청자가 운영자에게 이메일로 보낸다 — 여기선
+ * 학교·성함만 status=pending 으로 남겨 /admin 대기목록에 뜨게 한다.
  * 동시 pending 은 unique 인덱스가 막는다(중복 신청 시 에러).
  */
 export async function submitVerification({
-  file,
-  region,
   school,
+  name,
 }: VerificationInput): Promise<VerificationRequest> {
   const uid = await currentUserId()
   if (!uid) throw new Error("로그인이 필요합니다.")
 
-  const r = region.trim()
   const s = school.trim()
-  if (r === "") throw new Error("근무 지역을 입력하세요.")
-  if (s === "") throw new Error("학교를 입력하세요.")
-  if (!VERIFICATION_DOC_MIME.includes(file.type))
-    throw new Error("이미지(JPG·PNG·WebP) 또는 PDF 파일만 업로드할 수 있습니다.")
-  if (file.size > VERIFICATION_DOC_MAX_BYTES)
-    throw new Error("파일은 5MB 이하만 업로드할 수 있습니다.")
+  const n = name.trim()
+  if (s === "") throw new Error("소속 학교를 입력하세요.")
+  if (n === "") throw new Error("성함을 입력하세요.")
 
-  const ext = file.name.split(".").pop()?.toLowerCase() || "bin"
-  const path = `${uid}/${Date.now()}.${ext}`
-
-  const { error: uploadError } = await supabase.storage
-    .from(VERIFICATION_BUCKET)
-    .upload(path, file, { cacheControl: "0", upsert: false })
-  if (uploadError) throw uploadError
-
-  const { data, error: insertError } = await supabase
+  const { data, error } = await supabase
     .from("verification_requests")
-    .insert({ user_id: uid, document_path: path, region: r, school: s })
+    .insert({ user_id: uid, school: s, applicant_name: n })
     .select()
     .single()
-
-  if (insertError) {
-    // insert 가 실패하면 방금 올린 서류를 정리(고아 파일 방지). best-effort.
-    await supabase.storage.from(VERIFICATION_BUCKET).remove([path])
-    throw insertError
-  }
+  if (error) throw error
   return mapRow(data as VerificationRow)
+}
+
+// ── 인증 메일 템플릿 (config/site.ts verification) ─────────────
+
+export type VerificationMail = { to: string; subject: string; body: string }
+
+/** 인증센터 템플릿 → 메일 제목·본문. 빈 칸은 빈 채로 둔다(미리보기용). */
+export function buildVerificationMail({
+  school,
+  name,
+  email,
+}: {
+  school: string
+  name: string
+  email: string
+}): VerificationMail {
+  const v = site.verification
+  const body = [
+    v.title,
+    `가입 플랫폼: ${v.platformName}`,
+    `소속 학교: ${school.trim()}`,
+    `성함: ${name.trim()}`,
+    `누리집에 가입하신 정확한 이메일 주소: ${email}`,
+    "",
+    "※ 첨부: 개인정보를 가린 재직증명서 또는 본인 이름이 보이는 나이스 화면 캡처",
+  ].join("\n")
+  return { to: v.email, subject: v.title, body }
+}
+
+/** Gmail 웹 작성창을 받는사람·제목·본문이 채워진 채로 여는 URL. */
+export function gmailComposeUrl({ to, subject, body }: VerificationMail): string {
+  const q = new URLSearchParams({ view: "cm", fs: "1", to, su: subject, body })
+  return `https://mail.google.com/mail/?${q.toString()}`
+}
+
+/** 기본 메일 앱용 mailto URL. */
+export function mailtoUrl({ to, subject, body }: VerificationMail): string {
+  return `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
 }
 
 // ── 관리자 심사 — /admin 묶음 A (RLS 가 최종 강제) ─────────────
@@ -205,6 +218,8 @@ export async function listReviewedRequests(): Promise<AdminVerificationRequest[]
     applicantEmail: row.applicant?.email ?? null,
   }))
 }
+
+const VERIFICATION_BUCKET = "verification-docs"
 
 /** 서류 열람용 서명 URL(기본 5분). 관리자만 발급됨(RLS). 새 탭으로 연다. */
 export async function createDocSignedUrl(

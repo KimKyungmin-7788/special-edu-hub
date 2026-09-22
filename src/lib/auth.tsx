@@ -14,7 +14,7 @@ import { NicknameOnboardingDialog } from "@/components/auth/NicknameOnboardingDi
 
 /**
  * 로그인 세션 토대 (2단계 묶음 A-1).
- * D-3: @gw1.kr 자동인증 축하 팝업 추가. (22: 노출 1회를 서버 플래그로 — 계정 기준)
+ * D-3: 교사인증 축하 팝업(자동인증은 25 에서 폐지 — 지금은 운영진 승인 후 노출). (22: 노출 1회를 서버 플래그로 — 계정 기준)
  *
  * 팝업 노출 조건: 로그인 후 is_teacher_verified=true AND profiles.verified_celebrated=false.
  * 노출 후 본인 프로필의 verified_celebrated 를 true 로 올려 계정 기준 1회만 표시한다.

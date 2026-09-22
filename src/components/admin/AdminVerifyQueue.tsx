@@ -12,6 +12,8 @@ import {
  * 관리자 "교사인증 큐" — 대기(심사) / 처리 내역(이력) 두 화면 (묶음 A·B-1).
  * 14_admin.sql 의 verif_update_admin · verif_docs_read_admin 정책이 있어야 동작.
  * 승인 시 09 의 트리거가 신청자 is_teacher_verified 를 반영한다.
+ * 25 부터 서류는 이메일로 받는다 — 카드의 성함·학교·이메일을 받은 메일과 대조해 승인.
+ * (예전 업로드 방식 신청만 '서류 보기' 가 뜬다.)
  */
 type QueueView = "pending" | "reviewed"
 
@@ -180,7 +182,7 @@ function ReviewedCard({ req }: { req: AdminVerificationRequest }) {
       </div>
 
       <p className="mt-2 text-sm text-muted-foreground">
-        {req.region} · {req.school}
+        {[req.applicantName, req.region, req.school].filter(Boolean).join(" · ")}
       </p>
 
       {!approved && req.rejectReason && (
@@ -217,13 +219,15 @@ function QueueCard({
   const [reason, setReason] = useState("")
 
   async function openDoc() {
+    if (!req.documentPath) return
+    const path = req.documentPath
     onError("")
     // 새 탭은 클릭 제스처 안에서 즉시 연다(서명 URL 을 await 한 뒤 window.open 하면
     // 팝업 차단기가 막는다). opener 를 끊어 noopener 와 같은 보안 효과를 낸다.
     const win = window.open("about:blank", "_blank")
     if (win) win.opener = null
     try {
-      const url = await createDocSignedUrl(req.documentPath)
+      const url = await createDocSignedUrl(path)
       if (win) win.location.href = url
       else window.location.href = url // 팝업이 끝내 막히면 현재 탭으로 폴백
     } catch (err) {
@@ -279,20 +283,34 @@ function QueueCard({
       </div>
 
       <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
-        <dt className="text-muted-foreground">근무 지역</dt>
-        <dd>{req.region}</dd>
+        {req.applicantName && (
+          <>
+            <dt className="text-muted-foreground">성함</dt>
+            <dd>{req.applicantName}</dd>
+          </>
+        )}
+        {req.region && (
+          <>
+            <dt className="text-muted-foreground">근무 지역</dt>
+            <dd>{req.region}</dd>
+          </>
+        )}
         <dt className="text-muted-foreground">학교</dt>
         <dd>{req.school}</dd>
+        <dt className="text-muted-foreground">서류</dt>
+        <dd>{req.documentPath ? "사이트 업로드(예전 방식)" : "이메일로 접수 — 메일함에서 확인"}</dd>
       </dl>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={openDoc}
-          className="rounded-md border border-border px-3 py-1.5 text-sm font-medium hover:bg-accent"
-        >
-          서류 보기 ↗
-        </button>
+        {req.documentPath && (
+          <button
+            type="button"
+            onClick={openDoc}
+            className="rounded-md border border-border px-3 py-1.5 text-sm font-medium hover:bg-accent"
+          >
+            서류 보기 ↗
+          </button>
+        )}
         <button
           type="button"
           onClick={approve}
