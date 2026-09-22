@@ -5,7 +5,19 @@
  */
 
 export type HeroSlide =
-  | { type: "text"; title: string; subtitle?: string; ctaLabel?: string }
+  | {
+      type: "text"
+      /** 왼쪽 칸의 큰 회색 키워드(예: 공유·나눔·참여). 선택. */
+      keyword?: string
+      /** 줄바꿈은 \n */
+      title: string
+      subtitle?: string
+      ctaLabel?: string
+      /** 버튼 이동 경로(기본 /apps/subject). ctaAction 이 있으면 무시. */
+      ctaHref?: string
+      /** "write" = 글쓰기 버튼처럼 과목 선택 창을 띄운 뒤 글쓰기로 */
+      ctaAction?: "write"
+    }
   | { type: "banner"; imageUrl: string; alt?: string }
 
 /** 누리집 이름 — 헤더·푸터·탭 제목·법적 페이지·인증 메일이 모두 이 값을 따른다. */
@@ -17,19 +29,31 @@ export const site = {
   /** 이미지 로고 들어오면 교체 */
   logoText: "로고",
 
-  hero: {
-    title: "히어로 문구 (예정)",
-    subtitle: "",
-    ctaLabel: "자료 둘러보기",
-  },
-
-  /** 히어로 캐러셀: 문구 슬라이드 + 배너 이미지 슬라이드를 배열로 */
+  /** 히어로 캐러셀: 문구 슬라이드 + 배너 이미지 슬라이드를 배열로(순서대로 넘김) */
   heroSlides: [
     {
       type: "text",
-      title: "히어로 문구 (예정)",
-      subtitle: "",
+      keyword: "공유",
+      title: "우리 아이를 위해 만든 디지털 학습자료가,\n모든 교실의 자료가 됩니다",
+      subtitle: "바이브코딩으로 특수교사가 만들고 나누는 디지털 학습자료 누리집",
       ctaLabel: "자료 둘러보기",
+      ctaHref: "/apps/subject",
+    },
+    {
+      type: "text",
+      keyword: "나눔",
+      title: "혼자 고민하던 수업,\n함께라서 더 멀리 갑니다",
+      subtitle: "정성껏 만든 자료를 나누고, 서로의 수업에 응원을 보내 주세요.",
+      ctaLabel: "내 자료 공유하기",
+      ctaAction: "write",
+    },
+    {
+      type: "text",
+      keyword: "참여",
+      title: "교사인증을 하면\n자료를 올리고 교사 전용 자료도 볼 수 있어요",
+      subtitle: "재직 확인 서류를 메일로 보내 주시면 운영진이 확인 후 승인해 드려요.",
+      ctaLabel: "교사인증 하기",
+      ctaHref: "/verify",
     },
     // { type: "banner", imageUrl: "...", alt: "..." } // 배너 추가 시
   ] satisfies HeroSlide[],
