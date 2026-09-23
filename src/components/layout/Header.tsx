@@ -74,19 +74,20 @@ export function Header() {
   )
 }
 
-/** 로고 + 누리집명(config 단일 소스). */
+/** 로고 + 누리집명(config 단일 소스 — 헤더 표기는 headerName, 없으면 name). */
 function Brand() {
+  const headerName = site.headerName || site.name
   return (
     <Link
       to="/"
       className="flex min-w-0 shrink-0 items-center gap-2.5 rounded-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
-      aria-label={`${site.name} 홈`}
+      aria-label={`${headerName} 홈`}
     >
       <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary text-xs font-bold tracking-tight text-primary-foreground">
         {site.logoText}
       </span>
       <span className="max-w-[9.5rem] text-sm leading-tight font-bold break-keep tracking-tight text-foreground sm:max-w-none sm:text-[15px]">
-        {site.name}
+        {headerName}
       </span>
     </Link>
   )

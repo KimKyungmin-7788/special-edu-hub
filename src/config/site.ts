@@ -20,12 +20,17 @@ export type HeroSlide =
     }
   | { type: "banner"; imageUrl: string; alt?: string }
 
-/** 누리집 이름 — 헤더·푸터·탭 제목·법적 페이지·인증 메일이 모두 이 값을 따른다. */
+/** 누리집 이름 — 푸터·탭 제목·법적 페이지·인증 메일이 모두 이 값을 따른다. */
 const SITE_NAME = "특수교육 디지털 학습자료 누리집"
 
 export const site = {
   /** 누리집 이름(index.html <title> 도 같은 값으로 맞춰 둔다 — 첫 로딩 순간 표시용). */
   name: SITE_NAME,
+  /**
+   * 헤더 로고 옆에 쓰는 이름(워드마크). 비워 두면 name 을 쓴다.
+   * 지금은 헤더에서만 다른 이름을 시험 중 — 확정되면 SITE_NAME 을 바꾸고 이 줄을 지운다.
+   */
+  headerName: "강원 특수교육 디지털 학습자료zip",
   /** 이미지 로고 들어오면 교체 */
   logoText: "로고",
 
