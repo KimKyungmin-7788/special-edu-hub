@@ -81,7 +81,7 @@ export function AppCard({
           {(mainLabel || teachersOnly) && (
             <div className="absolute left-2 top-2 flex max-w-[calc(100%-8.5rem)] items-center gap-1">
               {mainLabel && (
-                <span className="truncate rounded-full bg-primary/90 px-2.5 py-0.5 text-xs font-medium text-primary-foreground shadow-sm">
+                <span className="truncate rounded-full bg-brand-muted px-2.5 py-0.5 text-xs font-semibold text-brand-muted-foreground shadow-sm ring-1 ring-brand-line">
                   {mainLabel}
                 </span>
               )}

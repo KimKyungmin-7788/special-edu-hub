@@ -40,7 +40,11 @@
   --color-ring: var(--ring);
 
   --color-brand-soft: var(--brand-soft);
+  --color-brand-muted: var(--brand-muted);
+  --color-brand-muted-foreground: var(--brand-muted-foreground);
   --color-brand-line: var(--brand-line);
+  --color-cta: var(--cta);
+  --color-cta-foreground: var(--cta-foreground);
 
   --color-hero: var(--hero);
   --color-hero-foreground: var(--hero-foreground);

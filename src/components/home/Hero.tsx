@@ -84,7 +84,8 @@ function SlideContent({
   }
   return (
     <div className="relative flex h-full items-stretch">
-      {/* 오른쪽 배경 사진 — 왼쪽으로 갈수록 배경색에 스며든다(넓은 화면만, 장식용) */}
+      {/* 오른쪽 배경 사진 — 왼쪽으로 갈수록 배경색에 스며든다(1280px 이상만 — 더 좁으면 부제와 겹침, 장식용).
+          오른쪽 끝을 버튼 칸 앞(right-40)에서 멈춰 버튼이 인물 얼굴을 가리지 않게 한다. */}
       {slide.image && (
         <img
           src={slide.image.src}
@@ -92,7 +93,7 @@ function SlideContent({
           aria-hidden
           loading="lazy"
           style={{ ...PHOTO_FADE, objectPosition: slide.image.position }}
-          className="pointer-events-none absolute inset-y-0 right-0 hidden h-full w-[62%] object-cover lg:block"
+          className="pointer-events-none absolute inset-y-0 right-40 hidden h-full w-[58%] object-cover xl:block"
         />
       )}
       {slide.keyword && (
@@ -153,10 +154,12 @@ function SlideContent({
   )
 }
 
-/** 배경 사진 페이드 — 왼쪽 끝은 투명, 가운데쯤부터 선명(마스크의 검정은 불투명도 값). */
+/** 배경 사진 페이드 — 왼쪽 끝은 투명, 가운데쯤부터 선명, 오른쪽 끝도 살짝 흐리게(마스크의 검정은 불투명도 값). */
+const PHOTO_FADE_GRADIENT =
+  "linear-gradient(to right, transparent 0%, rgb(0 0 0 / 0.55) 28%, black 55%, black 88%, transparent 100%)"
 const PHOTO_FADE: CSSProperties = {
-  maskImage: "linear-gradient(to right, transparent 0%, rgb(0 0 0 / 0.55) 28%, black 55%)",
-  WebkitMaskImage: "linear-gradient(to right, transparent 0%, rgb(0 0 0 / 0.55) 28%, black 55%)",
+  maskImage: PHOTO_FADE_GRADIENT,
+  WebkitMaskImage: PHOTO_FADE_GRADIENT,
 }
 
 /** 배경 물결 — 가는 선 3줄(장식, 스크린리더 제외). */
