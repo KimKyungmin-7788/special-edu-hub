@@ -30,6 +30,7 @@ export function PopularDashboard({ apps }: { apps: App[] }) {
             moreHref={`/apps/subject/${cat.id}`}
             emptyText="아직 등록된 자료가 없어요."
             columns={4}
+            contextCategoryId={cat.id}
             bookmarkable
           />
         )

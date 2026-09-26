@@ -32,7 +32,7 @@ export type CardBookmark = {
 
 /**
  * 앱 목록 카드 — 썸네일 / 제목 / 카테고리 태그 / 좋아요·담기 수.
- * 썸네일 좌상단 = 대표 분류 뱃지(1개). 하단 좌 = 작성자 사진·이름 / 우 = 조회·좋아요·댓글 수. move 가 주어지면(운영진) 좌하단 순서 ▲▼. bookmark 가 주어지면 우상단 담기 토글.
+ * 썸네일 좌상단 = 대표 분류 뱃지(1개). 과목 페이지에서 보면(contextCategoryId) 그 과목이 이 자료의 분류에 있을 때 그 과목을 보여 준다(관련 교과로 들어온 자료). 하단 좌 = 작성자 사진·이름 / 우 = 조회·좋아요·댓글 수. move 가 주어지면(운영진) 좌하단 순서 ▲▼. bookmark 가 주어지면 우상단 담기 토글.
  * 교사 전용 자료는 썸네일 좌상단에 "교사 전용" 칩, 볼 권한이 없으면(locked) 썸네일 잠금 + 담기·공유 숨김.
  * 썸네일 좌하단 = 공유 버튼(QR·주소 복사 창) + (운영진이면) 순서 ▲▼.
  * 카드 높이 통일: 제목·한줄 소개 각 2줄 고정 높이(태그 줄 없음).
@@ -41,15 +41,20 @@ export function AppCard({
   app,
   move,
   bookmark,
+  contextCategoryId,
 }: {
   app: App
   move?: CardMove
   bookmark?: CardBookmark
+  /** 지금 보고 있는 과목 페이지의 과목 id. 이 자료에 포함돼 있으면 뱃지를 이 과목으로. */
+  contextCategoryId?: string
 }) {
   const cats = app.categoryIds.map((id) => getCategory(id)).filter((c) => !!c)
   // 대표 분류 = 첫 번째 상위 분류 1개만 썸네일 좌상단 뱃지(짧은 이름 우선).
   // 여러 과목에 걸친 자료도 카드엔 대표만 — 실제 분류 지정은 그대로 여러 개.
-  const main = cats.find((c) => !c.parentId)
+  const main =
+    (contextCategoryId && cats.find((c) => c.id === contextCategoryId && !c.parentId)) ||
+    cats.find((c) => !c.parentId)
   const mainLabel = main ? (main.shortName ?? main.name) : null
   // 잠긴 카드는 가운데 "인증교사 전용" 오버레이가 있으므로 칩 생략
   const teachersOnly = app.visibility === "teachers" && !app.locked

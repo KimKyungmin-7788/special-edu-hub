@@ -20,6 +20,7 @@ export function AppCardList({
   columns = 5,
   moreHref,
   bookmarkable,
+  contextCategoryId,
 }: {
   title?: string
   apps: App[]
@@ -32,6 +33,8 @@ export function AppCardList({
   moreHref?: string
   /** true 면 각 카드에 담기(북마크) 토글을 단다(내 담기 상태를 직접 로드·관리). */
   bookmarkable?: boolean
+  /** 과목 페이지의 과목 id — 카드 뱃지를 이 과목으로 보여 준다(관련 교과 자료). */
+  contextCategoryId?: string
 }) {
   const { user } = useAuth()
   const navigate = useNavigate()
@@ -107,6 +110,7 @@ export function AppCardList({
             <li key={app.id}>
               <AppCard
                 app={app}
+                contextCategoryId={contextCategoryId}
                 move={
                   reorder && {
                     onUp: () => reorder.onMoveUp(app),

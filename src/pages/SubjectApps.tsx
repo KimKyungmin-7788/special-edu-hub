@@ -164,6 +164,7 @@ export function SubjectApps() {
               <AppCardList
                 apps={shownApps}
                 columns={4}
+                contextCategoryId={categoryId}
                 emptyText="이 분류의 앱이 아직 없습니다."
                 bookmarkable
                 reorder={
