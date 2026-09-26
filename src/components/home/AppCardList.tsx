@@ -79,7 +79,10 @@ export function AppCardList({
       {(title || moreHref) && (
         <div className="mb-4 flex items-center justify-between border-b border-border pb-3">
           {title && (
-            <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
+            <h2 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
+              <span aria-hidden className="h-4 w-1 rounded-full bg-primary" />
+              {title}
+            </h2>
           )}
           {moreHref && (
             <Link

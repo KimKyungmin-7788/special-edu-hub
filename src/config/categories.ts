@@ -29,18 +29,20 @@ export type Category = {
   group?: string
   /** 카드 뱃지처럼 좁은 자리에 쓰는 짧은 이름. 없으면 name. */
   shortName?: string
+  /** 과목 페이지 상단 배너의 한 줄 소개. */
+  tagline?: string
 }
 
 export const categories: Category[] = [
-  { id: "korean", name: "국어", type: "subject", icon: "book-open", sortOrder: 1 },
-  { id: "math", name: "수학", type: "subject", icon: "calculator", sortOrder: 2 },
-  { id: "social-science", name: "사회/과학", type: "subject", icon: "globe", sortOrder: 3 },
-  { id: "arts", name: "음악/미술/체육", type: "subject", icon: "music", sortOrder: 4 },
-  { id: "career", name: "진로와직업/전환", shortName: "진로/전환", type: "subject", icon: "briefcase", sortOrder: 5 },
-  { id: "life", name: "일상생활", type: "subject", icon: "house", sortOrder: 6 },
-  { id: "creative", name: "창체", type: "subject", icon: "sparkles", sortOrder: 7 },
-  { id: "class", name: "학급경영", type: "subject", icon: "users", sortOrder: 8 },
-  { id: "work", name: "업무혁신", type: "work", icon: "settings", sortOrder: 9 },
+  { id: "korean", name: "국어", type: "subject", icon: "book-open", sortOrder: 1, tagline: "읽고, 말하고, 쓰는 즐거움을 여는 국어 자료" },
+  { id: "math", name: "수학", type: "subject", icon: "calculator", sortOrder: 2, tagline: "수와 모양을 보고 만지며 익히는 수학 자료" },
+  { id: "social-science", name: "사회/과학", type: "subject", icon: "globe", sortOrder: 3, tagline: "우리 동네에서 지구까지, 세상을 탐구하는 자료" },
+  { id: "arts", name: "음악/미술/체육", type: "subject", icon: "music", sortOrder: 4, tagline: "소리와 색, 몸으로 마음껏 표현하는 자료" },
+  { id: "career", name: "진로와직업/전환", shortName: "진로/전환", type: "subject", icon: "briefcase", sortOrder: 5, tagline: "학교 너머의 삶과 일을 준비하는 자료" },
+  { id: "life", name: "일상생활", type: "subject", icon: "house", sortOrder: 6, tagline: "하루를 스스로 해내는 힘을 기르는 생활 자료" },
+  { id: "creative", name: "창체", type: "subject", icon: "sparkles", sortOrder: 7, tagline: "생각을 키우고 경험을 넓히는 창의적 체험활동 자료" },
+  { id: "class", name: "학급경영", type: "subject", icon: "users", sortOrder: 8, tagline: "함께 지내는 교실을 가꾸는 학급경영 자료" },
+  { id: "work", name: "업무혁신", type: "work", icon: "settings", sortOrder: 9, tagline: "교사의 시간을 아껴 주는 업무 도구" },
   { id: "automation", name: "업무자동화", type: "work", icon: "zap", sortOrder: 10, hideFromGrid: true },
 
   // ── 국어 하위 분류 (과목 페이지 안에서 칩 필터로만 사용) ──

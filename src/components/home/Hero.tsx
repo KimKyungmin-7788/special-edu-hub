@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, type CSSProperties } from "react"
 import { flushSync } from "react-dom"
 import { Link } from "react-router-dom"
 import { ChevronLeft, ChevronRight } from "lucide-react"
@@ -15,7 +15,7 @@ type PagerProps = {
 /** 넘김 표시 — 진행 막대(누르면 해당 장) + ‹ 1 / 3 ›. */
 function Pager({ index, count, onGo }: PagerProps) {
   return (
-    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+    <div className="flex items-center gap-3 text-xs text-hero-muted">
       <div className="flex gap-1">
         {Array.from({ length: count }, (_, i) => (
           <button
@@ -28,7 +28,7 @@ function Pager({ index, count, onGo }: PagerProps) {
             <span
               className={cn(
                 "block h-0.5 w-5 rounded-full transition-colors",
-                i === index ? "bg-foreground" : "bg-border",
+                i === index ? "bg-hero-foreground" : "bg-hero-line",
               )}
             />
           </button>
@@ -39,7 +39,7 @@ function Pager({ index, count, onGo }: PagerProps) {
           type="button"
           aria-label="이전 슬라이드"
           onClick={() => onGo(index - 1)}
-          className="rounded p-0.5 hover:text-foreground"
+          className="rounded p-0.5 hover:text-hero-foreground"
         >
           <ChevronLeft className="size-3.5" aria-hidden />
         </button>
@@ -50,7 +50,7 @@ function Pager({ index, count, onGo }: PagerProps) {
           type="button"
           aria-label="다음 슬라이드"
           onClick={() => onGo(index + 1)}
-          className="rounded p-0.5 hover:text-foreground"
+          className="rounded p-0.5 hover:text-hero-foreground"
         >
           <ChevronRight className="size-3.5" aria-hidden />
         </button>
@@ -83,32 +83,43 @@ function SlideContent({
     )
   }
   return (
-    <div className="flex h-full items-stretch">
+    <div className="relative flex h-full items-stretch">
+      {/* 오른쪽 배경 사진 — 왼쪽으로 갈수록 배경색에 스며든다(넓은 화면만, 장식용) */}
+      {slide.image && (
+        <img
+          src={slide.image.src}
+          alt=""
+          aria-hidden
+          loading="lazy"
+          style={{ ...PHOTO_FADE, objectPosition: slide.image.position }}
+          className="pointer-events-none absolute inset-y-0 right-0 hidden h-full w-[62%] object-cover lg:block"
+        />
+      )}
       {slide.keyword && (
         <>
-          <div className="hidden w-40 shrink-0 items-center justify-center sm:flex">
-            <span className="text-4xl font-semibold tracking-tight text-muted-foreground/70">
+          <div className="relative hidden w-40 shrink-0 items-center justify-center sm:flex">
+            <span className="text-4xl font-semibold tracking-tight text-hero-accent">
               {slide.keyword}
             </span>
           </div>
-          <div aria-hidden className="my-6 hidden w-px shrink-0 bg-border sm:block" />
+          <div aria-hidden className="relative my-6 hidden w-px shrink-0 bg-hero-line sm:block" />
         </>
       )}
 
-      <div className="grid min-w-0 flex-1 content-center items-center gap-y-2 px-6 py-6 sm:grid-cols-[1fr_auto] sm:gap-x-8 sm:px-8">
+      <div className="relative grid min-w-0 flex-1 content-center items-center gap-y-2 px-6 py-6 sm:grid-cols-[1fr_auto] sm:gap-x-8 sm:px-8">
         <div className="min-w-0 sm:col-start-1 sm:row-start-1">
           {slide.keyword && (
-            <p className="mb-1 text-sm font-semibold text-muted-foreground sm:hidden">
+            <p className="mb-1 text-sm font-semibold text-hero-accent sm:hidden">
               {slide.keyword}
             </p>
           )}
-          <h1 className="whitespace-pre-line text-xl font-bold leading-snug tracking-tight sm:text-2xl">
+          <h1 className="whitespace-pre-line text-xl font-bold leading-snug tracking-tight text-hero-foreground sm:text-2xl">
             {slide.title}
           </h1>
         </div>
 
         {slide.subtitle && (
-          <p className="text-sm text-muted-foreground sm:col-start-1 sm:row-start-2">
+          <p className="text-sm text-hero-muted sm:col-start-1 sm:row-start-2">
             {slide.subtitle}
           </p>
         )}
@@ -117,11 +128,14 @@ function SlideContent({
           <div className="mt-2 sm:col-start-2 sm:row-start-1 sm:mt-0 sm:justify-self-center">
             {slide.ctaAction === "write" ? (
               // 글쓰기 진입점과 동일 — 과목 선택 창 → /write/:categoryId (로그인·인증은 글쓰기 페이지가 안내)
-              <WriteButton label={slide.ctaLabel} />
+              <WriteButton
+                label={slide.ctaLabel}
+                className="bg-hero-cta text-hero-cta-foreground"
+              />
             ) : (
               <Link
                 to={slide.ctaHref ?? "/apps/subject"}
-                className="inline-block rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+                className="inline-block rounded-md bg-hero-cta px-4 py-2 text-sm font-semibold text-hero-cta-foreground transition-opacity hover:opacity-90"
               >
                 {slide.ctaLabel}
               </Link>
@@ -136,6 +150,30 @@ function SlideContent({
         )}
       </div>
     </div>
+  )
+}
+
+/** 배경 사진 페이드 — 왼쪽 끝은 투명, 가운데쯤부터 선명(마스크의 검정은 불투명도 값). */
+const PHOTO_FADE: CSSProperties = {
+  maskImage: "linear-gradient(to right, transparent 0%, rgb(0 0 0 / 0.55) 28%, black 55%)",
+  WebkitMaskImage: "linear-gradient(to right, transparent 0%, rgb(0 0 0 / 0.55) 28%, black 55%)",
+}
+
+/** 배경 물결 — 가는 선 3줄(장식, 스크린리더 제외). */
+function HeroWaves() {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 600 160"
+      preserveAspectRatio="none"
+      className="pointer-events-none absolute inset-y-0 right-0 h-full w-2/3 text-hero-accent opacity-25"
+    >
+      <g fill="none" stroke="currentColor" strokeWidth="1.5">
+        <path d="M0 110 C100 80 200 140 300 110 S500 80 600 110" />
+        <path d="M0 130 C100 100 200 160 300 130 S500 100 600 130" />
+        <path d="M0 150 C100 120 200 180 300 150 S500 120 600 150" />
+      </g>
+    </svg>
   )
 }
 
@@ -224,7 +262,7 @@ export function Hero() {
   return (
     <section
       aria-roledescription="carousel"
-      className="relative overflow-hidden rounded-xl border bg-surface"
+      className="relative overflow-hidden rounded-xl bg-hero"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)}
@@ -232,12 +270,14 @@ export function Hero() {
         if (!e.currentTarget.contains(e.relatedTarget as Node)) setPaused(false)
       }}
     >
+      <HeroWaves />
+
       {/* 가로 트랙: 모든 장을 한 줄로 두고 translateX 로 민다.
           flex 항목은 높이가 같아져 → 배너 높이 = 가장 긴 슬라이드(넘겨도 아래가 들썩이지 않음). */}
       <div
         ref={trackRef}
         className={cn(
-          "flex min-h-36",
+          "relative flex min-h-36",
           animate &&
             "transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
         )}

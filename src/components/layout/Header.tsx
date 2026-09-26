@@ -74,20 +74,28 @@ export function Header() {
   )
 }
 
-/** 로고 + 누리집명(config 단일 소스 — 헤더 표기는 headerName, 없으면 name). */
+/** 로고 + 2줄 워드마크(config 단일 소스 — 윗줄 eyebrow, 아랫줄 title, 없으면 name). */
 function Brand() {
-  const headerName = site.headerName || site.name
+  const { eyebrow } = site.headerBrand
+  const title = site.headerBrand.title || site.name
   return (
     <Link
       to="/"
-      className="flex min-w-0 shrink-0 items-center gap-2.5 rounded-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
-      aria-label={`${headerName} 홈`}
+      className="flex min-w-0 items-center gap-2.5 rounded-md xl:shrink-0 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+      aria-label={`${[eyebrow, title].filter(Boolean).join(" ")} 홈`}
     >
       <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary text-xs font-bold tracking-tight text-primary-foreground">
         {site.logoText}
       </span>
-      <span className="max-w-[9.5rem] text-sm leading-tight font-bold break-keep tracking-tight text-foreground sm:max-w-none sm:text-[15px]">
-        {headerName}
+      <span className="flex min-w-0 flex-col justify-center gap-0.5">
+        {eyebrow && (
+          <span className="truncate text-[11px] leading-none font-medium tracking-tight text-muted-foreground sm:text-xs">
+            {eyebrow}
+          </span>
+        )}
+        <span className="truncate text-sm leading-tight font-bold tracking-tight text-foreground sm:text-[15px]">
+          {title}
+        </span>
       </span>
     </Link>
   )

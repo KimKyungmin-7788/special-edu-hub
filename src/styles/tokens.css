@@ -32,7 +32,7 @@
   --popover: #ffffff;
   --popover-foreground: #1a1a1a;
 
-  --primary: #1a1a1a; /* 브랜드 정해지면 여기부터 교체 */
+  --primary: #2f6b2f; /* 브랜드 포인트색 — 따뜻한 초록(버튼·링크·활성 표시) */
   --primary-foreground: #ffffff;
 
   --secondary: #f7f7f8;
@@ -49,5 +49,18 @@
 
   --border: #e5e5e8;
   --input: #e5e5e8;
-  --ring: #1a1a1a;
+  --ring: #2f6b2f;
+
+  /* 브랜드 보조색 — 포인트색의 연한 배경(호버·활성 배경·히어로) */
+  --brand-soft: #eef5e8;
+  --brand-line: #cfe1c4;
+
+  /* 히어로 배너 — 브랜드 초록 계열(연두빛 배경 + 짙은 초록 글씨). */
+  --hero: var(--brand-soft); /* 배경 */
+  --hero-foreground: #1f3a22; /* 제목 */
+  --hero-muted: #5a6f58; /* 부제·넘김 표시 */
+  --hero-accent: #4f8a3f; /* 키워드·물결 */
+  --hero-line: var(--brand-line); /* 구분선 */
+  --hero-cta: var(--primary); /* 버튼 배경 */
+  --hero-cta-foreground: var(--primary-foreground); /* 버튼 글씨 */
 }

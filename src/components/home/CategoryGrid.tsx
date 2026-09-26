@@ -11,7 +11,8 @@ function categoryTo(c: Category): string {
 export function CategoryGrid() {
   return (
     <section>
-      <h2 className="mb-4 border-b border-border pb-3 text-xl font-semibold tracking-tight">
+      <h2 className="mb-4 flex items-center gap-2 border-b border-border pb-3 text-xl font-semibold tracking-tight">
+        <span aria-hidden className="h-4 w-1 rounded-full bg-primary" />
         카테고리
       </h2>
       <ul className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-6">
@@ -23,9 +24,9 @@ export function CategoryGrid() {
             <li key={c.id}>
               <Link
                 to={categoryTo(c)}
-                className="flex flex-col items-center gap-2 rounded-lg border bg-card px-2 py-4 text-center transition-colors hover:border-foreground/30 hover:bg-accent"
+                className="flex flex-col items-center gap-2 rounded-lg border bg-card px-2 py-4 text-center transition-colors hover:border-brand-line hover:bg-brand-soft"
               >
-                <Icon className="size-6 text-foreground" aria-hidden />
+                <Icon className="size-10 text-primary" aria-hidden />
                 <span className="text-sm">{c.name}</span>
               </Link>
             </li>

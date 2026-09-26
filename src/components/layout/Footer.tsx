@@ -13,7 +13,22 @@ export function Footer() {
           "flex flex-col gap-4 py-8 sm:flex-row sm:items-start sm:justify-between",
         )}
       >
-        <p className="text-sm font-medium">{site.name}</p>
+        <div className="space-y-1">
+          <p className="text-sm font-medium">{site.name}</p>
+          {site.footer.credits.map((c) => (
+            <p key={c.href} className="text-xs text-muted-foreground">
+              아이콘:{" "}
+              <a
+                href={c.href}
+                target="_blank"
+                rel="noopener"
+                className="underline underline-offset-2 hover:text-foreground"
+              >
+                {c.label}
+              </a>
+            </p>
+          ))}
+        </div>
 
         <nav aria-label="정책 및 안내">
           <ul className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">

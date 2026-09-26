@@ -14,6 +14,7 @@ import { getCategory } from "@/config/categories"
 import { AppThumbnail } from "@/components/app/AppThumbnail"
 import { ShareDialog } from "@/components/app/ShareDialog"
 import { displayTitle, type App } from "@/lib/apps"
+import { cn } from "@/lib/utils"
 
 /** 운영진 순서 조정 컨트롤(있으면 카드에 ▲▼ 노출). */
 export type CardMove = {
@@ -58,10 +59,13 @@ export function AppCard({
     <>
       <Link
         to={`/app/${app.id}`}
-        className="group flex h-full flex-col overflow-hidden rounded-xl border bg-card transition-colors hover:border-foreground/30"
+        className="group flex h-full flex-col overflow-hidden rounded-xl border bg-card transition-[border-color,box-shadow,translate] duration-200 hover:border-primary/50 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring motion-safe:hover:-translate-y-1"
       >
-        <div className="relative aspect-video bg-surface">
-          <AppThumbnail app={app} iconClassName="size-7" />
+        <div className="relative aspect-video overflow-hidden bg-surface">
+          {/* 호버 시 썸네일 살짝 확대 */}
+          <div className="h-full w-full transition-transform duration-300 motion-safe:group-hover:scale-[1.04]">
+            <AppThumbnail app={app} iconClassName="size-7" />
+          </div>
 
           {/* 잠금 — 교사 전용인데 볼 권한 없음. 제목·썸네일만 보여준다. */}
           {app.locked && (
@@ -75,9 +79,9 @@ export function AppCard({
 
           {/* 썸네일 좌상단 — 대표 분류 뱃지 + (교사 전용이면) 교사 전용 칩 */}
           {(mainLabel || teachersOnly) && (
-            <div className="absolute left-2 top-2 flex max-w-[calc(100%-3.5rem)] items-center gap-1">
+            <div className="absolute left-2 top-2 flex max-w-[calc(100%-8.5rem)] items-center gap-1">
               {mainLabel && (
-                <span className="truncate rounded-full bg-foreground/85 px-2.5 py-0.5 text-xs font-medium text-background shadow-sm">
+                <span className="truncate rounded-full bg-primary/90 px-2.5 py-0.5 text-xs font-medium text-primary-foreground shadow-sm">
                   {mainLabel}
                 </span>
               )}
@@ -90,24 +94,8 @@ export function AppCard({
             </div>
           )}
 
-          {/* 좌하단 — 공유(잠긴 자료 제외) + 운영진 순서 ▲▼. Link 내부라 기본동작 차단. */}
+          {/* 좌하단 — 운영진 순서 ▲▼. Link 내부라 기본동작 차단. */}
           <div className="absolute bottom-2 left-2 flex items-center gap-1">
-            {!app.locked && app.appUrl && (
-              <button
-                type="button"
-                title="공유"
-                aria-label="공유"
-                onClick={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  setShareOpen(true)
-                }}
-                className="inline-flex items-center gap-1 rounded-md bg-background/90 px-2 py-1 text-xs font-medium text-muted-foreground shadow-sm hover:text-foreground"
-              >
-                <QrCode className="size-3.5" aria-hidden />
-                공유
-              </button>
-            )}
             {move && (
               <>
                 <MoveButton
@@ -124,34 +112,52 @@ export function AppCard({
             )}
           </div>
 
-          {/* 담기(북마크) 토글 — bookmark 있을 때만. Link 내부라 기본동작 차단. */}
-          {bookmark && !app.locked && (
-            <button
-              type="button"
-              aria-label="담기"
-              aria-pressed={bookmark.active}
-              title="담기"
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                bookmark.onToggle()
-              }}
-              className="absolute right-2 top-2 rounded-md bg-background/90 p-1.5 text-muted-foreground shadow-sm hover:text-foreground"
-            >
-              <Bookmark
-                className={
-                  "size-4" +
-                  (bookmark.active ? " fill-current text-foreground" : "")
-                }
-                aria-hidden
-              />
-            </button>
+          {/* 우상단 동작 묶음 — 공유(잠긴 자료 제외) + 담기. 썸네일 위에서도 읽히도록 불투명 흰 바탕.
+              Link 내부라 기본동작 차단. */}
+          {!app.locked && (app.appUrl || bookmark) && (
+            <div className="absolute right-2 top-2 flex items-center gap-1">
+              {app.appUrl && (
+                <button
+                  type="button"
+                  title="공유(QR·주소 복사)"
+                  aria-label="공유"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    setShareOpen(true)
+                  }}
+                  className="inline-flex h-7 items-center gap-1 rounded-full border border-border bg-background px-2.5 text-xs font-semibold text-foreground shadow-md transition-colors hover:border-primary hover:bg-primary hover:text-primary-foreground"
+                >
+                  <QrCode className="size-3.5" aria-hidden />
+                  공유
+                </button>
+              )}
+              {bookmark && (
+                <button
+                  type="button"
+                  aria-label="담기"
+                  aria-pressed={bookmark.active}
+                  title="담기"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    bookmark.onToggle()
+                  }}
+                  className="flex size-7 items-center justify-center rounded-full border border-border bg-background text-foreground shadow-md transition-colors hover:border-primary hover:text-primary"
+                >
+                  <Bookmark
+                    className={cn("size-3.5", bookmark.active && "fill-current text-primary")}
+                    aria-hidden
+                  />
+                </button>
+              )}
+            </div>
           )}
         </div>
 
         <div className="flex flex-1 flex-col gap-2 px-4 pt-3.5 pb-3">
           {/* 카드 높이 통일 — 제목·한줄 소개 모두 항상 2줄 높이를 확보하고 넘치면 … */}
-          <h3 className="line-clamp-2 min-h-[2lh] text-base font-semibold leading-snug tracking-tight">
+          <h3 className="line-clamp-2 min-h-[2lh] text-base font-semibold leading-snug tracking-tight transition-colors group-hover:text-primary">
             {displayTitle(app)}
           </h3>
           <p className="line-clamp-2 min-h-[2lh] text-sm leading-snug text-muted-foreground">

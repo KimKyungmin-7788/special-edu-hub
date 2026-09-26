@@ -31,7 +31,7 @@ export function Nav({
                   cn(
                     "flex items-center justify-between rounded-md px-3 py-2.5 text-[15px] transition-colors",
                     isActive
-                      ? "bg-accent font-semibold text-foreground"
+                      ? "bg-brand-soft font-semibold text-primary"
                       : "text-foreground/80 hover:bg-accent hover:text-foreground",
                   )
                 }
@@ -70,7 +70,7 @@ function BarLink({ item }: { item: NavItem }) {
           // 현재 메뉴 표시: 헤더 아래 테두리 위에 겹치는 2px 밑줄
           "after:absolute after:inset-x-3.5 after:-bottom-px after:h-0.5 after:rounded-full after:transition-colors",
           isActive
-            ? "font-semibold text-foreground after:bg-foreground"
+            ? "font-semibold text-primary after:bg-primary"
             : "font-medium text-foreground/70 hover:text-foreground after:bg-transparent hover:after:bg-border",
         )
       }

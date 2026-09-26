@@ -39,6 +39,17 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-line: var(--brand-line);
+
+  --color-hero: var(--hero);
+  --color-hero-foreground: var(--hero-foreground);
+  --color-hero-muted: var(--hero-muted);
+  --color-hero-accent: var(--hero-accent);
+  --color-hero-line: var(--hero-line);
+  --color-hero-cta: var(--hero-cta);
+  --color-hero-cta-foreground: var(--hero-cta-foreground);
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);

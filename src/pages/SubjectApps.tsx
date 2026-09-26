@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { useParams, useSearchParams } from "react-router-dom"
 import { getCategory, getSubcategories } from "@/config/categories"
 import { SubjectSidebar } from "@/components/app/SubjectSidebar"
+import { SubjectBanner } from "@/components/app/SubjectBanner"
 import { AppCardList } from "@/components/home/AppCardList"
 import { PopularDashboard } from "@/components/app/PopularDashboard"
 import { WriteButton } from "@/components/app/WriteButton"
@@ -115,13 +116,11 @@ export function SubjectApps() {
             </>
           ) : (
             <>
-              <h1 className="text-2xl font-semibold tracking-tight">
-                {category.name}
-              </h1>
+              <SubjectBanner category={category} />
 
               {/* 하위 분류 칩 바 */}
               {subcategories.length > 0 && (
-                <div className="mt-4 flex flex-wrap gap-2">
+                <div className="mt-5 flex flex-wrap gap-2">
                   <SubChip
                     label="전체"
                     active={activeSub === null}

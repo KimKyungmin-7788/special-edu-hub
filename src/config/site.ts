@@ -17,6 +17,11 @@ export type HeroSlide =
       ctaHref?: string
       /** "write" = 글쓰기 버튼처럼 과목 선택 창을 띄운 뒤 글쓰기로 */
       ctaAction?: "write"
+      /**
+       * 오른쪽 배경 사진(넓은 화면에서만). 왼쪽으로 갈수록 배경색에 스며든다.
+       * position = CSS object-position(사진 속 인물이 보이도록 맞춤). 장식용이라 대체텍스트 없음.
+       */
+      image?: { src: string; position?: string }
     }
   | { type: "banner"; imageUrl: string; alt?: string }
 
@@ -27,15 +32,35 @@ export const site = {
   /** 누리집 이름(index.html <title> 도 같은 값으로 맞춰 둔다 — 첫 로딩 순간 표시용). */
   name: SITE_NAME,
   /**
-   * 헤더 로고 옆에 쓰는 이름(워드마크). 비워 두면 name 을 쓴다.
-   * 지금은 헤더에서만 다른 이름을 시험 중 — 확정되면 SITE_NAME 을 바꾸고 이 줄을 지운다.
+   * 헤더 로고 옆 워드마크(2줄): eyebrow = 작은 윗줄, title = 굵은 아랫줄.
+   * title 을 비워 두면 name 을 쓴다. 헤더에서만 쓰는 표기 — SITE_NAME 은 그대로.
    */
-  headerName: "강원 특수교육 디지털 학습자료zip",
+  headerBrand: {
+    eyebrow: "강릉오성학교",
+    title: "AI하이터치 수업 연구회 자료집",
+  },
   /** 이미지 로고 들어오면 교체 */
   logoText: "로고",
 
-  /** 히어로 캐러셀: 문구 슬라이드 + 배너 이미지 슬라이드를 배열로(순서대로 넘김) */
+  /**
+   * 히어로 캐러셀: 문구 슬라이드 + 배너 이미지 슬라이드를 배열로(순서대로 넘김).
+   * 1장이면 넘김 표시 없이 고정. 지금은 연구회 아카이브 1장 사용 중.
+   * 3장 캐러셀로 되돌릴 때: heroSlides 를 heroSlidesThree 로 바꾼다.
+   */
   heroSlides: [
+    {
+      type: "text",
+      keyword: "기록",
+      title: "강릉오성학교 학교안 연구회 플랫폼",
+      subtitle: "연구회 선생님들이 수업을 두고 나눈 고민과 노력을 한곳에 모았습니다.",
+      ctaLabel: "자료 둘러보기",
+      ctaHref: "/apps/subject",
+      image: { src: "/hero/research-together.webp", position: "right 38%" },
+    },
+  ] satisfies HeroSlide[],
+
+  /** 보관 중인 3장 캐러셀(공유·나눔·참여) — "3장 캐러셀 적용" 요청 시 heroSlides 로 되돌린다. */
+  heroSlidesThree: [
     {
       type: "text",
       keyword: "공유",
@@ -89,6 +114,13 @@ export const site = {
   },
 
   footer: {
+    /** 외부 저작물 표시(라이선스 필수 문구 — 문구를 바꾸지 않는다). 카테고리 손그림 아이콘. */
+    credits: [
+      {
+        label: "Designed by Freepik and distributed by Flaticon",
+        href: "https://www.flaticon.com/",
+      },
+    ],
     /** 푸터 링크. emphasis=강조(개인정보처리방침). */
     links: [
       { label: "소개", to: "/about" },
