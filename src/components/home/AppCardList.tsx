@@ -26,8 +26,8 @@ export function AppCardList({
   emptyText?: string
   leading?: ReactNode
   reorder?: { onMoveUp: (app: App) => void; onMoveDown: (app: App) => void }
-  /** 큰 화면에서의 열 수. 기본 5(목록), 랜딩 섹션처럼 좁게 쓸 때는 2. */
-  columns?: 2 | 5
+  /** 큰 화면에서의 열 수. 기본 5(전체 폭 목록), 좌측 사이드바가 있는 페이지는 4, 랜딩 섹션처럼 좁게 쓸 때는 2. */
+  columns?: 2 | 4 | 5
   /** 주어지면 헤더 오른쪽에 "더보기" 링크(해당 전체 목록으로). */
   moreHref?: string
   /** true 면 각 카드에 담기(북마크) 토글을 단다(내 담기 상태를 직접 로드·관리). */
@@ -73,7 +73,9 @@ export function AppCardList({
   const gridCols =
     columns === 2
       ? "grid-cols-1 sm:grid-cols-2"
-      : "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+      : columns === 4
+        ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4"
+        : "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
   return (
     <section>
       {(title || moreHref) && (

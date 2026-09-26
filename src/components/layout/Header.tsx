@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import { Link, useLocation } from "react-router-dom"
 import { ChevronDown, LogOut, Menu, Settings, User, X } from "lucide-react"
 import { site } from "@/config/site"
+import { SiteLogo } from "@/config/logo"
 import { CONTAINER } from "@/config/layout"
 import { Nav } from "@/components/layout/Nav"
 import { useAuth } from "@/lib/auth"
@@ -84,9 +85,7 @@ function Brand() {
       className="flex min-w-0 items-center gap-2.5 rounded-md xl:shrink-0 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
       aria-label={`${[eyebrow, title].filter(Boolean).join(" ")} 홈`}
     >
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary text-xs font-bold tracking-tight text-primary-foreground">
-        {site.logoText}
-      </span>
+      <SiteLogo className="size-9 shrink-0" />
       <span className="flex min-w-0 flex-col justify-center gap-0.5">
         {eyebrow && (
           <span className="truncate text-[11px] leading-none font-medium tracking-tight text-muted-foreground sm:text-xs">
