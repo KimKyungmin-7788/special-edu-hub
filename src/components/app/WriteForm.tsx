@@ -7,7 +7,7 @@ import {
 } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { ImagePlus, X } from "lucide-react"
-import { getCategory, getSubcategories } from "@/config/categories"
+import { getCategory, getSubcategories, subjectCategories } from "@/config/categories"
 import {
   createApp,
   updateApp,
@@ -20,6 +20,7 @@ import {
 } from "@/lib/apps"
 import { SubcategorySelect } from "@/components/app/SubcategorySelect"
 import { RichTextEditor } from "@/components/app/RichTextEditor"
+import { cn } from "@/lib/utils"
 
 const inputClass =
   "w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
@@ -35,7 +36,9 @@ const THUMB_MAX_BYTES = 2 * 1024 * 1024 // 2MB (버킷·lib 와 동일)
 /**
  * 글쓰기/수정 폼 (3단계 묶음 G-1, 수정은 5단계 추가).
  * 상위 분류(categoryId)는 진입 시 정해져 생략 — 세부 분류만 제목 다음에 고른다.
- * 저장되는 category_ids = [categoryId, ...선택한 세부분류].
+ * 과목(subject) 자료는 관련 교과를 1개 더(총 2개까지) 고를 수 있다 → 두 과목 목록 모두에 보인다.
+ * 저장되는 category_ids = [categoryId, ...세부분류, (관련 교과, ...그 세부분류)].
+ * 첫 번째 = 대표 과목(카드 뱃지·수정 진입 기준)이므로 순서를 지킨다.
  * app 이 주어지면 수정 모드(기존 값 프리필 + updateApp). 없으면 등록 모드(createApp).
  * 제출 성공 시 해당 글(/app/:id)로 이동.
  */
@@ -62,8 +65,28 @@ export function WriteForm({
   const [title, setTitle] = useState(app?.title ?? "")
   const [summary, setSummary] = useState(app?.summary ?? "")
   const [subIds, setSubIds] = useState<string[]>(
-    app ? app.categoryIds.filter((id) => id !== categoryId) : [],
+    app ? app.categoryIds.filter((id) => getCategory(id)?.parentId === categoryId) : [],
   )
+  // 관련 교과(선택, 1개) — 대표 과목이 과목(subject)일 때만.
+  const canRelate = getCategory(categoryId)?.type === "subject"
+  const relatedOptions = subjectCategories.filter((c) => c.id !== categoryId)
+  const [relatedId, setRelatedId] = useState<string | null>(
+    () =>
+      app?.categoryIds.find(
+        (id) => id !== categoryId && relatedOptions.some((c) => c.id === id),
+      ) ?? null,
+  )
+  const [relatedSubIds, setRelatedSubIds] = useState<string[]>(
+    app && relatedId
+      ? app.categoryIds.filter((id) => getCategory(id)?.parentId === relatedId)
+      : [],
+  )
+  const related = relatedId ? getCategory(relatedId) : undefined
+
+  function pickRelated(id: string) {
+    setRelatedId((cur) => (cur === id ? null : id))
+    setRelatedSubIds([])
+  }
   const [appUrl, setAppUrl] = useState(app?.appUrl ?? "")
   const [authorName, setAuthorName] = useState(app?.authorName ?? defaultAuthorName)
   const [content, setContent] = useState(app?.description ?? "")
@@ -169,7 +192,11 @@ export function WriteForm({
         thumbnailUrl,
         authorName,
         description: content,
-        categoryIds: [categoryId, ...subIds],
+        categoryIds: [
+          categoryId,
+          ...subIds,
+          ...(canRelate && relatedId ? [relatedId, ...relatedSubIds] : []),
+        ],
         visibility,
       }
       const saved = app
@@ -249,6 +276,49 @@ export function WriteForm({
           </p>
         )}
       </div>
+
+      {/* 관련 교과 (선택, 1개 더) — 고른 교과 목록에도 함께 보인다 */}
+      {canRelate && (
+        <div className="flex flex-col gap-1.5">
+          <label className={labelClass}>관련 교과 (선택)</label>
+          <p className="text-xs text-muted-foreground">
+            다른 교과에도 쓸 수 있는 자료라면 1개 더 고르세요. 고른 교과 목록에도 함께 보입니다.
+            다시 누르면 해제됩니다.
+          </p>
+          <div className="mt-1 flex flex-wrap gap-2">
+            {relatedOptions.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => pickRelated(c.id)}
+                disabled={submitting}
+                aria-pressed={relatedId === c.id}
+                className={cn(
+                  "rounded-full border px-3 py-1 text-sm transition-colors disabled:opacity-50",
+                  relatedId === c.id
+                    ? "border-foreground bg-accent font-medium text-accent-foreground"
+                    : "border-border text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+                )}
+              >
+                {c.name}
+              </button>
+            ))}
+          </div>
+          {related && getSubcategories(related.id).length > 0 && (
+            <div className="mt-2 rounded-md border border-border bg-surface p-3">
+              <p className="mb-2 text-xs text-muted-foreground">
+                {related.name} 세부 분류 (선택) — 고르면 {related.name} 목록의 칩 필터에서도 찾을 수 있어요.
+              </p>
+              <SubcategorySelect
+                parentId={related.id}
+                value={relatedSubIds}
+                onChange={setRelatedSubIds}
+                disabled={submitting}
+              />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 앱 URL */}
       <div className="flex flex-col gap-1.5">
