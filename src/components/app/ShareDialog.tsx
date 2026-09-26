@@ -106,8 +106,16 @@ export function ShareDialog({
           >
             <canvas ref={canvasRef} className="block h-auto w-full" />
           </div>
-          <p className="mt-3 text-sm text-muted-foreground">
-            태블릿 카메라로 찍으면 바로 열립니다
+          <p className="mt-3 text-sm">
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener"
+              className="inline-flex items-center gap-1 font-medium text-primary underline-offset-2 hover:underline"
+            >
+              새 탭에서 열어 보기
+              <ExternalLink className="size-3.5" aria-hidden />
+            </a>
           </p>
 
           <div className="mt-4 flex flex-wrap justify-center gap-2">
@@ -157,18 +165,6 @@ export function ShareDialog({
             {error}
           </p>
         )}
-
-        <div className="mt-5 border-t border-border pt-4">
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener"
-            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-          >
-            새 탭에서 열어 보기
-            <ExternalLink className="size-4" aria-hidden />
-          </a>
-        </div>
       </div>
     </Modal>
   )
