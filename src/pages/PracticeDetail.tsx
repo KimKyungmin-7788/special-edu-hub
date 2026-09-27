@@ -2,11 +2,13 @@ import { useEffect, useState } from "react"
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom"
 import {
   ArrowLeft,
+  Bookmark,
   Check,
   Download,
   ExternalLink,
   EyeOff,
   FileText,
+  Heart,
   Link2,
   Lock,
   Pencil,
@@ -19,6 +21,10 @@ import {
   getPractice,
   getPracticeApps,
   setPracticeStatus,
+  togglePracticeLike,
+  togglePracticeBookmark,
+  getMyPracticeReactions,
+  incrementPracticeView,
   errorText,
   stripEmptySections,
   type Practice,
@@ -27,6 +33,7 @@ import {
 import { RichTextViewer } from "@/components/app/RichTextViewer"
 import { AppCard } from "@/components/app/AppCard"
 import { ProfileTrigger } from "@/components/profile/ProfileTrigger"
+import { CommentSection } from "@/components/comment/CommentSection"
 import { formatBytes } from "@/components/practice/FileListField"
 import { OwnerAvatar, PracticeCover, formatDate } from "@/components/practice/PracticeCard"
 
@@ -34,7 +41,7 @@ import { OwnerAvatar, PracticeCover, formatDate } from "@/components/practice/Pr
  * /practices/:id — 수업실천사례 상세 (PRD §13, 묶음 P-3).
  * 머리(교과·대상·차시·작성자) → 대표 사진 → 본문 → 이 수업에서 쓴 자료(앱 카드) → 첨부 파일·링크.
  * 교사 전용인데 권한 없으면 본문·자료·첨부 대신 잠금 안내.
- * 좋아요·담기·댓글·조회수는 P-5.
+ * 좋아요·담기·조회수·댓글(P-5, 34_practice_engagement.sql). 잠긴 사례에선 숨김.
  */
 export function PracticeDetail() {
   const { id = "" } = useParams<{ id: string }>()
@@ -47,6 +54,11 @@ export function PracticeDetail() {
   const [copied, setCopied] = useState(false)
   const [hiding, setHiding] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
+  const [liked, setLiked] = useState(false)
+  const [bookmarked, setBookmarked] = useState(false)
+  const [likeCount, setLikeCount] = useState(0)
+  const [bookmarkCount, setBookmarkCount] = useState(0)
+  const [reacting, setReacting] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -54,7 +66,19 @@ export function PracticeDetail() {
     getPractice(id).then((p) => {
       if (!active) return
       setPractice(p)
+      if (p) {
+        setLikeCount(p.likeCount)
+        setBookmarkCount(p.bookmarkCount)
+        setLiked(false)
+        setBookmarked(false)
+      }
       if (p && !p.locked) {
+        incrementPracticeView(p.id)
+        getMyPracticeReactions().then((r) => {
+          if (!active) return
+          setLiked(r.liked.has(p.id))
+          setBookmarked(r.bookmarked.has(p.id))
+        })
         getPracticeApps(p.id).then(async (l) => {
           const a = await getAppsByIds(l.map((x) => x.appId))
           if (!active) return
@@ -67,6 +91,31 @@ export function PracticeDetail() {
       active = false
     }
   }, [id])
+
+  /** 좋아요/담기 — 먼저 화면에 반영하고, 실패하면 되돌린다. 비로그인은 로그인으로. */
+  async function react(kind: "like" | "bookmark") {
+    if (!practice || reacting) return
+    if (!user) return navigate("/login", { state: { from: location.pathname } })
+    const on = kind === "like" ? !liked : !bookmarked
+    const apply = (v: boolean) => {
+      if (kind === "like") {
+        setLiked(v)
+        setLikeCount((c) => c + (v ? 1 : -1))
+      } else {
+        setBookmarked(v)
+        setBookmarkCount((c) => c + (v ? 1 : -1))
+      }
+    }
+    apply(on)
+    setReacting(true)
+    try {
+      await (kind === "like" ? togglePracticeLike : togglePracticeBookmark)(practice.id)
+    } catch {
+      apply(!on)
+    } finally {
+      setReacting(false)
+    }
+  }
 
   function goBack() {
     if (location.key !== "default") navigate(-1)
@@ -194,6 +243,7 @@ export function PracticeDetail() {
           <span className="tabular-nums">{formatDate(practice.createdAt)}</span>
           {practice.target && <span>대상 {practice.target}</span>}
           {practice.lessonCount != null && <span>{practice.lessonCount}차시</span>}
+          <span>조회 {practice.viewCount}</span>
         </div>
       </header>
 
@@ -203,6 +253,42 @@ export function PracticeDetail() {
 
       {/* 동작 */}
       <div className="mt-6 flex flex-wrap items-center gap-2">
+        {!practice.locked && (
+          <>
+            <button
+              type="button"
+              onClick={() => react("like")}
+              disabled={reacting}
+              aria-pressed={liked}
+              title={user ? "좋아요" : "로그인이 필요합니다"}
+              className={
+                "inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm transition-colors disabled:opacity-60 " +
+                (liked
+                  ? "border-foreground/30 bg-accent text-foreground"
+                  : "bg-card text-muted-foreground hover:bg-accent")
+              }
+            >
+              <Heart className={"size-4" + (liked ? " fill-current" : "")} aria-hidden />
+              {likeCount}
+            </button>
+            <button
+              type="button"
+              onClick={() => react("bookmark")}
+              disabled={reacting}
+              aria-pressed={bookmarked}
+              title={user ? "담기" : "로그인이 필요합니다"}
+              className={
+                "inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm transition-colors disabled:opacity-60 " +
+                (bookmarked
+                  ? "border-foreground/30 bg-accent text-foreground"
+                  : "bg-card text-muted-foreground hover:bg-accent")
+              }
+            >
+              <Bookmark className={"size-4" + (bookmarked ? " fill-current" : "")} aria-hidden />
+              {bookmarkCount}
+            </button>
+          </>
+        )}
         <button
           type="button"
           onClick={share}
@@ -311,6 +397,8 @@ export function PracticeDetail() {
               </ul>
             </section>
           )}
+
+          <CommentSection target={{ kind: "practice", id: practice.id }} />
         </>
       )}
     </div>

@@ -18,6 +18,8 @@ import {
 import { ProfileTrigger } from "@/components/profile/ProfileTrigger"
 import { MyAppList } from "@/components/app/MyAppList"
 import { SavedAppList } from "@/components/app/SavedAppList"
+import { PracticeLoadList } from "@/components/practice/PracticeLoadList"
+import { getMyBookmarkedPractices, getMyPractices } from "@/lib/practices"
 import { getMyBookmarkedApps, getMyLikedApps } from "@/lib/engagement"
 import { InfoHint } from "@/components/ui/InfoHint"
 import { MessageBox } from "@/components/messages/MessageBox"
@@ -224,6 +226,11 @@ export function MyPage() {
             load={getMyBookmarkedApps}
             emptyText="담아둔 자료가 아직 없어요. 자료 카드의 담기 버튼으로 저장하세요."
           />
+          <h2 className="mt-10 mb-4 text-lg font-semibold tracking-tight">담은 수업 사례</h2>
+          <PracticeLoadList
+            load={getMyBookmarkedPractices}
+            emptyText="담아둔 수업 사례가 아직 없어요. 사례 화면의 담기 버튼으로 저장하세요."
+          />
         </section>
       )}
 
@@ -419,6 +426,15 @@ export function MyPage() {
               내가 등록한 앱
             </h2>
             <MyAppList />
+          </section>
+          <section>
+            <h2 className="mb-4 text-lg font-semibold tracking-tight">
+              내가 쓴 수업 사례
+            </h2>
+            <PracticeLoadList
+              load={getMyPractices}
+              emptyText="아직 쓴 수업 사례가 없어요."
+            />
           </section>
           <section>
             <h2 className="mb-4 text-lg font-semibold tracking-tight">

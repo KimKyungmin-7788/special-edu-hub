@@ -112,7 +112,7 @@ function json(status: number, body: unknown): Response {
 
 export async function POST(request: Request): Promise<Response> {
   if (!process.env.ANTHROPIC_API_KEY || !SUPABASE_URL || !SUPABASE_ANON_KEY)
-    return json(500, { error: "서버 설정이 끝나지 않았습니다. 운영진에게 알려 주세요." })
+    return json(503, { error: "설계안 초안 기능은 준비 중이에요. 곧 열어 드릴게요." })
 
   // ── 1. 로그인·인증교사 확인 (그 교사의 토큰으로 Supabase 에 묻는다 → RLS 그대로 적용) ──
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? ""

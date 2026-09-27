@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
-import { useParams, useSearchParams } from "react-router-dom"
+import { Link, useParams, useSearchParams } from "react-router-dom"
+import { PenLine } from "lucide-react"
 import { getCategory, getSubcategories } from "@/config/categories"
 import { SubjectSidebar } from "@/components/app/SubjectSidebar"
 import { SubjectBanner } from "@/components/app/SubjectBanner"
@@ -13,6 +14,8 @@ import {
   type App,
 } from "@/lib/apps"
 import { useAuth } from "@/lib/auth"
+import { getPractices, type Practice } from "@/lib/practices"
+import { PracticeCard } from "@/components/practice/PracticeCard"
 import { CONTAINER } from "@/config/layout"
 import { cn } from "@/lib/utils"
 
@@ -23,6 +26,7 @@ import { cn } from "@/lib/utils"
  *
  * 선택 과목에 하위 분류가 있으면 제목 아래 칩 바로 추가 필터한다.
  * 선택 상태는 URL 쿼리(?sub=<하위분류id>)로 관리 → 공유·뒤로가기 자연스럽게.
+ * 과목을 고르면 "학습자료 │ 수업 사례" 탭(?tab=practices). 같은 교과 분류를 공유한다(PRD §13.2).
  */
 export function SubjectApps() {
   const { categoryId } = useParams<{ categoryId: string }>()
@@ -34,6 +38,9 @@ export function SubjectApps() {
   const sub = searchParams.get("sub")
   // 유효하지 않은 sub 값은 무시(전체로 취급).
   const activeSub = subcategories.some((s) => s.id === sub) ? sub : null
+
+  const tab = searchParams.get("tab") === "practices" ? "practices" : "apps"
+  const [practices, setPractices] = useState<Practice[]>([])
 
   const { isStaff } = useAuth()
   const [apps, setApps] = useState<App[]>([])
@@ -55,6 +62,31 @@ export function SubjectApps() {
       active = false
     }
   }, [categoryId, unknown])
+
+  useEffect(() => {
+    if (!categoryId || unknown) {
+      setPractices([])
+      return
+    }
+    let active = true
+    getPractices(categoryId).then((d) => {
+      if (active) setPractices(d)
+    })
+    return () => {
+      active = false
+    }
+  }, [categoryId, unknown])
+
+  const shownPractices = activeSub
+    ? practices.filter((p) => p.categoryIds.includes(activeSub))
+    : practices
+
+  function selectTab(next: "apps" | "practices") {
+    const params = new URLSearchParams(searchParams)
+    if (next === "practices") params.set("tab", "practices")
+    else params.delete("tab")
+    setSearchParams(params, { replace: true })
+  }
 
   // 하위 분류 선택 시 앱의 category_ids 에 해당 id 가 포함된 것만.
   const shownApps = activeSub
@@ -118,6 +150,16 @@ export function SubjectApps() {
             <>
               <SubjectBanner category={category} />
 
+              {/* 학습자료 │ 수업 사례 탭 */}
+              <div role="tablist" className="mt-5 flex gap-1 border-b border-border">
+                <TabButton active={tab === "apps"} onClick={() => selectTab("apps")}>
+                  학습자료 <span className="text-muted-foreground">{apps.length}</span>
+                </TabButton>
+                <TabButton active={tab === "practices"} onClick={() => selectTab("practices")}>
+                  수업 사례 <span className="text-muted-foreground">{practices.length}</span>
+                </TabButton>
+              </div>
+
               {/* 하위 분류 칩 바 */}
               {subcategories.length > 0 && (
                 <div className="mt-5 flex flex-wrap gap-2">
@@ -150,6 +192,36 @@ export function SubjectApps() {
                 </div>
               )}
 
+              {tab === "practices" ? (
+                <>
+                  <p className="mt-4 mb-4 text-sm text-muted-foreground">
+                    {shownPractices.length}개 사례
+                  </p>
+                  {shownPractices.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      이 분류의 수업 사례가 아직 없습니다.
+                    </p>
+                  ) : (
+                    <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+                      {shownPractices.map((p) => (
+                        <li key={p.id}>
+                          <PracticeCard practice={p} />
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <div className="mt-8 flex justify-end">
+                    <Link
+                      to="/practices/write"
+                      className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+                    >
+                      <PenLine className="size-4" aria-hidden />
+                      사례 쓰기
+                    </Link>
+                  </div>
+                </>
+              ) : (
+              <>
               <p className="mt-4 mb-2 text-sm text-muted-foreground">
                 {shownApps.length}개 앱
               </p>
@@ -179,11 +251,41 @@ export function SubjectApps() {
               <div className="mt-8 flex justify-end">
                 <WriteButton categoryId={categoryId} />
               </div>
+              </>
+              )}
             </>
           )}
         </section>
       </div>
     </div>
+  )
+}
+
+/** 학습자료/수업 사례 탭 버튼 — 밑줄로 활성 표시(헤더 메뉴와 같은 방식). */
+function TabButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean
+  onClick: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={active}
+      onClick={onClick}
+      className={cn(
+        "-mb-px border-b-2 px-4 py-2 text-sm transition-colors",
+        active
+          ? "border-primary font-semibold text-foreground"
+          : "border-transparent text-muted-foreground hover:text-foreground",
+      )}
+    >
+      {children}
+    </button>
   )
 }
 

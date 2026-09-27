@@ -61,19 +61,26 @@ async function currentUserId(): Promise<string | null> {
   return data.session?.user.id ?? null
 }
 
+/** 댓글이 달리는 대상 — 앱 자료 또는 수업실천사례(34_practice_engagement.sql). */
+export type CommentTarget = { kind: "app"; id: string } | { kind: "practice"; id: string }
+
+function targetColumn(t: CommentTarget) {
+  return t.kind === "app" ? "app_id" : "practice_id"
+}
+
 /** 본문 길이 제한. */
 export const COMMENT_BODY_MAX = 1000
 
 /**
- * 한 앱의 댓글 목록(오래된 순). 미삭제만(RLS).
+ * 한 대상(앱·사례)의 댓글 목록(오래된 순). 미삭제만(RLS).
  * 내가 차단한 사용자의 댓글은 클라에서 가린다(차단=내 화면에서 안 보이게).
  */
-export async function getComments(appId: string): Promise<Comment[]> {
+export async function getComments(target: CommentTarget): Promise<Comment[]> {
   const [{ data, error }, blocks] = await Promise.all([
     supabase
       .from("comments")
       .select(SELECT_WITH_AUTHOR)
-      .eq("app_id", appId)
+      .eq(targetColumn(target), target.id)
       .order("created_at", { ascending: true }),
     getMyBlocks(),
   ])
@@ -89,7 +96,7 @@ export async function getComments(appId: string): Promise<Comment[]> {
 }
 
 /** 댓글 작성. author_id 는 RLS 가 강제하므로 보내지 않는다(위조 불가). */
-export async function addComment(appId: string, body: string): Promise<void> {
+export async function addComment(target: CommentTarget, body: string): Promise<void> {
   const uid = await currentUserId()
   if (!uid) throw new Error("로그인이 필요합니다.")
 
@@ -100,7 +107,7 @@ export async function addComment(appId: string, body: string): Promise<void> {
 
   const { error } = await supabase
     .from("comments")
-    .insert({ app_id: appId, author_id: uid, body: trimmed })
+    .insert({ [targetColumn(target)]: target.id, author_id: uid, body: trimmed })
   if (error) throw error
 }
 

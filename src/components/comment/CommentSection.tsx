@@ -11,6 +11,7 @@ import {
   deleteComment,
   COMMENT_BODY_MAX,
   type Comment,
+  type CommentTarget,
 } from "@/lib/comments"
 
 /**
@@ -38,7 +39,7 @@ function formatTime(iso: string): string {
   })
 }
 
-export function CommentSection({ appId }: { appId: string }) {
+export function CommentSection({ target }: { target: CommentTarget }) {
   const { user, isStaff } = useAuth()
   const [comments, setComments] = useState<Comment[]>([])
   const [loading, setLoading] = useState(true)
@@ -51,7 +52,7 @@ export function CommentSection({ appId }: { appId: string }) {
   useEffect(() => {
     let active = true
     setLoading(true)
-    getComments(appId).then((list) => {
+    getComments(target).then((list) => {
       if (active) {
         setComments(list)
         setLoading(false)
@@ -60,7 +61,8 @@ export function CommentSection({ appId }: { appId: string }) {
     return () => {
       active = false
     }
-  }, [appId])
+    // target 은 매 렌더 새 객체라 종류·id 로 비교
+  }, [target.kind, target.id])
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -70,9 +72,9 @@ export function CommentSection({ appId }: { appId: string }) {
     setError(null)
     setSubmitting(true)
     try {
-      await addComment(appId, trimmed)
+      await addComment(target, trimmed)
       setBody("")
-      setComments(await getComments(appId))
+      setComments(await getComments(target))
     } catch (err) {
       setError(err instanceof Error ? err.message : "댓글을 등록하지 못했습니다.")
     } finally {

@@ -16,6 +16,8 @@ import { getCategory } from "@/config/categories"
 import { AppThumbnail } from "@/components/app/AppThumbnail"
 import { RichTextViewer } from "@/components/app/RichTextViewer"
 import { CommentSection } from "@/components/comment/CommentSection"
+import { PracticeRow } from "@/components/practice/PracticeCard"
+import { getPracticesByApp, type Practice } from "@/lib/practices"
 import { ProfileTrigger } from "@/components/profile/ProfileTrigger"
 import { PromoLinks } from "@/components/profile/PromoLinks"
 import { getApp, setAppStatus, displayTitle, type App } from "@/lib/apps"
@@ -51,6 +53,8 @@ export function AppDetail() {
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [shareCopied, setShareCopied] = useState(false)
+  // 이 자료를 활용한 수업실천사례(PRD §13.2 역링크)
+  const [practices, setPractices] = useState<Practice[]>([])
 
   // "목록으로" — 직전 페이지로. 직접 진입(앱 내 이력 없음)이면 인기로.
   function goBack() {
@@ -62,6 +66,10 @@ export function AppDetail() {
     let active = true
     setLoading(true)
     setOwner(null)
+    setPractices([])
+    getPracticesByApp(id ?? "").then((list) => {
+      if (active) setPractices(list)
+    })
     getApp(id ?? "").then((data) => {
       if (!active) return
       setApp(data)
@@ -417,8 +425,25 @@ export function AppDetail() {
             </div>
           )}
 
+          {/* 이 자료를 활용한 수업 사례 */}
+          {practices.length > 0 && (
+            <section className="mt-10 border-t pt-8">
+              <h2 className="text-lg font-semibold tracking-tight">
+                이 자료를 활용한 수업 사례{" "}
+                <span className="text-muted-foreground">{practices.length}</span>
+              </h2>
+              <ul className="mt-3 divide-y divide-border border-y border-border">
+                {practices.map((p) => (
+                  <li key={p.id}>
+                    <PracticeRow practice={p} />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
           {/* 댓글 (PRD 4단계) */}
-          <CommentSection appId={app.id} />
+          <CommentSection target={{ kind: "app", id: app.id }} />
         </>
       )}
     </div>

@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom"
-import { Eye, Lock, Paperclip, NotebookPen } from "lucide-react"
+import { Eye, Heart, Lock, MessageCircle, Paperclip, NotebookPen } from "lucide-react"
 import { getCategory } from "@/config/categories"
 import type { Practice } from "@/lib/practices"
 
@@ -115,6 +115,14 @@ export function PracticeCard({ practice }: { practice: Practice }) {
               <Eye className="size-3.5" aria-hidden />
               {practice.viewCount}
             </span>
+            <span className="inline-flex items-center gap-1" title="좋아요">
+              <Heart className="size-3.5" aria-hidden />
+              {practice.likeCount}
+            </span>
+            <span className="inline-flex items-center gap-1" title="댓글">
+              <MessageCircle className="size-3.5" aria-hidden />
+              {practice.commentCount}
+            </span>
           </span>
         </div>
       </div>
@@ -141,6 +149,9 @@ export function PracticeRow({ practice }: { practice: Practice }) {
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          {practice.status === "hidden" && (
+            <span className="rounded border border-border px-1.5 text-foreground">숨김</span>
+          )}
           {label && <span className="font-semibold text-primary">{label}</span>}
           {practice.target && <span>{practice.target}</span>}
           {practice.visibility === "teachers" && (

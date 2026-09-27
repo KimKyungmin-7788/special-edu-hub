@@ -444,3 +444,91 @@ export async function requestPracticeDraft(fileUrl: string): Promise<PracticeDra
   if (!res.ok) throw new Error(body?.error ?? "초안을 만들지 못했습니다.")
   return body as PracticeDraft
 }
+
+// ── 좋아요·담기·조회수 (34_practice_engagement.sql) ──────────────
+
+type ReactionTable = "practice_likes" | "practice_bookmarks"
+
+/** 있으면 지우고(false), 없으면 넣는다(true). 카운트는 DB 트리거가 practices 에 반영. */
+async function toggleReaction(table: ReactionTable, practiceId: string): Promise<boolean> {
+  const uid = await currentUserId()
+  if (!uid) throw new Error("로그인이 필요합니다.")
+  const { count, error: selErr } = await supabase
+    .from(table)
+    .select("practice_id", { count: "exact", head: true })
+    .eq("user_id", uid)
+    .eq("practice_id", practiceId)
+  if (selErr) throw selErr
+  if ((count ?? 0) > 0) {
+    const { error } = await supabase
+      .from(table)
+      .delete()
+      .eq("user_id", uid)
+      .eq("practice_id", practiceId)
+    if (error) throw error
+    return false
+  }
+  const { error } = await supabase.from(table).insert({ user_id: uid, practice_id: practiceId })
+  if (error) throw error
+  return true
+}
+
+export const togglePracticeLike = (id: string) => toggleReaction("practice_likes", id)
+export const togglePracticeBookmark = (id: string) => toggleReaction("practice_bookmarks", id)
+
+/** 내가 좋아요/담기 한 사례 id(최신순). 비로그인·표 없음이면 빈 배열. */
+async function myReactionIds(table: ReactionTable): Promise<string[]> {
+  const uid = await currentUserId()
+  if (!uid) return []
+  const { data, error } = await supabase
+    .from(table)
+    .select("practice_id, created_at")
+    .eq("user_id", uid)
+    .order("created_at", { ascending: false })
+  if (error) {
+    console.error(`[practices] my ${table} 실패:`, error.message)
+    return []
+  }
+  return (data as { practice_id: string }[]).map((r) => r.practice_id)
+}
+
+export async function getMyPracticeReactions(): Promise<{ liked: Set<string>; bookmarked: Set<string> }> {
+  const [l, b] = await Promise.all([
+    myReactionIds("practice_likes"),
+    myReactionIds("practice_bookmarks"),
+  ])
+  return { liked: new Set(l), bookmarked: new Set(b) }
+}
+
+/** 내가 담은 사례(담은 순서, 최신 먼저) — 마이페이지용. */
+export async function getMyBookmarkedPractices(): Promise<Practice[]> {
+  const ids = await myReactionIds("practice_bookmarks")
+  if (ids.length === 0) return []
+  const { data, error } = await supabase
+    .from(CATALOG)
+    .select("*")
+    .in("id", ids)
+    .eq("status", "published")
+  if (error) {
+    console.error("[practices] getMyBookmarkedPractices 실패:", error.message)
+    return []
+  }
+  const byId = new Map((data as PracticeRow[]).map((r) => [r.id, mapRow(r)]))
+  return ids.map((id) => byId.get(id)).filter((p): p is Practice => !!p)
+}
+
+const VIEW_THROTTLE_MS = 24 * 60 * 60 * 1000 // 같은 사례는 하루 1회
+
+/** 조회수 +1 (이 브라우저에서 같은 사례는 하루 1회만). */
+export async function incrementPracticeView(practiceId: string): Promise<void> {
+  try {
+    const key = `viewed_practice_${practiceId}`
+    const last = Number(localStorage.getItem(key) || 0)
+    if (Date.now() - last < VIEW_THROTTLE_MS) return
+    localStorage.setItem(key, String(Date.now()))
+  } catch {
+    // 저장 불가 환경이면 throttle 없이 진행
+  }
+  const { error } = await supabase.rpc("increment_practice_view", { p_practice_id: practiceId })
+  if (error) console.error("[practices] 조회수 실패:", error.message)
+}

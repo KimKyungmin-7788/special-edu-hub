@@ -428,3 +428,8 @@
 - 권한: 인증교사만(서버에서 확인). 한도: 하루(24시간) 10회 — `practice_draft_usage`(SQL 33).
 - 학생 실명 등 개인정보가 보이면 본문엔 쓰지 않고 경고로 알림. 개인정보처리방침에 Anthropic·Vercel 국외 이전 추가.
 
+### 13.5 연동·반응 (P-4·P-5, 2026-09-28)
+- P-4: 앱 상세 "이 자료를 활용한 수업 사례 N"(목록 보기), 과목 페이지 `학습자료 │ 수업 사례` 탭(?tab=practices, 세부 분류 칩 공유).
+- P-5(SQL 34): 좋아요·담기(practice_likes/practice_bookmarks + 카운트 트리거), 조회수(increment_practice_view, 하루 1회 throttle),
+  댓글 = 기존 comments 에 practice_id 추가(삭제·신고·운영진 큐 그대로). 마이페이지: 담은 수업 사례 / 내가 쓴 수업 사례.
+
