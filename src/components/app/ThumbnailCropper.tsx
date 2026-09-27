@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react"
-import { Crop, Maximize, Minus, Plus } from "lucide-react"
+import { Check, Crop, Maximize, Move, ZoomIn, ZoomOut } from "lucide-react"
 import { Modal } from "@/components/ui/Modal"
 import { cn } from "@/lib/utils"
 
@@ -36,6 +36,9 @@ export function ThumbnailCropper({
   const [center, setCenter] = useState({ x: 0.5, y: 0.5 })
   const [boxW, setBoxW] = useState(0)
   const [busy, setBusy] = useState(false)
+  // 조작 안내(끌기·확대) — 한 번이라도 움직이면 숨긴다 / 끄는 중엔 3등분 격자 표시
+  const [touched, setTouched] = useState(false)
+  const [dragging, setDragging] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const boxRef = useRef<HTMLDivElement>(null)
   const drag = useRef<{ x: number; y: number } | null>(null)
@@ -50,6 +53,7 @@ export function ThumbnailCropper({
       setMode(image.naturalWidth / image.naturalHeight < 1.2 ? "fit" : "fill")
       setZoom(1)
       setCenter({ x: 0.5, y: 0.5 })
+      setTouched(false)
     }
     image.onerror = () => setError("사진을 읽지 못했어요. 다른 파일로 시도해 주세요.")
     image.src = url
@@ -94,6 +98,7 @@ export function ThumbnailCropper({
     const next = Math.min(ZOOM_MAX, Math.max(1, z))
     const s = Math.max(boxW / iw, boxH / ih) * next
     setZoom(next)
+    setTouched(true)
     setCenter((c) => clamp(c, iw * s, ih * s))
   }
 
@@ -113,12 +118,14 @@ export function ThumbnailCropper({
     if (mode !== "fill") return
     e.currentTarget.setPointerCapture(e.pointerId)
     drag.current = { x: e.clientX, y: e.clientY }
+    setDragging(true)
+    setTouched(true)
   }
   function onPointerMove(e: ReactPointerEvent<HTMLDivElement>) {
     if (!drag.current) return
     // 끌기 끝(pointerup)을 놓친 경우 — 버튼이 떼어져 있으면 더 움직이지 않는다
     if (e.pointerType === "mouse" && e.buttons === 0) {
-      drag.current = null
+      onPointerUp()
       return
     }
     const dx = e.clientX - drag.current.x
@@ -128,6 +135,7 @@ export function ThumbnailCropper({
   }
   function onPointerUp() {
     drag.current = null
+    setDragging(false)
   }
 
   async function confirm() {
@@ -165,8 +173,10 @@ export function ThumbnailCropper({
     }
   }
 
-  const tab =
-    "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors"
+  const modes: { value: Mode; icon: typeof Crop; title: string; desc: string }[] = [
+    { value: "fill", icon: Crop, title: "꽉 채우기", desc: "틀에 맞춰 잘라요" },
+    { value: "fit", icon: Maximize, title: "전체 보이기", desc: "자르지 않고 빈 곳은 흐리게" },
+  ]
 
   return (
     <Modal
@@ -180,32 +190,48 @@ export function ThumbnailCropper({
           썸네일 맞추기
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          목록 카드와 같은 16:9 비율로 맞춰 올려요.{" "}
-          {mode === "fill" ? "끌어서 위치를 옮기고, 확대할 수 있어요." : "사진 전체가 보이고 빈 곳은 흐리게 채워져요."}
+          목록 카드와 같은 16:9 비율로 맞춰 올려요. 먼저 맞추는 방식을 고르세요.
         </p>
 
-        {/* 모드 선택 */}
-        <div role="radiogroup" aria-label="맞추는 방식" className="mt-4 inline-flex gap-1 rounded-lg bg-surface p-1">
-          <button
-            type="button"
-            role="radio"
-            aria-checked={mode === "fill"}
-            onClick={() => setMode("fill")}
-            className={cn(tab, mode === "fill" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
-          >
-            <Crop className="size-4" aria-hidden />
-            꽉 채우기
-          </button>
-          <button
-            type="button"
-            role="radio"
-            aria-checked={mode === "fit"}
-            onClick={() => setMode("fit")}
-            className={cn(tab, mode === "fit" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
-          >
-            <Maximize className="size-4" aria-hidden />
-            전체 보이기
-          </button>
+        {/* 모드 선택 — 가장 먼저 눈에 들어오도록 큰 카드 두 개 */}
+        <div role="radiogroup" aria-label="맞추는 방식" className="mt-4 grid grid-cols-2 gap-2">
+          {modes.map((m) => {
+            const on = mode === m.value
+            const Icon = m.icon
+            return (
+              <button
+                key={m.value}
+                type="button"
+                role="radio"
+                aria-checked={on}
+                onClick={() => setMode(m.value)}
+                className={cn(
+                  "relative flex items-center gap-3 rounded-lg border-2 px-3.5 py-3 text-left transition-colors",
+                  on
+                    ? "border-primary bg-brand-soft"
+                    : "border-border bg-background hover:border-brand-line hover:bg-brand-soft/50",
+                )}
+              >
+                <span
+                  className={cn(
+                    "flex size-9 shrink-0 items-center justify-center rounded-md",
+                    on ? "bg-primary text-primary-foreground" : "bg-surface text-muted-foreground",
+                  )}
+                >
+                  <Icon className="size-5" aria-hidden />
+                </span>
+                <span className="min-w-0">
+                  <span className={cn("block text-sm font-semibold", on ? "text-foreground" : "text-foreground/80")}>
+                    {m.title}
+                  </span>
+                  <span className="block text-xs text-muted-foreground">{m.desc}</span>
+                </span>
+                {on && (
+                  <Check className="absolute right-2.5 top-2.5 size-4 text-primary" aria-hidden />
+                )}
+              </button>
+            )
+          })}
         </div>
 
         {/* 자르기 틀 */}
@@ -235,6 +261,37 @@ export function ThumbnailCropper({
               }}
             />
           )}
+          {/* 끄는 중 — 3등분 격자 */}
+          {mode === "fill" && dragging && (
+            <div aria-hidden className="pointer-events-none absolute inset-0">
+              <div className="absolute inset-y-0 left-1/3 w-px bg-background/70" />
+              <div className="absolute inset-y-0 left-2/3 w-px bg-background/70" />
+              <div className="absolute inset-x-0 top-1/3 h-px bg-background/70" />
+              <div className="absolute inset-x-0 top-2/3 h-px bg-background/70" />
+            </div>
+          )}
+          {/* 조작 안내 — 처음 한 번, 움직이면 사라짐 */}
+          {mode === "fill" && img && (
+            <div
+              aria-hidden
+              className={cn(
+                "pointer-events-none absolute inset-x-0 bottom-3 flex justify-center transition-opacity duration-300",
+                touched ? "opacity-0" : "opacity-100",
+              )}
+            >
+              <span className="inline-flex items-center gap-3 rounded-full bg-foreground/75 px-3.5 py-1.5 text-xs font-medium text-background">
+                <span className="inline-flex items-center gap-1">
+                  <Move className="size-3.5" />
+                  끌어서 위치 이동
+                </span>
+                <span className="h-3 w-px bg-background/40" />
+                <span className="inline-flex items-center gap-1">
+                  <ZoomIn className="size-3.5" />
+                  아래 막대·휠로 확대
+                </span>
+              </span>
+            </div>
+          )}
           {src && img && mode === "fit" && (
             <>
               <img src={src} alt="" aria-hidden className="absolute inset-0 h-full w-full scale-110 object-cover blur-xl" />
@@ -248,16 +305,16 @@ export function ThumbnailCropper({
           )}
         </div>
 
-        {/* 확대 */}
+        {/* 확대 — 보조 조작이라 차분하게 */}
         {mode === "fill" && (
-          <div className="mt-3 flex items-center gap-3">
+          <div className="mt-3 flex items-center gap-2 text-muted-foreground">
             <button
               type="button"
               aria-label="축소"
               onClick={() => setZoomClamped(zoom - 0.2)}
-              className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+              className="rounded-md p-1 hover:bg-accent hover:text-foreground"
             >
-              <Minus className="size-4" aria-hidden />
+              <ZoomOut className="size-4" aria-hidden />
             </button>
             <input
               type="range"
@@ -267,16 +324,17 @@ export function ThumbnailCropper({
               value={zoom}
               onChange={(e) => setZoomClamped(Number(e.target.value))}
               aria-label="확대"
-              className="flex-1 accent-primary"
+              className="h-1 flex-1 accent-muted-foreground"
             />
             <button
               type="button"
               aria-label="확대"
               onClick={() => setZoomClamped(zoom + 0.2)}
-              className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+              className="rounded-md p-1 hover:bg-accent hover:text-foreground"
             >
-              <Plus className="size-4" aria-hidden />
+              <ZoomIn className="size-4" aria-hidden />
             </button>
+            <span className="w-10 text-right text-xs tabular-nums">{Math.round(zoom * 100)}%</span>
           </div>
         )}
 
