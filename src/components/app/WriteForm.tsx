@@ -6,7 +6,7 @@ import {
   type FormEvent,
 } from "react"
 import { Link, useNavigate } from "react-router-dom"
-import { ImagePlus, X } from "lucide-react"
+import { Crop, ImagePlus, X } from "lucide-react"
 import { getCategory, getSubcategories, subjectCategories } from "@/config/categories"
 import {
   createApp,
@@ -20,6 +20,7 @@ import {
 } from "@/lib/apps"
 import { SubcategorySelect } from "@/components/app/SubcategorySelect"
 import { RichTextEditor } from "@/components/app/RichTextEditor"
+import { ThumbnailCropper } from "@/components/app/ThumbnailCropper"
 import { cn } from "@/lib/utils"
 
 const inputClass =
@@ -31,7 +32,8 @@ const VISIBILITY_OPTIONS: { value: AppVisibility; label: string }[] = [
   { value: "teachers", label: "인증교사만" },
 ]
 
-const THUMB_MAX_BYTES = 2 * 1024 * 1024 // 2MB (버킷·lib 와 동일)
+const THUMB_MAX_BYTES = 2 * 1024 * 1024 // 2MB — 올라가는 결과물 한도(버킷·lib 와 동일)
+const THUMB_SOURCE_MAX_BYTES = 20 * 1024 * 1024 // 원본 사진 한도 — 자르기 창에서 1280×720 으로 줄인 뒤 올린다
 
 /**
  * 글쓰기/수정 폼 (3단계 묶음 G-1, 수정은 5단계 추가).
@@ -97,6 +99,9 @@ export function WriteForm({
     app?.thumbnailUrl ? app.thumbnailUrl : null,
   )
   const [thumbError, setThumbError] = useState<string | null>(null)
+  // 자르기 창에 띄울 원본(열림 = 값 있음) / 마지막으로 고른 원본(다시 맞추기용)
+  const [cropSource, setCropSource] = useState<File | null>(null)
+  const [thumbSource, setThumbSource] = useState<File | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -109,14 +114,25 @@ export function WriteForm({
       setThumbError("이미지(PNG·JPG·WebP·GIF) 파일만 넣을 수 있습니다.")
       return
     }
-    if (file.size > THUMB_MAX_BYTES) {
-      setThumbError("썸네일은 2MB 이하만 넣을 수 있습니다.")
+    if (file.size > THUMB_SOURCE_MAX_BYTES) {
+      setThumbError("사진은 20MB 이하만 넣을 수 있습니다.")
       return
     }
-    const url = URL.createObjectURL(file)
+    // 바로 올리지 않고 자르기 창으로 → 16:9 · 1280×720 으로 맞춘 결과를 쓴다.
+    setThumbSource(file)
+    setCropSource(file)
+  }
+
+  function applyCropped(result: File) {
+    setCropSource(null)
+    if (result.size > THUMB_MAX_BYTES) {
+      setThumbError("변환한 썸네일이 2MB를 넘어요. 다른 사진으로 시도해 주세요.")
+      return
+    }
+    const url = URL.createObjectURL(result)
     if (previewRef.current) URL.revokeObjectURL(previewRef.current)
     previewRef.current = url
-    setThumbFile(file)
+    setThumbFile(result)
     setThumbPreview(url)
   }
 
@@ -125,6 +141,7 @@ export function WriteForm({
     previewRef.current = null
     setThumbFile(null)
     setThumbPreview(null)
+    setThumbSource(null)
     setThumbError(null)
   }
 
@@ -344,8 +361,8 @@ export function WriteForm({
         <label className={labelClass}>썸네일</label>
         <p className="text-xs text-muted-foreground">
           넣으면 목록에서 훨씬 잘 보여요 (선택이지만 권장). 스크린샷을 복사해
-          붙여넣기(Ctrl·⌘+V) 하거나, 파일을 끌어다 놓아도 됩니다. PNG·JPG·WebP·GIF /
-          최대 2MB.
+          붙여넣기(Ctrl·⌘+V) 하거나, 파일을 끌어다 놓아도 됩니다. 어떤 크기든 목록 카드와 같은
+          16:9(1280×720)로 맞춰 올려요. PNG·JPG·WebP·GIF / 최대 20MB.
         </p>
 
         {thumbPreview ? (
@@ -355,6 +372,17 @@ export function WriteForm({
               alt="썸네일 미리보기"
               className="h-full w-full object-cover"
             />
+            {thumbSource && (
+              <button
+                type="button"
+                onClick={() => setCropSource(thumbSource)}
+                disabled={submitting}
+                className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-md bg-background/90 px-2 py-1 text-xs font-medium text-foreground shadow-sm hover:bg-background disabled:opacity-50"
+              >
+                <Crop className="size-3.5" aria-hidden />
+                다시 맞추기
+              </button>
+            )}
             <button
               type="button"
               onClick={clearThumb}
@@ -384,10 +412,18 @@ export function WriteForm({
           type="file"
           accept="image/png,image/jpeg,image/webp,image/gif"
           className="hidden"
-          onChange={(e) => acceptImage(e.target.files?.[0] ?? null)}
+          onChange={(e) => {
+            acceptImage(e.target.files?.[0] ?? null)
+            e.target.value = "" // 같은 파일을 다시 골라도 자르기 창이 뜨게
+          }}
           disabled={submitting}
         />
         {thumbError && <p className="text-xs text-destructive">{thumbError}</p>}
+        <ThumbnailCropper
+          file={cropSource}
+          onCancel={() => setCropSource(null)}
+          onDone={applyCropped}
+        />
       </div>
 
       {/* 작성자 */}
