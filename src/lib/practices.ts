@@ -407,3 +407,40 @@ export async function removePracticeFile(path: string): Promise<void> {
   const { error } = await supabase.storage.from(FILE_BUCKET).remove([path])
   if (error) console.error("[practices] 첨부 삭제 실패:", error.message)
 }
+
+// ── 설계안 AI 초안 (PRD §13.4, api/practice-draft.ts) ─────────────
+
+/** 서버가 돌려주는 초안. 학생 반응·돌아보며는 없다(실제 수업 모습이라 AI가 쓰지 않음). */
+export type PracticeDraft = {
+  title: string
+  summary: string
+  subjectIds: string[]
+  subcategoryIds: string[]
+  target: string
+  lessonCount: number // 0 = 알 수 없음
+  overviewHtml: string
+  flowHtml: string
+  links: PracticeLink[]
+  personalInfoWarnings: string[] // 학생 실명 등 개인정보가 보인 위치
+}
+
+/** 올려 둔 설계안 PDF(practice-files 본인 폴더)로 초안을 받는다. 30초~1분 걸릴 수 있다. */
+export async function requestPracticeDraft(fileUrl: string): Promise<PracticeDraft> {
+  const { data } = await supabase.auth.getSession()
+  const token = data.session?.access_token
+  if (!token) throw new Error("로그인이 필요합니다.")
+
+  let res: Response
+  try {
+    res = await fetch("/api/practice-draft", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ fileUrl }),
+    })
+  } catch {
+    throw new Error("서버에 연결하지 못했습니다. 인터넷 연결을 확인해 주세요.")
+  }
+  const body = await res.json().catch(() => null)
+  if (!res.ok) throw new Error(body?.error ?? "초안을 만들지 못했습니다.")
+  return body as PracticeDraft
+}

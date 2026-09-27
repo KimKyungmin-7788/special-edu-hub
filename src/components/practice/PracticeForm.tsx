@@ -7,7 +7,7 @@ import {
   practiceSections,
   practiceTargets,
 } from "@/config/practice"
-import { uploadThumbnail, charCount } from "@/lib/apps"
+import { uploadThumbnail, charCount, getApps } from "@/lib/apps"
 import {
   createPractice,
   updatePractice,
@@ -19,8 +19,10 @@ import {
   PRACTICE_TITLE_MAX,
   PRACTICE_FILES_MAX,
   PRACTICE_LINKS_MAX,
+  PRACTICE_APPS_MAX,
   type Practice,
   type PracticeAppLink,
+  type PracticeDraft,
   type PracticeFile,
   type PracticeLink,
   type PracticeVisibility,
@@ -31,6 +33,7 @@ import { CoverField, type CoverValue } from "@/components/practice/CoverField"
 import { AppLinkPicker } from "@/components/practice/AppLinkPicker"
 import { LinkListField } from "@/components/practice/LinkListField"
 import { FileListField } from "@/components/practice/FileListField"
+import { DraftFromPlan } from "@/components/practice/DraftFromPlan"
 import { cn } from "@/lib/utils"
 
 const inputClass =
@@ -42,6 +45,16 @@ const VISIBILITY_OPTIONS: { value: PracticeVisibility; label: string }[] = [
   { value: "public", label: "전체 공개" },
   { value: "teachers", label: "인증교사만" },
 ]
+
+/** 주소 비교용 — 프로토콜·www·끝 슬래시·대소문자 차이를 없앤다. */
+function normalizeUrl(url: string): string {
+  return url
+    .trim()
+    .replace(/^https?:\/\//i, "")
+    .replace(/^www\./i, "")
+    .replace(/\/+$/, "")
+    .toLowerCase()
+}
 
 /** 저장된 category_ids → [고른 교과(순서대로)], {교과: 세부분류[]} */
 function splitCategories(ids: string[]) {
@@ -95,6 +108,9 @@ export function PracticeForm({
   const [fileBusy, setFileBusy] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // 에디터는 처음 값만 읽으므로, 초안으로 본문을 바꿀 때 key 를 바꿔 다시 그린다.
+  const [editorKey, setEditorKey] = useState(0)
+  const [draftApplied, setDraftApplied] = useState<{ warnings: string[] } | null>(null)
 
   // 이번 편집에서 저장소에 있던/올린 파일 경로 — 저장 후 목록에서 빠진 것만 지운다.
   const knownPaths = useRef(new Set((practice?.files ?? []).map((f) => f.path)))
@@ -115,6 +131,63 @@ export function PracticeForm({
   function onFilesChange(next: PracticeFile[]) {
     for (const f of next) knownPaths.current.add(f.path)
     setFiles(next)
+  }
+
+  /** AI 초안 → 폼 칸 채우기. 학생 반응·돌아보며는 비워 둔다(실제 수업 모습이라). */
+  async function applyDraft(draft: PracticeDraft, planFile: PracticeFile) {
+    const hasInput =
+      title.trim() !== "" ||
+      summary.trim() !== "" ||
+      stripEmptySections(body) !== ""
+    if (hasInput && !window.confirm("이미 쓴 제목·요약·본문을 초안으로 바꿀까요?")) {
+      onFilesChange([...files, planFile]) // 설계안 첨부는 그대로 둔다
+      return
+    }
+
+    setTitle(Array.from(draft.title).slice(0, PRACTICE_TITLE_MAX).join(""))
+    setSummary(Array.from(draft.summary).slice(0, PRACTICE_SUMMARY_MAX).join(""))
+    const pickedSubjects = draft.subjectIds
+      .filter((id) => subjectCategories.some((c) => c.id === id))
+      .slice(0, SUBJECTS_MAX)
+    if (pickedSubjects.length > 0) {
+      setSubjects(pickedSubjects)
+      setSubs(
+        Object.fromEntries(
+          pickedSubjects.map((sid) => [
+            sid,
+            draft.subcategoryIds.filter((id) => getCategory(id)?.parentId === sid),
+          ]),
+        ),
+      )
+    }
+    if ((practiceTargets as readonly string[]).includes(draft.target)) setTarget(draft.target)
+    if (draft.lessonCount >= 1 && draft.lessonCount <= 99) setLessonCount(String(draft.lessonCount))
+
+    const [overview, flow, reaction, reflection] = practiceSections
+    setBody(
+      `<h2>${overview.title}</h2>${draft.overviewHtml}` +
+        `<h2>${flow.title}</h2>${draft.flowHtml}` +
+        `<h2>${reaction.title}</h2><p></p><h2>${reflection.title}</h2><p></p>`,
+    )
+    setEditorKey((k) => k + 1)
+
+    // 설계안 속 주소: 등록된 자료면 "쓴 학습자료"로 연결, 아니면 링크로.
+    const allApps = await getApps()
+    const byUrl = new Map(allApps.map((a) => [normalizeUrl(a.appUrl), a.id]))
+    const nextApps = [...apps]
+    const nextLinks = [...links]
+    for (const l of draft.links) {
+      const appId = byUrl.get(normalizeUrl(l.url))
+      if (appId) {
+        if (!nextApps.some((x) => x.appId === appId)) nextApps.push({ appId, note: "" })
+      } else if (!nextLinks.some((x) => normalizeUrl(x.url) === normalizeUrl(l.url))) {
+        nextLinks.push({ title: l.title, url: l.url })
+      }
+    }
+    setApps(nextApps.slice(0, PRACTICE_APPS_MAX))
+    setLinks(nextLinks.slice(0, PRACTICE_LINKS_MAX))
+    onFilesChange([...files, planFile])
+    setDraftApplied({ warnings: draft.personalInfoWarnings })
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -171,6 +244,32 @@ export function PracticeForm({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-10">
+      {/* ── 0. 설계안으로 초안 채우기 (새 글) ── */}
+      {!isEdit && (
+        <DraftFromPlan
+          onDraft={applyDraft}
+          canAttach={files.length < PRACTICE_FILES_MAX}
+          disabled={busy}
+        />
+      )}
+      {draftApplied && (
+        <div role="status" className="-mt-4 rounded-lg border border-border bg-surface p-4 text-sm">
+          <p className="font-medium">설계안으로 초안을 채웠어요. 올리기 전에 꼭 읽고 다듬어 주세요.</p>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-muted-foreground">
+            <li>
+              <span className="font-medium text-foreground">학생 반응·돌아보며</span>는 실제 수업에서 본 모습이라
+              AI가 도와드리기 어려워요. 비워 두었으니 직접 채워 주세요(비워 두면 올릴 때 빠집니다).
+            </li>
+            <li>대표 사진은 직접 올려 주세요.</li>
+            {draftApplied.warnings.map((w, i) => (
+              <li key={i} className="text-destructive">
+                개인정보 확인: {w}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* ── 1. 기본 정보 ── */}
       <Section title="기본 정보">
         <Field label="제목" required>
@@ -312,7 +411,7 @@ export function PracticeForm({
             </li>
           ))}
         </ul>
-        <RichTextEditor value={body} onChange={setBody} />
+        <RichTextEditor key={editorKey} value={body} onChange={setBody} />
       </Section>
 
       {/* ── 3. 앱 연결 ── */}
