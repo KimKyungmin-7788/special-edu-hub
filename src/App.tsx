@@ -21,6 +21,9 @@ import { MyPage } from "@/pages/MyPage"
 import { VerifyPage } from "@/pages/VerifyPage"
 import { AdminPage } from "@/pages/AdminPage"
 import { NotFound } from "@/pages/NotFound"
+import { PracticeList } from "@/pages/PracticeList"
+import { PracticeDetail } from "@/pages/PracticeDetail"
+import { PracticeWritePage } from "@/pages/PracticeWritePage"
 
 function App() {
   useEffect(() => {
@@ -49,11 +52,13 @@ function App() {
             <Route path="mypage" element={<MyPage />} />
             <Route path="admin" element={<AdminPage />} />
 
+            {/* 수업실천사례 (PRD §13) */}
+            <Route path="practices" element={<PracticeList />} />
+            <Route path="practices/write" element={<PracticeWritePage />} />
+            <Route path="practices/:id" element={<PracticeDetail />} />
+            <Route path="practices/:id/edit" element={<PracticeWritePage />} />
+
             {/* 자리만 / 준비 중 */}
-            <Route
-              path="practices"
-              element={<ComingSoon title="수업실천사례" />}
-            />
             <Route path="board" element={<ComingSoon title="자유게시판" />} />
             <Route path="verify" element={<VerifyPage />} />
 

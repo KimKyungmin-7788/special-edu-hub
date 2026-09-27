@@ -1,7 +1,7 @@
 import { CONTAINER } from "@/config/layout"
 
 /**
- * "준비 중" 공용 페이지 — 수업실천사례 / 자유게시판 / 교사인증센터.
+ * "준비 중" 공용 페이지 — 자유게시판 / 소개.
  * 자리만 존재하고 기능은 후속 단계(CLAUDE.md 규칙 4).
  */
 export function ComingSoon({ title }: { title: string }) {
