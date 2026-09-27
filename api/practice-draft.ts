@@ -110,9 +110,14 @@ function json(status: number, body: unknown): Response {
   })
 }
 
+/** GET /api/practice-draft — 초안 기능을 쓸 수 있는지(AI 키 등록 여부)만 알려 준다. 키 값은 절대 내보내지 않음. */
+export function GET(): Response {
+  return json(200, { ready: Boolean(process.env.ANTHROPIC_API_KEY) })
+}
+
 export async function POST(request: Request): Promise<Response> {
   if (!process.env.ANTHROPIC_API_KEY || !SUPABASE_URL || !SUPABASE_ANON_KEY)
-    return json(503, { error: "설계안 초안 기능은 준비 중이에요. 곧 열어 드릴게요." })
+    return json(503, { error: "설계안 초안 기능은 아직 개발 중이에요(AI 연결 준비 중). 지금은 직접 작성해 주세요." })
 
   // ── 1. 로그인·인증교사 확인 (그 교사의 토큰으로 Supabase 에 묻는다 → RLS 그대로 적용) ──
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? ""

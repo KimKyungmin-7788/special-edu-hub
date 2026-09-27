@@ -96,7 +96,7 @@ export const site = {
       "특수교사 개발자들의 협력과 나눔을 위한 강릉오성학교 AI하이터치 수업 연구회의 프로젝트입니다.",
     privacyOfficer: { name: "김경민", email: "themaniwant19@gmail.com" },
     /** 법적 문서 시행일(개정 시 갱신). */
-    effectiveDate: "2026-06-28",
+    effectiveDate: "2026-09-28",
   },
 
   /**

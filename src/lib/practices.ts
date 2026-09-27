@@ -424,6 +424,18 @@ export type PracticeDraft = {
   personalInfoWarnings: string[] // 학생 실명 등 개인정보가 보인 위치
 }
 
+/** 초안 기능을 쓸 수 있는지(서버에 AI 키가 등록됐는지). 확인 실패(로컬 개발 등)는 false. */
+export async function isPracticeDraftReady(): Promise<boolean> {
+  try {
+    const res = await fetch("/api/practice-draft", { method: "GET" })
+    if (!res.ok) return false
+    const body = await res.json()
+    return body?.ready === true
+  } catch {
+    return false
+  }
+}
+
 /** 올려 둔 설계안 PDF(practice-files 본인 폴더)로 초안을 받는다. 30초~1분 걸릴 수 있다. */
 export async function requestPracticeDraft(fileUrl: string): Promise<PracticeDraft> {
   const { data } = await supabase.auth.getSession()

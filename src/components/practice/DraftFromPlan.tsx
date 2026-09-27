@@ -1,7 +1,8 @@
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { FileUp, Loader2, Sparkles } from "lucide-react"
 import {
   errorText,
+  isPracticeDraftReady,
   requestPracticeDraft,
   uploadPracticeFile,
   type PracticeDraft,
@@ -27,12 +28,31 @@ export function DraftFromPlan({
   const [step, setStep] = useState<"idle" | "uploading" | "reading">("idle")
   const [error, setError] = useState<string | null>(null)
   const busy = step !== "idle"
+  // AI 연결(서버 키) 여부. null = 확인 중. 준비 전이면 파일을 올리지 않고 "개발 중" 안내만.
+  const [ready, setReady] = useState<boolean | null>(null)
+  const [notReadyNotice, setNotReadyNotice] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    isPracticeDraftReady().then((r) => {
+      if (active) setReady(r)
+    })
+    return () => {
+      active = false
+    }
+  }, [])
 
   async function pick(file: File | null) {
     if (!file) return
     setError(null)
     if (!/\.pdf$/i.test(file.name)) {
       setError("PDF 파일만 분석할 수 있어요. 한글 파일은 [파일 → PDF로 저장] 후 올려 주세요.")
+      return
+    }
+    // 서버에 AI 키가 아직 없으면 올리지 않고 안내만(설계안이 첨부로 남지 않게).
+    const ok = ready ?? (await isPracticeDraftReady())
+    if (!ok) {
+      setNotReadyNotice(true)
       return
     }
     try {
@@ -54,7 +74,14 @@ export function DraftFromPlan({
         <div className="flex items-start gap-3">
           <Sparkles className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
           <div>
-            <p className="font-medium">수업 설계안이 있으신가요?</p>
+            <p className="flex items-center gap-2 font-medium">
+              수업 설계안이 있으신가요?
+              {ready === false && (
+                <span className="rounded-full border border-border bg-background px-2 py-0.5 text-xs font-normal text-muted-foreground">
+                  개발 중
+                </span>
+              )}
+            </p>
             <p className="mt-0.5 text-sm text-muted-foreground">
               설계안 PDF를 올리면 제목·교과·수업 개요·활동 흐름을 초안으로 채워 드려요. 설계안은
               첨부파일로도 함께 들어갑니다.
@@ -90,6 +117,12 @@ export function DraftFromPlan({
         올린 설계안은 초안 작성을 위해 AI 서비스(Anthropic, 해외)로 보내집니다. 학생 실명 등 개인정보가
         없는지 확인해 주세요. PDF만 가능하며, 하루 10번까지 쓸 수 있어요.
       </p>
+      {notReadyNotice && (
+        <p role="alert" className="mt-3 rounded-md border border-border bg-background px-3 py-2 text-sm">
+          설계안 초안 기능은 아직 개발 중이에요. AI 연결이 준비되면 열어 드릴게요. 지금은 아래 칸을 직접
+          채워 주시고, 설계안은 [첨부 → 파일 첨부]로 올려 주세요.
+        </p>
+      )}
       {error && (
         <p role="alert" className="mt-3 text-sm text-destructive">
           {error}
