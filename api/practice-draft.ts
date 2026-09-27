@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk"
 import { createClient } from "@supabase/supabase-js"
-import { categories, subjectCategories } from "../src/config/categories"
-import { practiceTargets } from "../src/config/practice"
+import { categories, subjectCategories } from "../src/config/categories.js"
+import { practiceTargets } from "../src/config/practice.js"
 
 /**
  * POST /api/practice-draft — 수업 설계안(PDF)으로 수업실천사례 초안 만들기 (PRD §13.4).
