@@ -11,11 +11,16 @@ import {
   Trash2,
   Check,
   Lock,
+  Sprout,
+  School,
+  Lightbulb,
+  type LucideIcon,
 } from "lucide-react"
 import { getCategory } from "@/config/categories"
 import { AppThumbnail } from "@/components/app/AppThumbnail"
 import { RichTextViewer } from "@/components/app/RichTextViewer"
 import { StandardsInfoBlock } from "@/components/app/StandardsInfoBlock"
+import { DetailSection } from "@/components/app/DetailSection"
 import { CommentSection } from "@/components/comment/CommentSection"
 import { PracticeRow } from "@/components/practice/PracticeCard"
 import { getPracticesByApp, type Practice } from "@/lib/practices"
@@ -380,41 +385,38 @@ export function AppDetail() {
         <LockedNotice loggedIn={!!user} from={location.pathname} />
       ) : (
         <>
-          {/* 교육적 의도 · 활용사례 · 관련 성취기준 (35·36) — 입력된 것만 */}
-          {(app.educationalIntent ||
-            app.useCase ||
-            app.achievementStandards ||
-            app.achievementCodes.length > 0) && (
-            <section className="mt-8 grid gap-4 border-t pt-8">
-              {app.educationalIntent && (
-                <InfoBlock title="교육적 의도" body={app.educationalIntent} />
-              )}
-              {app.useCase && (
-                <InfoBlock
-                  title={app.useCaseType === "expected" ? "예상되는 현장 변화" : "현장 활용 사례"}
-                  body={app.useCase}
-                />
-              )}
-              {(app.achievementCodes.length > 0 || app.achievementStandards) && (
-                <StandardsInfoBlock codes={app.achievementCodes} memo={app.achievementStandards} />
-              )}
-            </section>
-          )}
-
-          {/* 개발자 소개 글(블로그형) — HTML 정화 후 렌더 */}
-          <section className="mt-8 border-t pt-8">
-            <h2 className="text-xs font-semibold tracking-wide text-muted-foreground">
-              이런 학습자료에요.
-            </h2>
-            {app.description.trim() ? (
-              <div className="mt-3">
-                <RichTextViewer html={app.description} />
-              </div>
-            ) : (
-              <p className="mt-3 text-sm text-muted-foreground">
-                소개 내용이 없습니다.
-              </p>
+          {/* 교육적 의도 · 활용사례 · 관련 성취기준(35·36) — 입력된 것만, 같은 카드 모양 */}
+          <div className="mt-8 grid gap-4 border-t pt-8">
+            {app.educationalIntent && (
+              <InfoBlock icon={Sprout} title="교육적 의도" body={app.educationalIntent} />
             )}
+            {app.useCase && (
+              <InfoBlock
+                icon={app.useCaseType === "expected" ? Lightbulb : School}
+                title={app.useCaseType === "expected" ? "예상되는 현장 변화" : "현장 활용 사례"}
+                body={app.useCase}
+              />
+            )}
+            {(app.achievementCodes.length > 0 || app.achievementStandards) && (
+              <StandardsInfoBlock codes={app.achievementCodes} memo={app.achievementStandards} />
+            )}
+
+          </div>
+
+          {/* 개발자 소개 글(블로그형) — HTML 정화 후 렌더.
+              위 요약 카드들과 구분되게 "본문 글" 모양: 사이트 공통 초록 막대 제목 + 넓은 여백의 글 카드 */}
+          <section className="mt-10">
+            <h2 className="mb-3 flex items-center gap-2 text-lg font-bold tracking-tight">
+              <span aria-hidden className="h-4 w-1 rounded-full bg-primary" />
+              이런 학습자료예요
+            </h2>
+            <div className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-8">
+              {app.description.trim() ? (
+                <RichTextViewer html={app.description} />
+              ) : (
+                <p className="text-sm text-muted-foreground">소개 내용이 없습니다.</p>
+              )}
+            </div>
           </section>
 
           {/* 작성자(또는 관리자) 전용 — 글 하단 수정·삭제 */}
@@ -473,12 +475,11 @@ export function AppDetail() {
 }
 
 /** 제목 + 여러 줄 글(줄바꿈 보존) 상자. */
-function InfoBlock({ title, body }: { title: string; body: string }) {
+function InfoBlock({ icon, title, body }: { icon: LucideIcon; title: string; body: string }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-5">
-      <h2 className="text-xs font-semibold tracking-wide text-muted-foreground">{title}</h2>
-      <p className="mt-2 whitespace-pre-wrap text-base leading-relaxed">{body}</p>
-    </div>
+    <DetailSection icon={icon} title={title}>
+      <p className="whitespace-pre-wrap text-base leading-relaxed">{body}</p>
+    </DetailSection>
   )
 }
 

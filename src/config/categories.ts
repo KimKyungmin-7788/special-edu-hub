@@ -130,8 +130,16 @@ export const workCategories = categories.filter(
   (c) => c.type === "work" && !c.parentId,
 )
 
-/** 특정 과목의 하위 분류 목록 (sortOrder 순). 없으면 빈 배열. */
+/**
+ * 하위 주제 사용 여부 — 잠시 꺼 둠(2026-09-29 사용자 요청). true 로 바꾸면 전부 되살아난다.
+ * 끄면 getSubcategories 가 빈 배열 → 등록 폼·수업실천사례 폼의 하위 주제 칸, 교과 목록의 하위 주제 탭이 사라지고
+ * 하위 주제 필수 검사도 빠진다. 이미 저장된 하위 주제 id 는 지우지 않는다(수정 저장 때도 유지).
+ */
+export const SUBCATEGORIES_ENABLED = false
+
+/** 특정 과목의 하위 분류 목록 (sortOrder 순). 없거나 하위 주제를 꺼 두었으면 빈 배열. */
 export function getSubcategories(parentId: string): Category[] {
+  if (!SUBCATEGORIES_ENABLED) return []
   return categories
     .filter((c) => c.parentId === parentId)
     .sort((a, b) => a.sortOrder - b.sortOrder)

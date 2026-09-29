@@ -1,6 +1,11 @@
 import { useRef, useState, type FormEvent, type ReactNode } from "react"
 import { Link, useNavigate } from "react-router-dom"
-import { getCategory, getSubcategories, subjectCategories } from "@/config/categories"
+import {
+  getCategory,
+  getSubcategories,
+  subjectCategories,
+  SUBCATEGORIES_ENABLED,
+} from "@/config/categories"
 import {
   practiceBodyTemplate,
   practicePrivacyCheck,
@@ -154,7 +159,9 @@ export function PracticeForm({
         Object.fromEntries(
           pickedSubjects.map((sid) => [
             sid,
-            draft.subcategoryIds.filter((id) => getCategory(id)?.parentId === sid),
+            SUBCATEGORIES_ENABLED
+              ? draft.subcategoryIds.filter((id) => getCategory(id)?.parentId === sid)
+              : [],
           ]),
         ),
       )

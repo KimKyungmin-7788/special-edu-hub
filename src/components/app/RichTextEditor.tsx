@@ -36,9 +36,12 @@ import { downscaleImage } from "@/lib/image"
 export function RichTextEditor({
   value = "",
   onChange,
+  placeholder,
 }: {
   value?: string
   onChange: (html: string) => void
+  /** 비어 있을 때 회색 안내 글(입력하면 사라짐). 줄바꿈(\n) 가능 */
+  placeholder?: string
 }) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [imgBusy, setImgBusy] = useState(false)
@@ -97,7 +100,17 @@ export function RichTextEditor({
         onLink={setLink}
         onImage={() => fileRef.current?.click()}
       />
-      <EditorContent editor={editor} />
+      <div className="relative">
+        <EditorContent editor={editor} />
+        {placeholder && editor.isEmpty && (
+          <p
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 top-0 whitespace-pre-line px-3 py-2.5 text-base text-muted-foreground"
+          >
+            {placeholder}
+          </p>
+        )}
+      </div>
       {(imgBusy || imgError) && (
         <div className="border-t border-border px-3 py-1.5 text-xs">
           {imgBusy ? (

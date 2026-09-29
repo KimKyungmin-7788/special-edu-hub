@@ -29,6 +29,7 @@ import { RichTextEditor } from "@/components/app/RichTextEditor"
 import { ThumbnailCropper } from "@/components/app/ThumbnailCropper"
 import { StandardsFinderModal } from "@/components/app/StandardsFinderModal"
 import { SelectedStandards } from "@/components/app/SelectedStandards"
+import { StandardsManualModal } from "@/components/app/StandardsManualModal"
 import {
   CharCounter,
   FormField,
@@ -57,7 +58,6 @@ const USE_CASE_OPTIONS: { value: Exclude<UseCaseType, "">; label: string; hint: 
   },
 ]
 
-const ACHIEVEMENT_MAX = 500 // DB check(35)와 같은 값
 const INTENT_MAX = 1000
 const USE_CASE_MAX = 2000
 const THUMB_MAX_BYTES = 2 * 1024 * 1024 // 2MB — 올라가는 결과물 한도(버킷·lib 와 동일)
@@ -69,7 +69,9 @@ const clip = (text: string, max: number) => Array.from(text).slice(0, max).join(
 /**
  * 자료 등록/수정 폼 (2026-09-29 개편).
  * 순서: 앱 이름 → 앱 링크 → 한줄 설명(+성취기준 찾기) → 카테고리(교과·하위 주제·관련 성취기준·연관 교과)
- *       → 목록에 없는 성취기준 메모(선택) → 교육적 의도(필수) → 활용사례(선택, 종류 토글) → 자세한 설명 → 썸네일 → 공개 범위.
+ *       → 교육적 의도(필수) → 활용사례(선택, 종류 토글) → 자세한 설명 → 썸네일 → 공개 범위.
+ * 관련 성취기준은 검색 모달·직접 입력 모달로 고른 코드 목록만 받는다(35의 자유 입력 메모 칸은 뺐다 —
+ * 기존 메모 값은 수정 때 건드리지 않고 상세 페이지에는 그대로 보인다).
  * 교과는 진입 경로(categoryId)에서 미리 골라져 오지만 폼에서 바꿀 수 있다.
  * 저장되는 category_ids = [교과, ...하위 주제, (연관 교과, ...그 하위 주제)] — 첫 번째가 대표.
  * 작성자 이름은 계정 닉네임(defaultAuthorName)을 자동으로 쓴다(수정 때는 기존 이름 유지).
@@ -135,9 +137,9 @@ export function WriteForm({
   const [title, setTitle] = useState(app?.title ?? "")
   const [appUrl, setAppUrl] = useState(app?.appUrl ?? "")
   const [summary, setSummary] = useState(app?.summary ?? "")
-  const [achievement, setAchievement] = useState(app?.achievementStandards ?? "")
   const [achievementCodes, setAchievementCodes] = useState<string[]>(app?.achievementCodes ?? [])
   const [finderOpen, setFinderOpen] = useState(false)
+  const [manualOpen, setManualOpen] = useState(false)
   const [intent, setIntent] = useState(app?.educationalIntent ?? "")
   const [useCaseType, setUseCaseType] = useState<Exclude<UseCaseType, "">>(
     app?.useCaseType === "expected" ? "expected" : "field",
@@ -263,7 +265,6 @@ export function WriteForm({
           ...(canRelate && relatedId ? [relatedId, ...relatedSubIds] : []),
         ],
         visibility,
-        achievementStandards: achievement,
         achievementCodes,
         educationalIntent: intent,
         useCaseType,
@@ -271,7 +272,7 @@ export function WriteForm({
       }
       const saved = app
         ? await updateApp(app.id, payload) // 작성자 이름은 그대로 둔다
-        : await createApp({ ...payload, authorName: defaultAuthorName })
+        : await createApp({ ...payload, authorName: defaultAuthorName, achievementStandards: "" })
       // replace: 폼 페이지를 히스토리에서 치워, 상세에서 "목록으로"가 폼으로 되돌아가지 않게.
       navigate(`/app/${saved.id}`, { replace: true })
     } catch (err) {
@@ -388,6 +389,7 @@ export function WriteForm({
             codes={achievementCodes}
             onChange={setAchievementCodes}
             onOpenFinder={() => setFinderOpen(true)}
+            onOpenManual={() => setManualOpen(true)}
             disabled={submitting}
           />
         </FormField>
@@ -432,34 +434,15 @@ export function WriteForm({
       {/* ── 3. 수업에서의 쓰임 ── */}
       <FormPanel title="수업에서의 쓰임">
         <FormField
-          label="목록에 없는 성취기준 (메모)"
-          htmlFor="app-achievement"
-          optional
-          hint="공통 교육과정 등 위 목록에서 찾을 수 없는 성취기준이 있으면 적어 주세요."
-        >
-          <textarea
-            id="app-achievement"
-            rows={2}
-            className={fieldTextarea}
-            placeholder="예: [12진로01-05] 졸업 후 삶의 모습을 구체적으로 구상하며 미래에 대한 긍정적인 태도를 기른다."
-            value={achievement}
-            onChange={(e) => setAchievement(clip(e.target.value, ACHIEVEMENT_MAX))}
-            disabled={submitting}
-          />
-          <CharCounter count={charCount(achievement)} max={ACHIEVEMENT_MAX} />
-        </FormField>
-
-        <FormField
           label="교육적 의도"
           htmlFor="app-intent"
           required
-          hint="이 자료로 학생이 무엇을 배우고, 무엇을 할 수 있게 되길 바라나요?"
         >
           <textarea
             id="app-intent"
             rows={4}
             className={fieldTextarea}
-            placeholder="예: 실물로 연습하기 어려운 무인 기기 절차를 반복해서 익히고, 스스로 해냈다는 자신감을 기르도록 만들었어요."
+            placeholder="이 자료로 학생이 무엇을 배우고, 무엇을 할 수 있게 되길 바라나요?"
             value={intent}
             onChange={(e) => setIntent(clip(e.target.value, INTENT_MAX))}
             required
@@ -468,7 +451,7 @@ export function WriteForm({
           <CharCounter count={charCount(intent)} max={INTENT_MAX} />
         </FormField>
 
-        <FormField label="활용사례" optional hint={useCaseHint}>
+        <FormField label="활용사례" optional>
           <SegmentedToggle
             value={useCaseType}
             options={USE_CASE_OPTIONS}
@@ -478,6 +461,7 @@ export function WriteForm({
           <textarea
             aria-label="활용사례 내용"
             rows={5}
+            placeholder={useCaseHint}
             className={fieldTextarea + " mt-1"}
             value={useCase}
             onChange={(e) => setUseCase(clip(e.target.value, USE_CASE_MAX))}
@@ -488,12 +472,13 @@ export function WriteForm({
       </FormPanel>
 
       {/* ── 4. 자세한 설명 ── */}
-      <FormPanel
-        title="자세한 설명"
-        hint="어떤 문제를 풀어 주는지, 어떻게 쓰는지 자유롭게 적어 주세요. 사진·링크도 넣을 수 있어요."
-      >
+      <FormPanel title="자세한 설명">
         <div className="text-base">
-          <RichTextEditor value={content} onChange={setContent} />
+          <RichTextEditor
+            value={content}
+            onChange={setContent}
+            placeholder={"어떻게 사용하는지, 어떤 방식으로 운영하면 효과적인지 TIP과 다양한 정보를 자유롭게 적어주세요.\n사진과 링크도 넣을 수 있어요."}
+          />
         </div>
       </FormPanel>
 
@@ -618,6 +603,12 @@ export function WriteForm({
         initialApp={summary.trim() || title.trim()}
         selected={achievementCodes}
         onConfirm={setAchievementCodes}
+      />
+      <StandardsManualModal
+        open={manualOpen}
+        onClose={() => setManualOpen(false)}
+        selected={achievementCodes}
+        onAdd={(code) => setAchievementCodes((prev) => (prev.includes(code) ? prev : [...prev, code]))}
       />
     </form>
   )

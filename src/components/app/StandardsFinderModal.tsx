@@ -1,7 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react"
 import { Loader2 } from "lucide-react"
 import { Modal } from "@/components/ui/Modal"
-import { chipClass, fieldInput } from "@/components/form/FormParts"
+import { SegmentedToggle, chipClass, fieldInput } from "@/components/form/FormParts"
 import { cn } from "@/lib/utils"
 import {
   ACHIEVEMENT_CODES_MAX,
@@ -14,11 +14,19 @@ import {
 const LEVELS: SchoolLevel[] = ["초등학교", "중학교", "고등학교"]
 const STRENGTH_RANK: Record<Strength, number> = { 강함: 3, 보통: 2, 약함: 1 }
 
+/** 검색 기준 — 앱 설명(기본) 또는 수업 주제 중 하나만 쓴다 */
+type QueryMode = "app" | "topic"
+const MODE_OPTIONS: { value: QueryMode; label: string }[] = [
+  { value: "app", label: "앱 설명으로 찾기" },
+  { value: "topic", label: "수업 주제로 찾기" },
+]
+
 type Grouped = Awaited<ReturnType<typeof searchStandards>>["grouped"]
 
 /**
  * 관련 성취기준 찾기 모달 (2022 개정 특수교육 기본 교육과정 688개).
- * 수업 주제(선택) + 앱 설명으로 브라우저 안에서 검색하고, 체크한 코드를 돌려준다.
+ * 앱 설명(기본) 또는 수업 주제 중 토글로 고른 하나로 브라우저 안에서 검색하고, 체크한 코드를 돌려준다.
+ * 두 입력값은 따로 기억해서 토글을 오가도 지워지지 않는다. 열 때마다 앱 설명으로 돌아간다.
  * - 이미 고른 코드는 체크된 채로 시작한다. 결과에 안 보여도 선택은 유지된다.
  * - 확인 시 순서: 기존 선택 순서 유지 + 새로 고른 것은 뒤에 붙인다(결과 순서대로).
  */
@@ -38,6 +46,7 @@ export function StandardsFinderModal({
   onConfirm: (codes: string[]) => void
 }) {
   const titleId = useId()
+  const [mode, setMode] = useState<QueryMode>("app")
   const [topic, setTopic] = useState("")
   const [appText, setAppText] = useState(initialApp)
   const [levels, setLevels] = useState<SchoolLevel[]>(LEVELS)
@@ -51,6 +60,7 @@ export function StandardsFinderModal({
   // 열릴 때마다 폼의 현재 값으로 초기화
   useEffect(() => {
     if (!open) return
+    setMode("app")
     setAppText(initialApp)
     setChecked(selected)
     setError("")
@@ -60,7 +70,7 @@ export function StandardsFinderModal({
   // 입력이 바뀌면 잠시 뒤 검색 (타이핑 중 과도한 계산 방지)
   useEffect(() => {
     if (!open) return
-    const q = { topic: topic.trim(), app: appText.trim() }
+    const q = mode === "app" ? { topic: "", app: appText.trim() } : { topic: topic.trim(), app: "" }
     if (!q.topic && !q.app) {
       setGrouped([])
       setCount(0)
@@ -83,7 +93,7 @@ export function StandardsFinderModal({
       }
     }, 200)
     return () => clearTimeout(timer)
-  }, [open, topic, appText, levels])
+  }, [open, mode, topic, appText, levels])
 
   const resultOrder = useMemo(
     () => grouped.flatMap((g) => g.subjects.flatMap((s) => s.items.map((r) => r.standard.code))),
@@ -119,7 +129,7 @@ export function StandardsFinderModal({
   }
 
   return (
-    <Modal open={open} onClose={onClose} labelledBy={titleId} className="flex max-h-[88vh] max-w-2xl flex-col">
+    <Modal open={open} onClose={onClose} labelledBy={titleId} className="flex h-[min(88vh,760px)] max-w-2xl flex-col">
       {/* 머리: 입력 */}
       <div className="flex flex-col gap-4 border-b border-border p-5 pr-14 sm:p-6 sm:pr-14">
         <div>
@@ -127,32 +137,28 @@ export function StandardsFinderModal({
             관련 성취기준 찾기
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            2022 개정 특수교육 기본 교육과정 688개 중에서 찾아요. 수업 주제를 함께 적으면 더 정확해요.
+            2022 개정 특수교육 기본 교육과정 688개 중에서 찾아요.
           </p>
         </div>
-        <div className="grid gap-3">
-          <label className="grid gap-1.5">
-            <span className="text-sm font-semibold">
-              수업 주제 <span className="font-normal text-muted-foreground">(선택 · 한 문장)</span>
-            </span>
+        <div className="grid gap-2">
+          <SegmentedToggle value={mode} options={MODE_OPTIONS} onChange={setMode} />
+          {mode === "app" ? (
             <input
-              className={fieldInput}
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-              placeholder="예: 대중교통을 이용하여 목적지까지 이동하기"
-            />
-          </label>
-          <label className="grid gap-1.5">
-            <span className="text-sm font-semibold">
-              앱 설명 <span className="font-normal text-muted-foreground">(한 문장)</span>
-            </span>
-            <input
+              aria-label="앱 설명"
               className={fieldInput}
               value={appText}
               onChange={(e) => setAppText(e.target.value)}
               placeholder="예: 내릴 곳에서 버스 하차 버튼을 눌러 스스로 버스 타기를 연습해요."
             />
-          </label>
+          ) : (
+            <input
+              aria-label="수업 주제"
+              className={fieldInput}
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              placeholder="예: 대중교통을 이용하여 목적지까지 이동하기"
+            />
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-2" role="group" aria-label="학교급">
           {LEVELS.map((lv) => (
@@ -173,9 +179,11 @@ export function StandardsFinderModal({
       <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-6" aria-live="polite">
         {error ? (
           <p className="text-sm text-destructive">{error}</p>
-        ) : !topic.trim() && !appText.trim() ? (
+        ) : !(mode === "app" ? appText : topic).trim() ? (
           <p className="text-sm text-muted-foreground">
-            앱에서 학생이 실제로 하는 행동을 적어 주세요. 예: "지폐와 동전으로 물건값 내기"
+            {mode === "app"
+              ? '앱에서 학생이 실제로 하는 행동을 적어 주세요. 예: "지폐와 동전으로 물건값 내기"'
+              : '수업 주제를 한 문장으로 적어 주세요. 예: "대중교통을 이용하여 목적지까지 이동하기"'}
           </p>
         ) : loading && count === 0 ? (
           <p className="flex items-center gap-2 text-sm text-muted-foreground">
