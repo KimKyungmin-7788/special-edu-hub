@@ -48,6 +48,7 @@ export type App = {
   educationalIntent: string // 교육적 의도(35). 잠긴 자료는 ''
   useCaseType: UseCaseType // 활용사례 종류(35)
   useCase: string // 활용사례 본문(35). 잠긴 자료는 ''
+  achievementCodes: string[] // 관련 성취기준 코드, 순서 있음(36). 잠긴 자료는 []
 }
 
 /** DB row(snake_case) → App(camelCase) 변환. */
@@ -75,6 +76,7 @@ export type AppRow = {
   educational_intent?: string
   use_case_type?: UseCaseType
   use_case?: string
+  achievement_codes?: string[] // 36 미적용 DB 대비 optional
 }
 
 export function mapRow(row: AppRow): App {
@@ -102,6 +104,7 @@ export function mapRow(row: AppRow): App {
     educationalIntent: row.educational_intent ?? "",
     useCaseType: row.use_case_type ?? "",
     useCase: row.use_case ?? "",
+    achievementCodes: row.achievement_codes ?? [],
   }
 }
 
@@ -266,6 +269,7 @@ export type AppInput = {
   educationalIntent: string
   useCaseType: UseCaseType
   useCase: string
+  achievementCodes: string[]
 }
 
 /**
@@ -320,6 +324,7 @@ export async function createApp(input: AppInput): Promise<App> {
       educational_intent: input.educationalIntent.trim(),
       use_case_type: input.useCase.trim() ? input.useCaseType : "",
       use_case: input.useCase.trim(),
+      achievement_codes: input.achievementCodes,
       owner_id: uid,
       status: "published",
     })
@@ -351,6 +356,7 @@ export async function updateApp(
     row.use_case = patch.useCase.trim()
     row.use_case_type = patch.useCase.trim() ? (patch.useCaseType ?? "field") : ""
   }
+  if (patch.achievementCodes !== undefined) row.achievement_codes = patch.achievementCodes
 
   const { data, error } = await supabase
     .from("apps")

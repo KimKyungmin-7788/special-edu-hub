@@ -6,7 +6,7 @@ import {
   type FormEvent,
 } from "react"
 import { Link, useNavigate } from "react-router-dom"
-import { Crop, ImagePlus, X } from "lucide-react"
+import { Crop, ImagePlus, Search, X } from "lucide-react"
 import {
   getCategory,
   getSubcategories,
@@ -27,6 +27,8 @@ import {
 import { SubcategorySelect } from "@/components/app/SubcategorySelect"
 import { RichTextEditor } from "@/components/app/RichTextEditor"
 import { ThumbnailCropper } from "@/components/app/ThumbnailCropper"
+import { StandardsFinderModal } from "@/components/app/StandardsFinderModal"
+import { SelectedStandards } from "@/components/app/SelectedStandards"
 import {
   CharCounter,
   FormField,
@@ -66,8 +68,8 @@ const clip = (text: string, max: number) => Array.from(text).slice(0, max).join(
 
 /**
  * 자료 등록/수정 폼 (2026-09-29 개편).
- * 순서: 앱 이름 → 앱 링크 → 한줄 설명 → 카테고리(교과·하위 주제·연관 교과) → 관련 성취기준(선택)
- *       → 교육적 의도(필수) → 활용사례(선택, 종류 토글) → 자세한 설명 → 썸네일 → 공개 범위.
+ * 순서: 앱 이름 → 앱 링크 → 한줄 설명(+성취기준 찾기) → 카테고리(교과·하위 주제·관련 성취기준·연관 교과)
+ *       → 목록에 없는 성취기준 메모(선택) → 교육적 의도(필수) → 활용사례(선택, 종류 토글) → 자세한 설명 → 썸네일 → 공개 범위.
  * 교과는 진입 경로(categoryId)에서 미리 골라져 오지만 폼에서 바꿀 수 있다.
  * 저장되는 category_ids = [교과, ...하위 주제, (연관 교과, ...그 하위 주제)] — 첫 번째가 대표.
  * 작성자 이름은 계정 닉네임(defaultAuthorName)을 자동으로 쓴다(수정 때는 기존 이름 유지).
@@ -134,6 +136,8 @@ export function WriteForm({
   const [appUrl, setAppUrl] = useState(app?.appUrl ?? "")
   const [summary, setSummary] = useState(app?.summary ?? "")
   const [achievement, setAchievement] = useState(app?.achievementStandards ?? "")
+  const [achievementCodes, setAchievementCodes] = useState<string[]>(app?.achievementCodes ?? [])
+  const [finderOpen, setFinderOpen] = useState(false)
   const [intent, setIntent] = useState(app?.educationalIntent ?? "")
   const [useCaseType, setUseCaseType] = useState<Exclude<UseCaseType, "">>(
     app?.useCaseType === "expected" ? "expected" : "field",
@@ -260,6 +264,7 @@ export function WriteForm({
         ],
         visibility,
         achievementStandards: achievement,
+        achievementCodes,
         educationalIntent: intent,
         useCaseType,
         useCase,
@@ -325,6 +330,14 @@ export function WriteForm({
             disabled={submitting}
           />
           <CharCounter count={charCount(summary)} max={SUMMARY_MAX} />
+          <button
+            type="button"
+            onClick={() => setFinderOpen(true)}
+            disabled={submitting}
+            className="inline-flex h-10 items-center gap-2 self-start rounded-xl border border-border bg-background px-3 text-sm hover:bg-accent disabled:opacity-60"
+          >
+            <Search className="size-4" aria-hidden /> 이 설명으로 관련 성취기준 찾기
+          </button>
         </FormField>
       </FormPanel>
 
@@ -366,6 +379,19 @@ export function WriteForm({
           </FormField>
         )}
 
+        <FormField
+          label="관련 성취기준"
+          optional
+          hint="2022 개정 특수교육 기본 교육과정에서 찾아 고르고, 중요한 순서대로 정리하세요."
+        >
+          <SelectedStandards
+            codes={achievementCodes}
+            onChange={setAchievementCodes}
+            onOpenFinder={() => setFinderOpen(true)}
+            disabled={submitting}
+          />
+        </FormField>
+
         {canRelate && (
           <FormField
             label="연관 교과"
@@ -406,10 +432,10 @@ export function WriteForm({
       {/* ── 3. 수업에서의 쓰임 ── */}
       <FormPanel title="수업에서의 쓰임">
         <FormField
-          label="관련 성취기준"
+          label="목록에 없는 성취기준 (메모)"
           htmlFor="app-achievement"
           optional
-          hint="관련된 교육과정 성취기준이 있으면 적어 주세요."
+          hint="공통 교육과정 등 위 목록에서 찾을 수 없는 성취기준이 있으면 적어 주세요."
         >
           <textarea
             id="app-achievement"
@@ -585,6 +611,14 @@ export function WriteForm({
           {submitting ? (isEdit ? "저장 중…" : "등록 중…") : isEdit ? "수정 저장" : "등록하기"}
         </button>
       </div>
+
+      <StandardsFinderModal
+        open={finderOpen}
+        onClose={() => setFinderOpen(false)}
+        initialApp={summary.trim() || title.trim()}
+        selected={achievementCodes}
+        onConfirm={setAchievementCodes}
+      />
     </form>
   )
 }

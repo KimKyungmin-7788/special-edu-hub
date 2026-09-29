@@ -15,6 +15,7 @@ import {
 import { getCategory } from "@/config/categories"
 import { AppThumbnail } from "@/components/app/AppThumbnail"
 import { RichTextViewer } from "@/components/app/RichTextViewer"
+import { StandardsInfoBlock } from "@/components/app/StandardsInfoBlock"
 import { CommentSection } from "@/components/comment/CommentSection"
 import { PracticeRow } from "@/components/practice/PracticeCard"
 import { getPracticesByApp, type Practice } from "@/lib/practices"
@@ -379,8 +380,11 @@ export function AppDetail() {
         <LockedNotice loggedIn={!!user} from={location.pathname} />
       ) : (
         <>
-          {/* 교육적 의도 · 활용사례 · 관련 성취기준 (35) — 입력된 것만 */}
-          {(app.educationalIntent || app.useCase || app.achievementStandards) && (
+          {/* 교육적 의도 · 활용사례 · 관련 성취기준 (35·36) — 입력된 것만 */}
+          {(app.educationalIntent ||
+            app.useCase ||
+            app.achievementStandards ||
+            app.achievementCodes.length > 0) && (
             <section className="mt-8 grid gap-4 border-t pt-8">
               {app.educationalIntent && (
                 <InfoBlock title="교육적 의도" body={app.educationalIntent} />
@@ -391,8 +395,8 @@ export function AppDetail() {
                   body={app.useCase}
                 />
               )}
-              {app.achievementStandards && (
-                <InfoBlock title="관련 성취기준" body={app.achievementStandards} />
+              {(app.achievementCodes.length > 0 || app.achievementStandards) && (
+                <StandardsInfoBlock codes={app.achievementCodes} memo={app.achievementStandards} />
               )}
             </section>
           )}
