@@ -3,6 +3,7 @@ import { Link } from "react-router-dom"
 import {
   Eye,
   QrCode,
+  ExternalLink,
   Heart,
   Bookmark,
   MessageCircle,
@@ -15,6 +16,10 @@ import { AppThumbnail } from "@/components/app/AppThumbnail"
 import { ShareDialog } from "@/components/app/ShareDialog"
 import { displayTitle, type App } from "@/lib/apps"
 import { cn } from "@/lib/utils"
+
+/** 썸네일 위 글자 버튼(바로가기·공유) — 흰 바탕 알약, 호버 시 초록. */
+const overlayPillClass =
+  "inline-flex h-7 items-center gap-1 rounded-full border border-border bg-background px-2.5 text-xs font-semibold text-foreground shadow-md transition-colors hover:border-primary hover:bg-primary hover:text-primary-foreground"
 
 /** 운영진 순서 조정 컨트롤(있으면 카드에 ▲▼ 노출). */
 export type CardMove = {
@@ -32,9 +37,9 @@ export type CardBookmark = {
 
 /**
  * 앱 목록 카드 — 썸네일 / 제목 / 카테고리 태그 / 좋아요·담기 수.
- * 썸네일 좌상단 = 대표 분류 뱃지(1개). 과목 페이지에서 보면(contextCategoryId) 그 과목이 이 자료의 분류에 있을 때 그 과목을 보여 준다(관련 교과로 들어온 자료). 하단 좌 = 작성자 사진·이름 / 우 = 조회·좋아요·댓글 수. move 가 주어지면(운영진) 좌하단 순서 ▲▼. bookmark 가 주어지면 우상단 담기 토글.
+ * 썸네일 좌상단 = 대표 분류 뱃지(1개). 과목 페이지에서 보면(contextCategoryId) 그 과목이 이 자료의 분류에 있을 때 그 과목을 보여 준다(관련 교과로 들어온 자료). 하단 좌 = 작성자 사진·이름 / 우 = 조회·좋아요·댓글 수. move 가 주어지면(운영진) 우하단 순서 ▲▼. bookmark 가 주어지면 우상단 담기 토글.
  * 교사 전용 자료는 썸네일 좌상단에 "교사 전용" 칩, 볼 권한이 없으면(locked) 썸네일 잠금 + 담기·공유 숨김.
- * 썸네일 좌하단 = 공유 버튼(QR·주소 복사 창) + (운영진이면) 순서 ▲▼.
+ * 썸네일 좌하단 = 바로가기(앱 새 탭) + 공유(QR·주소 복사 창). 우하단 = (운영진이면) 순서 ▲▼. 우상단 = 담기.
  * 카드 높이 통일: 제목·한줄 소개 각 2줄 고정 높이(태그 줄 없음).
  */
 export function AppCard({
@@ -84,7 +89,7 @@ export function AppCard({
 
           {/* 썸네일 좌상단 — 대표 분류 뱃지 + (교사 전용이면) 교사 전용 칩 */}
           {(mainLabel || teachersOnly) && (
-            <div className="absolute left-2 top-2 flex max-w-[calc(100%-8.5rem)] items-center gap-1">
+            <div className="absolute left-2 top-2 flex max-w-[calc(100%-3rem)] items-center gap-1">
               {mainLabel && (
                 <span className="truncate rounded-full bg-brand-muted px-2.5 py-0.5 text-xs font-semibold text-brand-muted-foreground shadow-sm ring-1 ring-brand-line">
                   {mainLabel}
@@ -99,63 +104,69 @@ export function AppCard({
             </div>
           )}
 
-          {/* 좌하단 — 운영진 순서 ▲▼. Link 내부라 기본동작 차단. */}
-          <div className="absolute bottom-2 left-2 flex items-center gap-1">
-            {move && (
-              <>
-                <MoveButton
-                  dir="up"
-                  disabled={!move.canUp}
-                  onClick={move.onUp}
-                />
-                <MoveButton
-                  dir="down"
-                  disabled={!move.canDown}
-                  onClick={move.onDown}
-                />
-              </>
-            )}
-          </div>
+          {/* 좌하단 — 바로가기(앱 새 탭) + 공유. 잠긴 자료는 숨김.
+              Link 내부라 기본동작을 막고, 바로가기는 window.open 으로 새 탭(iframe 금지 규칙). */}
+          {!app.locked && app.appUrl && (
+            <div className="absolute bottom-2 left-2 flex items-center gap-1">
+              <button
+                type="button"
+                title="앱 바로가기(새 탭)"
+                aria-label="바로가기"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  window.open(app.appUrl, "_blank", "noopener")
+                }}
+                className={overlayPillClass}
+              >
+                <ExternalLink className="size-3.5" aria-hidden />
+                바로가기
+              </button>
+              <button
+                type="button"
+                title="공유(QR·주소 복사)"
+                aria-label="공유"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  setShareOpen(true)
+                }}
+                className={overlayPillClass}
+              >
+                <QrCode className="size-3.5" aria-hidden />
+                공유
+              </button>
+            </div>
+          )}
 
-          {/* 우상단 동작 묶음 — 공유(잠긴 자료 제외) + 담기. 썸네일 위에서도 읽히도록 불투명 흰 바탕.
-              Link 내부라 기본동작 차단. */}
-          {!app.locked && (app.appUrl || bookmark) && (
+          {/* 우하단 — 운영진 순서 ▲▼. */}
+          {move && (
+            <div className="absolute bottom-2 right-2 flex items-center gap-1">
+              <MoveButton dir="up" disabled={!move.canUp} onClick={move.onUp} />
+              <MoveButton dir="down" disabled={!move.canDown} onClick={move.onDown} />
+            </div>
+          )}
+
+          {/* 우상단 — 담기. 썸네일 위에서도 읽히도록 불투명 흰 바탕. */}
+          {!app.locked && bookmark && (
             <div className="absolute right-2 top-2 flex items-center gap-1">
-              {app.appUrl && (
-                <button
-                  type="button"
-                  title="공유(QR·주소 복사)"
-                  aria-label="공유"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    e.stopPropagation()
-                    setShareOpen(true)
-                  }}
-                  className="inline-flex h-7 items-center gap-1 rounded-full border border-border bg-background px-2.5 text-xs font-semibold text-foreground shadow-md transition-colors hover:border-primary hover:bg-primary hover:text-primary-foreground"
-                >
-                  <QrCode className="size-3.5" aria-hidden />
-                  공유
-                </button>
-              )}
-              {bookmark && (
-                <button
-                  type="button"
-                  aria-label="담기"
-                  aria-pressed={bookmark.active}
-                  title="담기"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    e.stopPropagation()
-                    bookmark.onToggle()
-                  }}
-                  className="flex size-7 items-center justify-center rounded-full border border-border bg-background text-foreground shadow-md transition-colors hover:border-primary hover:text-primary"
-                >
-                  <Bookmark
-                    className={cn("size-3.5", bookmark.active && "fill-current text-primary")}
-                    aria-hidden
-                  />
-                </button>
-              )}
+              <button
+                type="button"
+                aria-label="담기"
+                aria-pressed={bookmark.active}
+                title="담기"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  bookmark.onToggle()
+                }}
+                className="flex size-7 items-center justify-center rounded-full border border-border bg-background text-foreground shadow-md transition-colors hover:border-primary hover:text-primary"
+              >
+                <Bookmark
+                  className={cn("size-3.5", bookmark.active && "fill-current text-primary")}
+                  aria-hidden
+                />
+              </button>
             </div>
           )}
         </div>
