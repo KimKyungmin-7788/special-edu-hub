@@ -1,5 +1,5 @@
 import { getSubcategories } from "@/config/categories"
-import { cn } from "@/lib/utils"
+import { chipClass } from "@/components/form/FormParts"
 
 /**
  * 세부(하위) 분류 다중선택 칩.
@@ -42,12 +42,7 @@ export function SubcategorySelect({
               onClick={() => toggle(s.id)}
               disabled={disabled}
               aria-pressed={value.includes(s.id)}
-              className={cn(
-                "rounded-full border px-3 py-1 text-sm transition-colors disabled:opacity-50",
-                value.includes(s.id)
-                  ? "border-foreground bg-accent font-medium text-accent-foreground"
-                  : "border-border text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-              )}
+              className={chipClass(value.includes(s.id))}
             >
               {s.name}
             </button>

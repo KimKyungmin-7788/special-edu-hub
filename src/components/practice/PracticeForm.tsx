@@ -34,10 +34,9 @@ import { AppLinkPicker } from "@/components/practice/AppLinkPicker"
 import { LinkListField } from "@/components/practice/LinkListField"
 import { FileListField } from "@/components/practice/FileListField"
 import { DraftFromPlan } from "@/components/practice/DraftFromPlan"
-import { cn } from "@/lib/utils"
+import { FormField, FormPanel, chipClass, fieldInput } from "@/components/form/FormParts"
 
-const inputClass =
-  "w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+const inputClass = fieldInput
 
 const SUBJECTS_MAX = 2 // 대표 교과 + 관련 교과 1개(앱 글쓰기와 같은 규칙)
 
@@ -243,7 +242,7 @@ export function PracticeForm({
   const busy = submitting
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-10">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-6">
       {/* ── 0. 설계안으로 초안 채우기 (새 글) ── */}
       {!isEdit && (
         <DraftFromPlan
@@ -327,12 +326,7 @@ export function PracticeForm({
                   onClick={() => toggleSubject(c.id)}
                   disabled={busy || (!on && subjects.length >= SUBJECTS_MAX)}
                   aria-pressed={on}
-                  className={cn(
-                    "rounded-full border px-3 py-1 text-sm transition-colors disabled:opacity-40",
-                    on
-                      ? "border-foreground bg-accent font-medium text-accent-foreground"
-                      : "border-border text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-                  )}
+                  className={chipClass(on)}
                 >
                   {c.name}
                   {on && order === 0 && subjects.length > 1 && (
@@ -345,8 +339,8 @@ export function PracticeForm({
           {subjects
             .filter((s) => getSubcategories(s).length > 0)
             .map((s) => (
-              <div key={s} className="mt-2 rounded-md border border-border bg-card p-3">
-                <p className="mb-2 text-xs text-muted-foreground">
+              <div key={s} className="mt-1 rounded-xl border border-border bg-surface p-4">
+                <p className="mb-3 text-sm text-muted-foreground">
                   {getCategory(s)?.name} 세부 분류 (선택)
                 </p>
                 <SubcategorySelect
@@ -369,12 +363,7 @@ export function PracticeForm({
                   onClick={() => setTarget((cur) => (cur === t ? "" : t))}
                   disabled={busy}
                   aria-pressed={target === t}
-                  className={cn(
-                    "rounded-full border px-3 py-1 text-sm transition-colors disabled:opacity-50",
-                    target === t
-                      ? "border-foreground bg-accent font-medium text-accent-foreground"
-                      : "border-border text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-                  )}
+                  className={chipClass(target === t)}
                 >
                   {t}
                 </button>
@@ -384,7 +373,7 @@ export function PracticeForm({
           <Field label="차시 (선택)">
             <div className="flex items-center gap-2">
               <input
-                className={inputClass + " w-20"}
+                className={inputClass + " w-24"}
                 type="number"
                 inputMode="numeric"
                 min={1}
@@ -495,14 +484,14 @@ export function PracticeForm({
         <Link
           to={cancelTo}
           replace
-          className="rounded-md border border-border px-5 py-2 text-sm font-medium text-foreground hover:bg-accent"
+          className="rounded-xl border border-border bg-card px-6 py-3 text-base font-medium text-foreground hover:bg-accent"
         >
           취소
         </Link>
         <button
           type="submit"
           disabled={busy || fileBusy || !privacyOk}
-          className="rounded-md bg-primary px-6 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+          className="rounded-xl bg-primary px-8 py-3 text-base font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
         >
           {submitting ? "저장 중…" : fileBusy ? "파일 올리는 중…" : isEdit ? "수정 저장" : "올리기"}
         </button>
@@ -511,26 +500,16 @@ export function PracticeForm({
   )
 }
 
-function Section({
-  title,
-  hint,
-  children,
-}: {
-  title: string
-  hint?: string
-  children: ReactNode
-}) {
+/** 구역 — 공용 패널(FormPanel)로 감싼다. */
+function Section({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
   return (
-    <section className="flex flex-col gap-5">
-      <div className="border-b border-border pb-2">
-        <h2 className="text-base font-semibold">{title}</h2>
-        {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
-      </div>
+    <FormPanel title={title} hint={hint}>
       {children}
-    </section>
+    </FormPanel>
   )
 }
 
+/** 칸 — 공용 FormField. 라벨의 "(선택)" 은 optional 로 표시. */
 function Field({
   label,
   required,
@@ -542,13 +521,15 @@ function Field({
   hint?: string
   children: ReactNode
 }) {
+  const optional = label.endsWith(" (선택)")
   return (
-    <div className="flex flex-col gap-1.5">
-      <span className="text-sm font-medium">
-        {label} {required && <span className="text-destructive">*</span>}
-      </span>
-      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+    <FormField
+      label={optional ? label.replace(" (선택)", "") : label}
+      required={required}
+      optional={optional}
+      hint={hint}
+    >
       {children}
-    </div>
+    </FormField>
   )
 }

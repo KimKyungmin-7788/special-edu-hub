@@ -20,6 +20,9 @@ export type AppVisibility = "public" | "teachers"
  */
 const CATALOG = "apps_catalog"
 
+/** 활용사례 종류(35). field = 현장 활용 사례, expected = 예상되는 현장 변화, "" = 미입력. */
+export type UseCaseType = "" | "field" | "expected"
+
 /** 앱 한 건의 모양. DB 컬럼(snake_case)을 이 camelCase 모양으로 변환해 쓴다. */
 export type App = {
   id: string
@@ -41,6 +44,10 @@ export type App = {
   ownerAvatarUrl: string | null // 작성자 프로필 사진(뷰에서 조인, 28). 없으면 null
   summary: string // 한줄 소개(최대 SUMMARY_MAX 자, 29). 잠긴 자료에서도 공개
   commentCount: number // 삭제 안 된 댓글 수(트리거 집계, 30)
+  achievementStandards: string // 관련 성취기준(선택, 35). 잠긴 자료는 ''
+  educationalIntent: string // 교육적 의도(35). 잠긴 자료는 ''
+  useCaseType: UseCaseType // 활용사례 종류(35)
+  useCase: string // 활용사례 본문(35). 잠긴 자료는 ''
 }
 
 /** DB row(snake_case) → App(camelCase) 변환. */
@@ -64,6 +71,10 @@ export type AppRow = {
   owner_avatar_url?: string | null // 뷰에만 있음(28)
   summary?: string // 29 미적용 DB 대비 optional
   comment_count?: number // 30 미적용 DB 대비 optional
+  achievement_standards?: string // 35 미적용 DB 대비 optional
+  educational_intent?: string
+  use_case_type?: UseCaseType
+  use_case?: string
 }
 
 export function mapRow(row: AppRow): App {
@@ -87,6 +98,10 @@ export function mapRow(row: AppRow): App {
     ownerAvatarUrl: row.owner_avatar_url ?? null,
     summary: row.summary ?? "",
     commentCount: row.comment_count ?? 0,
+    achievementStandards: row.achievement_standards ?? "",
+    educationalIntent: row.educational_intent ?? "",
+    useCaseType: row.use_case_type ?? "",
+    useCase: row.use_case ?? "",
   }
 }
 
@@ -247,6 +262,10 @@ export type AppInput = {
   categoryIds: string[] // 상위+하위 분류 id 를 함께 넣는다
   visibility: AppVisibility
   summary: string
+  achievementStandards: string
+  educationalIntent: string
+  useCaseType: UseCaseType
+  useCase: string
 }
 
 /**
@@ -297,6 +316,10 @@ export async function createApp(input: AppInput): Promise<App> {
       category_ids: input.categoryIds,
       visibility: input.visibility,
       summary: cleanSummary(input.summary),
+      achievement_standards: input.achievementStandards.trim(),
+      educational_intent: input.educationalIntent.trim(),
+      use_case_type: input.useCase.trim() ? input.useCaseType : "",
+      use_case: input.useCase.trim(),
       owner_id: uid,
       status: "published",
     })
@@ -321,6 +344,13 @@ export async function updateApp(
   if (patch.categoryIds !== undefined) row.category_ids = patch.categoryIds
   if (patch.visibility !== undefined) row.visibility = patch.visibility
   if (patch.summary !== undefined) row.summary = cleanSummary(patch.summary)
+  if (patch.achievementStandards !== undefined)
+    row.achievement_standards = patch.achievementStandards.trim()
+  if (patch.educationalIntent !== undefined) row.educational_intent = patch.educationalIntent.trim()
+  if (patch.useCase !== undefined) {
+    row.use_case = patch.useCase.trim()
+    row.use_case_type = patch.useCase.trim() ? (patch.useCaseType ?? "field") : ""
+  }
 
   const { data, error } = await supabase
     .from("apps")

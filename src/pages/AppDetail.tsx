@@ -379,6 +379,24 @@ export function AppDetail() {
         <LockedNotice loggedIn={!!user} from={location.pathname} />
       ) : (
         <>
+          {/* 교육적 의도 · 활용사례 · 관련 성취기준 (35) — 입력된 것만 */}
+          {(app.educationalIntent || app.useCase || app.achievementStandards) && (
+            <section className="mt-8 grid gap-4 border-t pt-8">
+              {app.educationalIntent && (
+                <InfoBlock title="교육적 의도" body={app.educationalIntent} />
+              )}
+              {app.useCase && (
+                <InfoBlock
+                  title={app.useCaseType === "expected" ? "예상되는 현장 변화" : "현장 활용 사례"}
+                  body={app.useCase}
+                />
+              )}
+              {app.achievementStandards && (
+                <InfoBlock title="관련 성취기준" body={app.achievementStandards} />
+              )}
+            </section>
+          )}
+
           {/* 개발자 소개 글(블로그형) — HTML 정화 후 렌더 */}
           <section className="mt-8 border-t pt-8">
             <h2 className="text-xs font-semibold tracking-wide text-muted-foreground">
@@ -446,6 +464,16 @@ export function AppDetail() {
           <CommentSection target={{ kind: "app", id: app.id }} />
         </>
       )}
+    </div>
+  )
+}
+
+/** 제목 + 여러 줄 글(줄바꿈 보존) 상자. */
+function InfoBlock({ title, body }: { title: string; body: string }) {
+  return (
+    <div className="rounded-xl border border-border bg-card p-5">
+      <h2 className="text-xs font-semibold tracking-wide text-muted-foreground">{title}</h2>
+      <p className="mt-2 whitespace-pre-wrap text-base leading-relaxed">{body}</p>
     </div>
   )
 }

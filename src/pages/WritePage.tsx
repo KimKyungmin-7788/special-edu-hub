@@ -64,14 +64,10 @@ export function WritePage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10">
-      {/* 상단: "<카테고리명> 글쓰기" */}
-      <h1 className="mb-1 text-2xl font-bold">
-        {category ? `${category.name} 글쓰기` : "글쓰기"}
-      </h1>
-      <p className="mb-8 text-sm text-muted-foreground">
-        인증교사가 만든 교육 웹앱을 누리집에 공개합니다. 등록하면 바로 목록에
-        나타납니다.
+    <div className="mx-auto max-w-3xl px-4 py-10">
+      <h1 className="mb-2 text-3xl font-bold tracking-tight">자료 등록</h1>
+      <p className="mb-8 text-base text-muted-foreground">
+        인증교사가 만든 교육 웹앱을 누리집에 공개합니다. 등록하면 바로 목록에 나타납니다.
       </p>
 
       {state.kind === "loading" && (

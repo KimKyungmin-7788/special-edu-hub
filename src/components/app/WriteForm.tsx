@@ -7,7 +7,12 @@ import {
 } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { Crop, ImagePlus, X } from "lucide-react"
-import { getCategory, getSubcategories, subjectCategories } from "@/config/categories"
+import {
+  getCategory,
+  getSubcategories,
+  subjectCategories,
+  workCategories,
+} from "@/config/categories"
 import {
   createApp,
   updateApp,
@@ -15,34 +20,58 @@ import {
   THUMBNAIL_MIME,
   type App,
   type AppVisibility,
+  type UseCaseType,
   SUMMARY_MAX,
   charCount,
 } from "@/lib/apps"
 import { SubcategorySelect } from "@/components/app/SubcategorySelect"
 import { RichTextEditor } from "@/components/app/RichTextEditor"
 import { ThumbnailCropper } from "@/components/app/ThumbnailCropper"
-import { cn } from "@/lib/utils"
-
-const inputClass =
-  "w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-const labelClass = "text-sm font-medium"
+import {
+  CharCounter,
+  FormField,
+  FormPanel,
+  SegmentedToggle,
+  SelectBox,
+  fieldInput,
+  fieldTextarea,
+} from "@/components/form/FormParts"
 
 const VISIBILITY_OPTIONS: { value: AppVisibility; label: string }[] = [
   { value: "public", label: "전체 공개" },
   { value: "teachers", label: "인증교사만" },
 ]
 
+const USE_CASE_OPTIONS: { value: Exclude<UseCaseType, "">; label: string; hint: string }[] = [
+  {
+    value: "field",
+    label: "현장 활용 사례",
+    hint: "수업이나 업무에서 실제로 써 보니 어땠는지, 학생 반응과 함께 구체적으로 적어 주세요.",
+  },
+  {
+    value: "expected",
+    label: "예상되는 현장 변화",
+    hint: "아직 수업에서 써 보지 않았다면, 이 자료로 기대하는 변화와 반응을 적어 주세요.",
+  },
+]
+
+const ACHIEVEMENT_MAX = 500 // DB check(35)와 같은 값
+const INTENT_MAX = 1000
+const USE_CASE_MAX = 2000
 const THUMB_MAX_BYTES = 2 * 1024 * 1024 // 2MB — 올라가는 결과물 한도(버킷·lib 와 동일)
 const THUMB_SOURCE_MAX_BYTES = 20 * 1024 * 1024 // 원본 사진 한도 — 자르기 창에서 1280×720 으로 줄인 뒤 올린다
 
+/** 글자 수 제한까지만 받는다(유니코드 기준). */
+const clip = (text: string, max: number) => Array.from(text).slice(0, max).join("")
+
 /**
- * 글쓰기/수정 폼 (3단계 묶음 G-1, 수정은 5단계 추가).
- * 상위 분류(categoryId)는 진입 시 정해져 생략 — 세부 분류만 제목 다음에 고른다.
- * 과목(subject) 자료는 관련 교과를 1개 더(총 2개까지) 고를 수 있다 → 두 과목 목록 모두에 보인다.
- * 저장되는 category_ids = [categoryId, ...세부분류, (관련 교과, ...그 세부분류)].
- * 첫 번째 = 대표 과목(카드 뱃지·수정 진입 기준)이므로 순서를 지킨다.
- * app 이 주어지면 수정 모드(기존 값 프리필 + updateApp). 없으면 등록 모드(createApp).
- * 제출 성공 시 해당 글(/app/:id)로 이동.
+ * 자료 등록/수정 폼 (2026-09-29 개편).
+ * 순서: 앱 이름 → 앱 링크 → 한줄 설명 → 카테고리(교과·하위 주제·연관 교과) → 관련 성취기준(선택)
+ *       → 교육적 의도(필수) → 활용사례(선택, 종류 토글) → 자세한 설명 → 썸네일 → 공개 범위.
+ * 교과는 진입 경로(categoryId)에서 미리 골라져 오지만 폼에서 바꿀 수 있다.
+ * 저장되는 category_ids = [교과, ...하위 주제, (연관 교과, ...그 하위 주제)] — 첫 번째가 대표.
+ * 작성자 이름은 계정 닉네임(defaultAuthorName)을 자동으로 쓴다(수정 때는 기존 이름 유지).
+ * app 이 주어지면 수정 모드. 제출 성공 시 해당 글(/app/:id)로 이동.
  */
 export function WriteForm({
   categoryId,
@@ -56,27 +85,21 @@ export function WriteForm({
 }) {
   const navigate = useNavigate()
   const isEdit = app != null
-  const hasSubs = getSubcategories(categoryId).length > 0
-  // "목록"/"취소" → 수정이면 해당 글로, 등록이면 카테고리 목록으로.
-  const listTo = isEdit
-    ? `/app/${app.id}`
-    : getCategory(categoryId)?.type === "work"
-      ? "/apps/work"
-      : `/apps/subject/${categoryId}`
 
-  const [title, setTitle] = useState(app?.title ?? "")
-  const [summary, setSummary] = useState(app?.summary ?? "")
+  // ── 카테고리 ──
+  const [primaryId, setPrimaryId] = useState(categoryId)
+  const primary = getCategory(primaryId)
+  const hasSubs = getSubcategories(primaryId).length > 0
   const [subIds, setSubIds] = useState<string[]>(
     app ? app.categoryIds.filter((id) => getCategory(id)?.parentId === categoryId) : [],
   )
-  // 관련 교과(선택, 1개) — 대표 과목이 과목(subject)일 때만.
-  const canRelate = getCategory(categoryId)?.type === "subject"
-  const relatedOptions = subjectCategories.filter((c) => c.id !== categoryId)
-  const [relatedId, setRelatedId] = useState<string | null>(
+  const canRelate = primary?.type === "subject"
+  const relatedOptions = subjectCategories.filter((c) => c.id !== primaryId)
+  const [relatedId, setRelatedId] = useState<string>(
     () =>
       app?.categoryIds.find(
-        (id) => id !== categoryId && relatedOptions.some((c) => c.id === id),
-      ) ?? null,
+        (id) => id !== categoryId && subjectCategories.some((c) => c.id === id),
+      ) ?? "",
   )
   const [relatedSubIds, setRelatedSubIds] = useState<string[]>(
     app && relatedId
@@ -85,14 +108,41 @@ export function WriteForm({
   )
   const related = relatedId ? getCategory(relatedId) : undefined
 
-  function pickRelated(id: string) {
-    setRelatedId((cur) => (cur === id ? null : id))
+  function changePrimary(id: string) {
+    setPrimaryId(id)
+    setSubIds([])
+    if (id === relatedId || getCategory(id)?.type !== "subject") {
+      setRelatedId("")
+      setRelatedSubIds([])
+    }
+  }
+
+  function changeRelated(id: string) {
+    setRelatedId(id)
     setRelatedSubIds([])
   }
+
+  // "목록"/"취소" → 수정이면 해당 글로, 등록이면 고른 교과 목록으로.
+  const listTo = isEdit
+    ? `/app/${app.id}`
+    : primary?.type === "work"
+      ? "/apps/work"
+      : `/apps/subject/${primaryId}`
+
+  // ── 내용 ──
+  const [title, setTitle] = useState(app?.title ?? "")
   const [appUrl, setAppUrl] = useState(app?.appUrl ?? "")
-  const [authorName, setAuthorName] = useState(app?.authorName ?? defaultAuthorName)
+  const [summary, setSummary] = useState(app?.summary ?? "")
+  const [achievement, setAchievement] = useState(app?.achievementStandards ?? "")
+  const [intent, setIntent] = useState(app?.educationalIntent ?? "")
+  const [useCaseType, setUseCaseType] = useState<Exclude<UseCaseType, "">>(
+    app?.useCaseType === "expected" ? "expected" : "field",
+  )
+  const [useCase, setUseCase] = useState(app?.useCase ?? "")
   const [content, setContent] = useState(app?.description ?? "")
   const [visibility, setVisibility] = useState<AppVisibility>(app?.visibility ?? "public")
+
+  // ── 썸네일 ──
   const [thumbFile, setThumbFile] = useState<File | null>(null)
   // 수정 모드 초기 미리보기 = 기존 썸네일(원격 URL). blob: 이 아니면 "유지"로 본다.
   const [thumbPreview, setThumbPreview] = useState<string | null>(
@@ -145,9 +195,11 @@ export function WriteForm({
     setThumbError(null)
   }
 
-  // 스크린샷 붙여넣기(Ctrl·⌘+V) — 클립보드 이미지를 썸네일로.
+  // 스크린샷 붙여넣기(Ctrl·⌘+V) — 클립보드 이미지를 썸네일로. 입력 칸·에디터 안에서는 제외.
   useEffect(() => {
     function onPaste(e: ClipboardEvent) {
+      const target = e.target as HTMLElement | null
+      if (target?.closest("[contenteditable=true], input, textarea")) return
       const items = e.clipboardData?.items
       if (!items) return
       for (const it of items) {
@@ -181,273 +233,315 @@ export function WriteForm({
     e.preventDefault()
     setSubmitError(null)
 
-    if (title.trim() === "") {
-      setSubmitError("제목을 입력하세요.")
-      return
-    }
-    if (hasSubs && subIds.length === 0) {
-      setSubmitError("세부 분류를 한 개 이상 선택하세요.")
-      return
-    }
-    if (appUrl.trim() === "") {
-      setSubmitError("앱 URL 을 입력하세요.")
-      return
-    }
+    if (title.trim() === "") return setSubmitError("앱 이름을 입력하세요.")
+    if (appUrl.trim() === "") return setSubmitError("앱 링크를 입력하세요.")
+    if (!primary) return setSubmitError("교과를 선택하세요.")
+    if (hasSubs && subIds.length === 0)
+      return setSubmitError("하위 주제를 한 개 이상 선택하세요.")
+    if (intent.trim() === "") return setSubmitError("교육적 의도를 입력하세요.")
 
     setSubmitting(true)
     try {
       // 썸네일: 새 파일이면 업로드 / 기존 원격 URL 이면 유지 / 비웠으면 "".
       let thumbnailUrl = ""
       if (thumbFile) thumbnailUrl = await uploadThumbnail(thumbFile)
-      else if (thumbPreview && !thumbPreview.startsWith("blob:"))
-        thumbnailUrl = thumbPreview
+      else if (thumbPreview && !thumbPreview.startsWith("blob:")) thumbnailUrl = thumbPreview
 
       const payload = {
         title,
-        summary,
         appUrl,
+        summary,
         thumbnailUrl,
-        authorName,
         description: content,
         categoryIds: [
-          categoryId,
+          primaryId,
           ...subIds,
           ...(canRelate && relatedId ? [relatedId, ...relatedSubIds] : []),
         ],
         visibility,
+        achievementStandards: achievement,
+        educationalIntent: intent,
+        useCaseType,
+        useCase,
       }
       const saved = app
-        ? await updateApp(app.id, payload)
-        : await createApp(payload)
-      // replace: 폼(글쓰기/수정) 페이지를 히스토리에서 치워, 상세에서 "목록으로"가
-      // 폼 페이지로 되돌아가지 않게 한다.
+        ? await updateApp(app.id, payload) // 작성자 이름은 그대로 둔다
+        : await createApp({ ...payload, authorName: defaultAuthorName })
+      // replace: 폼 페이지를 히스토리에서 치워, 상세에서 "목록으로"가 폼으로 되돌아가지 않게.
       navigate(`/app/${saved.id}`, { replace: true })
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : "오류가 발생했습니다.")
+      const msg =
+        err && typeof err === "object" && "message" in err
+          ? String((err as { message: unknown }).message)
+          : "오류가 발생했습니다."
+      setSubmitError(msg)
       setSubmitting(false)
     }
   }
 
+  const useCaseHint = USE_CASE_OPTIONS.find((o) => o.value === useCaseType)?.hint
+
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-      {/* 제목 */}
-      <div className="flex flex-col gap-1.5">
-        <label className={labelClass}>
-          제목 <span className="text-destructive">*</span>
-        </label>
-        <input
-          className={inputClass}
-          placeholder="예: 날짜 저요저요!"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
+    <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+      {/* ── 1. 기본 정보 ── */}
+      <FormPanel title="기본 정보">
+        <FormField label="앱 이름" htmlFor="app-title" required>
+          <input
+            id="app-title"
+            className={fieldInput}
+            placeholder="예: 날짜 저요저요!"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            required
+            disabled={submitting}
+          />
+        </FormField>
+
+        <FormField
+          label="앱 링크"
+          htmlFor="app-url"
           required
-          disabled={submitting}
-        />
-      </div>
+          hint="앱은 새 탭으로 열립니다. https:// 로 시작하는 전체 주소를 넣어 주세요."
+        >
+          <input
+            id="app-url"
+            className={fieldInput}
+            type="url"
+            placeholder="https://..."
+            value={appUrl}
+            onChange={(e) => setAppUrl(e.target.value)}
+            required
+            disabled={submitting}
+          />
+        </FormField>
 
-      {/* 한줄 소개 — 카드·상세 제목 아래 표시. 최대 SUMMARY_MAX 자(초과 입력은 잘라냄) */}
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="app-summary" className={labelClass}>
-          한줄 소개
-        </label>
-        <input
-          id="app-summary"
-          className={inputClass}
-          placeholder="예: 고양이를 세며 1부터 10까지 수 개념을 익히는 터치 게임"
-          value={summary}
-          onChange={(e) =>
-            setSummary(Array.from(e.target.value).slice(0, SUMMARY_MAX).join(""))
-          }
-          disabled={submitting}
-        />
-        <div className="flex justify-between text-xs text-muted-foreground">
-          <span>목록 카드에서 제목 아래에 보여요. 비워 두어도 됩니다.</span>
-          <span className="shrink-0 tabular-nums">
-            {charCount(summary)} / {SUMMARY_MAX}
-          </span>
-        </div>
-      </div>
+        <FormField label="한줄 설명" htmlFor="app-summary" hint="목록 카드에서 제목 아래에 보여요.">
+          <input
+            id="app-summary"
+            className={fieldInput}
+            placeholder="한 문장으로: 누가, 무엇에 쓰나요?"
+            value={summary}
+            onChange={(e) => setSummary(clip(e.target.value, SUMMARY_MAX))}
+            disabled={submitting}
+          />
+          <CharCounter count={charCount(summary)} max={SUMMARY_MAX} />
+        </FormField>
+      </FormPanel>
 
-      {/* 세부 분류 (제목 다음) */}
-      <div className="flex flex-col gap-1.5">
-        <label className={labelClass}>
-          세부 분류 {hasSubs && <span className="text-destructive">*</span>}
-        </label>
-        {hasSubs ? (
-          <>
-            <p className="text-xs text-muted-foreground">
-              한 개 이상 선택하세요. 여러 개 고를 수 있습니다.
-            </p>
-            <div className="mt-1">
-              <SubcategorySelect
-                parentId={categoryId}
-                value={subIds}
-                onChange={setSubIds}
-                disabled={submitting}
-              />
-            </div>
-          </>
-        ) : (
-          <p className="text-xs text-muted-foreground">
-            이 분류는 세부 분류가 없어요. 바로 등록할 수 있습니다.
-          </p>
-        )}
-      </div>
+      {/* ── 2. 카테고리 ── */}
+      <FormPanel title="카테고리" hint="고른 교과 목록에 이 자료가 보여요.">
+        <FormField label="교과" htmlFor="app-primary" required>
+          <SelectBox
+            id="app-primary"
+            value={primaryId}
+            onChange={(e) => changePrimary(e.target.value)}
+            disabled={submitting}
+          >
+            {!primary && <option value="">교과를 고르세요</option>}
+            <optgroup label="교과">
+              {subjectCategories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label="업무">
+              {workCategories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </optgroup>
+          </SelectBox>
+        </FormField>
 
-      {/* 관련 교과 (선택, 1개 더) — 고른 교과 목록에도 함께 보인다 */}
-      {canRelate && (
-        <div className="flex flex-col gap-1.5">
-          <label className={labelClass}>관련 교과 (선택)</label>
-          <p className="text-xs text-muted-foreground">
-            다른 교과에도 쓸 수 있는 자료라면 1개 더 고르세요. 고른 교과 목록에도 함께 보입니다.
-            다시 누르면 해제됩니다.
-          </p>
-          <div className="mt-1 flex flex-wrap gap-2">
-            {relatedOptions.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => pickRelated(c.id)}
-                disabled={submitting}
-                aria-pressed={relatedId === c.id}
-                className={cn(
-                  "rounded-full border px-3 py-1 text-sm transition-colors disabled:opacity-50",
-                  relatedId === c.id
-                    ? "border-foreground bg-accent font-medium text-accent-foreground"
-                    : "border-border text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-                )}
-              >
-                {c.name}
-              </button>
-            ))}
-          </div>
-          {related && getSubcategories(related.id).length > 0 && (
-            <div className="mt-2 rounded-md border border-border bg-card p-3">
-              <p className="mb-2 text-xs text-muted-foreground">
-                {related.name} 세부 분류 (선택) — 고르면 {related.name} 목록의 칩 필터에서도 찾을 수 있어요.
-              </p>
-              <SubcategorySelect
-                parentId={related.id}
-                value={relatedSubIds}
-                onChange={setRelatedSubIds}
-                disabled={submitting}
-              />
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* 앱 URL */}
-      <div className="flex flex-col gap-1.5">
-        <label className={labelClass}>
-          앱 URL <span className="text-destructive">*</span>
-        </label>
-        <input
-          className={inputClass}
-          type="url"
-          placeholder="https://..."
-          value={appUrl}
-          onChange={(e) => setAppUrl(e.target.value)}
-          required
-          disabled={submitting}
-        />
-        <p className="text-xs text-muted-foreground">
-          앱은 새 탭으로 열립니다. https:// 로 시작하는 전체 주소를 넣어주세요.
-        </p>
-      </div>
-
-      {/* 썸네일 */}
-      <div className="flex flex-col gap-1.5">
-        <label className={labelClass}>썸네일</label>
-        <p className="text-xs text-muted-foreground">
-          넣으면 목록에서 훨씬 잘 보여요 (선택이지만 권장). 스크린샷을 복사해
-          붙여넣기(Ctrl·⌘+V) 하거나, 파일을 끌어다 놓아도 됩니다. 어떤 크기든 목록 카드와 같은
-          16:9(1280×720)로 맞춰 올려요. PNG·JPG·WebP·GIF / 최대 20MB.
-        </p>
-
-        {thumbPreview ? (
-          <div className="relative aspect-video w-full max-w-sm overflow-hidden rounded-md border border-border">
-            <img
-              src={thumbPreview}
-              alt="썸네일 미리보기"
-              className="h-full w-full object-cover"
+        {hasSubs && (
+          <FormField label="하위 주제" required hint="한 개 이상 고르세요. 여러 개 고를 수 있어요.">
+            <SubcategorySelect
+              parentId={primaryId}
+              value={subIds}
+              onChange={setSubIds}
+              disabled={submitting}
             />
-            {thumbSource && (
+          </FormField>
+        )}
+
+        {canRelate && (
+          <FormField
+            label="연관 교과"
+            htmlFor="app-related"
+            optional
+            hint="다른 교과에도 쓸 수 있다면 하나 더 고르세요. 그 교과 목록에도 함께 보여요."
+          >
+            <SelectBox
+              id="app-related"
+              value={relatedId}
+              onChange={(e) => changeRelated(e.target.value)}
+              disabled={submitting}
+            >
+              <option value="">없음</option>
+              {relatedOptions.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </SelectBox>
+            {related && getSubcategories(related.id).length > 0 && (
+              <div className="mt-1 rounded-xl border border-border bg-surface p-4">
+                <p className="mb-3 text-sm text-muted-foreground">
+                  {related.name} 하위 주제 (선택)
+                </p>
+                <SubcategorySelect
+                  parentId={related.id}
+                  value={relatedSubIds}
+                  onChange={setRelatedSubIds}
+                  disabled={submitting}
+                />
+              </div>
+            )}
+          </FormField>
+        )}
+      </FormPanel>
+
+      {/* ── 3. 수업에서의 쓰임 ── */}
+      <FormPanel title="수업에서의 쓰임">
+        <FormField
+          label="관련 성취기준"
+          htmlFor="app-achievement"
+          optional
+          hint="관련된 교육과정 성취기준이 있으면 적어 주세요."
+        >
+          <textarea
+            id="app-achievement"
+            rows={2}
+            className={fieldTextarea}
+            placeholder="예: [12진로01-05] 졸업 후 삶의 모습을 구체적으로 구상하며 미래에 대한 긍정적인 태도를 기른다."
+            value={achievement}
+            onChange={(e) => setAchievement(clip(e.target.value, ACHIEVEMENT_MAX))}
+            disabled={submitting}
+          />
+          <CharCounter count={charCount(achievement)} max={ACHIEVEMENT_MAX} />
+        </FormField>
+
+        <FormField
+          label="교육적 의도"
+          htmlFor="app-intent"
+          required
+          hint="이 자료로 학생이 무엇을 배우고, 무엇을 할 수 있게 되길 바라나요?"
+        >
+          <textarea
+            id="app-intent"
+            rows={4}
+            className={fieldTextarea}
+            placeholder="예: 실물로 연습하기 어려운 무인 기기 절차를 반복해서 익히고, 스스로 해냈다는 자신감을 기르도록 만들었어요."
+            value={intent}
+            onChange={(e) => setIntent(clip(e.target.value, INTENT_MAX))}
+            required
+            disabled={submitting}
+          />
+          <CharCounter count={charCount(intent)} max={INTENT_MAX} />
+        </FormField>
+
+        <FormField label="활용사례" optional hint={useCaseHint}>
+          <SegmentedToggle
+            value={useCaseType}
+            options={USE_CASE_OPTIONS}
+            onChange={setUseCaseType}
+            disabled={submitting}
+          />
+          <textarea
+            aria-label="활용사례 내용"
+            rows={5}
+            className={fieldTextarea + " mt-1"}
+            value={useCase}
+            onChange={(e) => setUseCase(clip(e.target.value, USE_CASE_MAX))}
+            disabled={submitting}
+          />
+          <CharCounter count={charCount(useCase)} max={USE_CASE_MAX} />
+        </FormField>
+      </FormPanel>
+
+      {/* ── 4. 자세한 설명 ── */}
+      <FormPanel
+        title="자세한 설명"
+        hint="어떤 문제를 풀어 주는지, 어떻게 쓰는지 자유롭게 적어 주세요. 사진·링크도 넣을 수 있어요."
+      >
+        <div className="text-base">
+          <RichTextEditor value={content} onChange={setContent} />
+        </div>
+      </FormPanel>
+
+      {/* ── 5. 썸네일 ── */}
+      <FormPanel
+        title="썸네일"
+        hint="넣으면 목록에서 훨씬 잘 보여요(선택이지만 권장). 스크린샷을 복사해 붙여넣기(Ctrl·⌘+V) 하거나 파일을 끌어다 놓아도 됩니다. 목록 카드와 같은 16:9(1280×720)로 맞춰 올려요. PNG·JPG·WebP·GIF / 최대 20MB."
+      >
+        <div className="flex flex-col gap-2">
+          {thumbPreview ? (
+            <div className="relative aspect-video w-full max-w-md overflow-hidden rounded-xl border border-border">
+              <img src={thumbPreview} alt="썸네일 미리보기" className="h-full w-full object-cover" />
+              {thumbSource && (
+                <button
+                  type="button"
+                  onClick={() => setCropSource(thumbSource)}
+                  disabled={submitting}
+                  className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-md bg-background/90 px-2 py-1 text-xs font-medium text-foreground shadow-sm hover:bg-background disabled:opacity-50"
+                >
+                  <Crop className="size-3.5" aria-hidden />
+                  다시 맞추기
+                </button>
+              )}
               <button
                 type="button"
-                onClick={() => setCropSource(thumbSource)}
+                onClick={clearThumb}
                 disabled={submitting}
-                className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-md bg-background/90 px-2 py-1 text-xs font-medium text-foreground shadow-sm hover:bg-background disabled:opacity-50"
+                aria-label="썸네일 제거"
+                className="absolute right-2 top-2 rounded-md bg-background/90 p-1.5 text-muted-foreground hover:text-foreground disabled:opacity-50"
               >
-                <Crop className="size-3.5" aria-hidden />
-                다시 맞추기
+                <X className="size-4" aria-hidden />
               </button>
-            )}
+            </div>
+          ) : (
             <button
               type="button"
-              onClick={clearThumb}
+              onClick={() => fileRef.current?.click()}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={handleDrop}
               disabled={submitting}
-              aria-label="썸네일 제거"
-              className="absolute right-2 top-2 rounded-md bg-background/90 p-1.5 text-muted-foreground hover:text-foreground disabled:opacity-50"
+              className="flex aspect-video w-full max-w-md flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-input bg-background text-muted-foreground transition-colors hover:border-foreground/30 disabled:opacity-50"
             >
-              <X className="size-4" aria-hidden />
+              <ImagePlus className="size-8" aria-hidden />
+              <span className="text-base">클릭해서 선택 · 끌어다 놓기 · 붙여넣기</span>
             </button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => fileRef.current?.click()}
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={handleDrop}
+          )}
+
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/gif"
+            className="hidden"
+            onChange={(e) => {
+              acceptImage(e.target.files?.[0] ?? null)
+              e.target.value = "" // 같은 파일을 다시 골라도 자르기 창이 뜨게
+            }}
             disabled={submitting}
-            className="flex aspect-video w-full max-w-sm flex-col items-center justify-center gap-2 rounded-md border border-dashed border-input bg-card text-muted-foreground transition-colors hover:border-foreground/30 disabled:opacity-50"
-          >
-            <ImagePlus className="size-7" aria-hidden />
-            <span className="text-sm">클릭해서 선택 · 끌어다 놓기 · 붙여넣기</span>
-          </button>
-        )}
+          />
+          {thumbError && <p className="text-sm text-destructive">{thumbError}</p>}
+          <ThumbnailCropper
+            file={cropSource}
+            onCancel={() => setCropSource(null)}
+            onDone={applyCropped}
+          />
+        </div>
+      </FormPanel>
 
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/png,image/jpeg,image/webp,image/gif"
-          className="hidden"
-          onChange={(e) => {
-            acceptImage(e.target.files?.[0] ?? null)
-            e.target.value = "" // 같은 파일을 다시 골라도 자르기 창이 뜨게
-          }}
-          disabled={submitting}
-        />
-        {thumbError && <p className="text-xs text-destructive">{thumbError}</p>}
-        <ThumbnailCropper
-          file={cropSource}
-          onCancel={() => setCropSource(null)}
-          onDone={applyCropped}
-        />
-      </div>
-
-      {/* 작성자 */}
-      <div className="flex flex-col gap-1.5">
-        <label className={labelClass}>작성자</label>
-        <input
-          className={inputClass}
-          placeholder="앱 상세에 보일 이름"
-          value={authorName}
-          onChange={(e) => setAuthorName(e.target.value)}
-          disabled={submitting}
-        />
-      </div>
-
-      {/* 내용 — 블로그형 에디터(HTML 저장) */}
-      <div className="flex flex-col gap-1.5">
-        <label className={labelClass}>내용</label>
-        <RichTextEditor value={content} onChange={setContent} />
-      </div>
-
-      {/* 공개 범위 — 인증교사만: 비인증자에겐 제목·썸네일만 보이는 잠금 카드 */}
-      <fieldset className="flex flex-col gap-1.5">
-        <legend className={labelClass}>공개 범위</legend>
-        <div className="mt-1.5 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+      {/* ── 6. 공개 범위 ── */}
+      <FormPanel
+        title="공개 범위"
+        hint="'인증교사만'으로 하면 인증 안 한 방문자에게는 제목·썸네일만 보이고, 앱 열기·본문·댓글은 잠깁니다."
+      >
+        <fieldset className="flex flex-wrap gap-x-8 gap-y-3 text-base">
+          <legend className="sr-only">공개 범위</legend>
           {VISIBILITY_OPTIONS.map((opt) => (
             <label key={opt.value} className="inline-flex items-center gap-2">
               <input
@@ -457,44 +551,38 @@ export function WriteForm({
                 checked={visibility === opt.value}
                 onChange={() => setVisibility(opt.value)}
                 disabled={submitting}
+                className="size-4"
               />
               {opt.label}
             </label>
           ))}
-        </div>
-        <p className="text-xs text-muted-foreground">
-          '인증교사만'으로 하면 인증 안 한 방문자에게는 제목·썸네일만 보이고, 앱 열기·본문·댓글은 잠깁니다.
-        </p>
-      </fieldset>
+        </fieldset>
+      </FormPanel>
 
-      {/* 에러 */}
       {submitError && (
-        <div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+        <div
+          role="alert"
+          className="rounded-xl border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+        >
           {submitError}
         </div>
       )}
 
-      {/* 하단 액션: 좌측 목록(카테고리로 돌아가기) · 우측 글쓰기(제출) */}
+      {/* 하단 액션: 좌측 목록/취소 · 우측 등록 */}
       <div className="flex items-center justify-between">
         <Link
           to={listTo}
           replace
-          className="rounded-md border border-border px-5 py-2 text-sm font-medium text-foreground hover:bg-accent"
+          className="rounded-xl border border-border bg-card px-6 py-3 text-base font-medium text-foreground hover:bg-accent"
         >
           {isEdit ? "취소" : "목록"}
         </Link>
         <button
           type="submit"
           disabled={submitting}
-          className="rounded-md bg-primary px-6 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+          className="rounded-xl bg-primary px-8 py-3 text-base font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
         >
-          {submitting
-            ? isEdit
-              ? "저장 중…"
-              : "등록 중…"
-            : isEdit
-              ? "수정 저장"
-              : "글쓰기"}
+          {submitting ? (isEdit ? "저장 중…" : "등록 중…") : isEdit ? "수정 저장" : "등록하기"}
         </button>
       </div>
     </form>
