@@ -174,7 +174,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
       </p>
 
       {!isLogin && (
-        <p className="mt-4 rounded-md border border-border bg-surface px-3 py-2.5 text-xs leading-relaxed text-muted-foreground">
+        <p className="mt-4 rounded-md border border-border bg-card px-3 py-2.5 text-xs leading-relaxed text-muted-foreground">
           <span className="font-medium text-foreground">
             자료(앱) 등록은 교사 인증을 받은 회원만 가능합니다.
           </span>{" "}

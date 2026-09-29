@@ -47,7 +47,7 @@ export function AdminMemberList() {
 
   if (members.length === 0) {
     return (
-      <p className="mt-2 rounded-lg border border-border bg-surface p-6 text-center text-sm text-muted-foreground">
+      <p className="mt-2 rounded-lg border border-border bg-card p-6 text-center text-sm text-muted-foreground">
         회원이 없습니다.
       </p>
     )

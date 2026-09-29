@@ -360,7 +360,7 @@ function Thread({
                     "max-w-[80%] whitespace-pre-wrap break-words rounded-2xl px-3 py-2 text-sm " +
                     (mine
                       ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-foreground")
+                      : "border border-border bg-card text-foreground")
                   }
                 >
                   {m.body}

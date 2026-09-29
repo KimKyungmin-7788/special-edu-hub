@@ -17,7 +17,7 @@ export function RegisterCtaCard() {
       <button
         type="button"
         onClick={() => setPickOpen(true)}
-        className="flex h-full min-h-44 w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-input bg-surface p-6 text-center text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
+        className="flex h-full min-h-44 w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-input bg-card p-6 text-center text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
       >
         <Plus className="size-7" aria-hidden />
         <span className="text-sm font-medium">글쓰기</span>

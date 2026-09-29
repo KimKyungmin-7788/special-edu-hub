@@ -322,7 +322,7 @@ export function WriteForm({
             ))}
           </div>
           {related && getSubcategories(related.id).length > 0 && (
-            <div className="mt-2 rounded-md border border-border bg-surface p-3">
+            <div className="mt-2 rounded-md border border-border bg-card p-3">
               <p className="mb-2 text-xs text-muted-foreground">
                 {related.name} 세부 분류 (선택) — 고르면 {related.name} 목록의 칩 필터에서도 찾을 수 있어요.
               </p>
@@ -400,7 +400,7 @@ export function WriteForm({
             onDragOver={(e) => e.preventDefault()}
             onDrop={handleDrop}
             disabled={submitting}
-            className="flex aspect-video w-full max-w-sm flex-col items-center justify-center gap-2 rounded-md border border-dashed border-input bg-surface text-muted-foreground transition-colors hover:border-foreground/30 disabled:opacity-50"
+            className="flex aspect-video w-full max-w-sm flex-col items-center justify-center gap-2 rounded-md border border-dashed border-input bg-card text-muted-foreground transition-colors hover:border-foreground/30 disabled:opacity-50"
           >
             <ImagePlus className="size-7" aria-hidden />
             <span className="text-sm">클릭해서 선택 · 끌어다 놓기 · 붙여넣기</span>

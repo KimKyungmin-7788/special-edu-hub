@@ -69,7 +69,7 @@ export function AppCard({
     <>
       <Link
         to={`/app/${app.id}`}
-        className="group flex h-full flex-col overflow-hidden rounded-xl border bg-card transition-[border-color,box-shadow,translate] duration-200 hover:border-primary/50 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring motion-safe:hover:-translate-y-1"
+        className="group flex h-full flex-col overflow-hidden rounded-xl border bg-card shadow-sm transition-[border-color,box-shadow,translate] duration-200 hover:border-primary/50 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring motion-safe:hover:-translate-y-1"
       >
         <div className="relative aspect-video overflow-hidden bg-surface">
           {/* 호버 시 썸네일 살짝 확대 */}

@@ -110,7 +110,7 @@ function Notice({
   cta: string
 }) {
   return (
-    <div className="rounded-lg border border-border bg-muted/40 p-6">
+    <div className="rounded-lg border border-border bg-card p-6">
       <p className="font-medium">{title}</p>
       <p className="mt-1 text-sm text-muted-foreground">{body}</p>
       <Link

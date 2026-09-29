@@ -253,7 +253,7 @@ export function PracticeForm({
         />
       )}
       {draftApplied && (
-        <div role="status" className="-mt-4 rounded-lg border border-border bg-surface p-4 text-sm">
+        <div role="status" className="-mt-4 rounded-lg border border-border bg-card p-4 text-sm">
           <p className="font-medium">설계안으로 초안을 채웠어요. 올리기 전에 꼭 읽고 다듬어 주세요.</p>
           <ul className="mt-2 list-disc space-y-1 pl-5 text-muted-foreground">
             <li>
@@ -345,7 +345,7 @@ export function PracticeForm({
           {subjects
             .filter((s) => getSubcategories(s).length > 0)
             .map((s) => (
-              <div key={s} className="mt-2 rounded-md border border-border bg-surface p-3">
+              <div key={s} className="mt-2 rounded-md border border-border bg-card p-3">
                 <p className="mb-2 text-xs text-muted-foreground">
                   {getCategory(s)?.name} 세부 분류 (선택)
                 </p>
@@ -467,7 +467,7 @@ export function PracticeForm({
           </p>
         </fieldset>
 
-        <label className="flex items-start gap-2.5 rounded-md border border-border bg-surface p-3 text-sm">
+        <label className="flex items-start gap-2.5 rounded-md border border-border bg-card p-3 text-sm">
           <input
             type="checkbox"
             className="mt-0.5"

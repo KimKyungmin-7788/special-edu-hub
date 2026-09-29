@@ -146,7 +146,7 @@ function Content({
     case "revoked":
       return (
         <div className="flex flex-col gap-6">
-          <div className="rounded-md border border-border bg-muted/40 p-4">
+          <div className="rounded-md border border-border bg-card p-4">
             <p className="text-sm font-semibold">교사인증이 해제된 계정입니다</p>
             <p className="mt-1 text-sm text-muted-foreground">
               다시 인증이 필요하면 아래에서 새로 신청해 주세요. 궁금한 점은 운영진 문의로 알려 주세요.

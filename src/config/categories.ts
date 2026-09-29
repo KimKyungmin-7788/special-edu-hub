@@ -38,7 +38,7 @@ export const categories: Category[] = [
   { id: "math", name: "수학", type: "subject", icon: "calculator", sortOrder: 2, tagline: "수와 모양을 보고 만지며 익히는 수학 자료" },
   { id: "social-science", name: "사회/과학", type: "subject", icon: "globe", sortOrder: 3, tagline: "우리 동네에서 지구까지, 세상을 탐구하는 자료" },
   { id: "arts", name: "음악/미술/체육", type: "subject", icon: "music", sortOrder: 4, tagline: "소리와 색, 몸으로 마음껏 표현하는 자료" },
-  { id: "career", name: "진로와직업/전환", shortName: "진로/전환", type: "subject", icon: "briefcase", sortOrder: 5, tagline: "학교 너머의 삶과 일을 준비하는 자료" },
+  { id: "career", name: "진로와직업/실과", shortName: "진로/실과", type: "subject", icon: "briefcase", sortOrder: 5, tagline: "학교 너머의 삶과 일을 준비하는 자료" },
   { id: "life", name: "일상생활", type: "subject", icon: "house", sortOrder: 6, tagline: "하루를 스스로 해내는 힘을 기르는 생활 자료" },
   { id: "creative", name: "창체", type: "subject", icon: "sparkles", sortOrder: 7, tagline: "생각을 키우고 경험을 넓히는 창의적 체험활동 자료" },
   { id: "class", name: "학급경영", type: "subject", icon: "users", sortOrder: 8, tagline: "함께 지내는 교실을 가꾸는 학급경영 자료" },

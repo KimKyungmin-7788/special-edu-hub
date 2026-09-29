@@ -38,7 +38,7 @@ export function VerifyPending({
       </div>
 
       {mail && (
-        <div className="w-full max-w-md rounded-md border border-border bg-muted/50 p-4 text-left text-sm">
+        <div className="w-full max-w-md rounded-md border border-border bg-card p-4 text-left text-sm">
           <p className="font-medium text-foreground">아직 메일을 보내지 않으셨나요?</p>
           <p className="mt-1 text-muted-foreground">
             재직증명서(개인정보 가림) 또는 이름이 보이는 나이스 화면 캡처를 첨부해{" "}

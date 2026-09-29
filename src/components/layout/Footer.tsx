@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils"
 /** 푸터 — 누리집명 + 안내 문구 + 정책/소개 링크(전부 config에서). */
 export function Footer() {
   return (
-    <footer className="mt-16 border-t bg-surface">
+    <footer className="border-t bg-background">
       <div
         className={cn(
           CONTAINER,

@@ -61,7 +61,7 @@ export function PracticeCard({ practice }: { practice: Practice }) {
   return (
     <Link
       to={`/practices/${practice.id}`}
-      className="group flex h-full flex-col overflow-hidden rounded-xl border bg-card transition-[border-color,box-shadow,translate] duration-200 hover:border-primary/50 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring motion-safe:hover:-translate-y-1"
+      className="group flex h-full flex-col overflow-hidden rounded-xl border bg-card shadow-sm transition-[border-color,box-shadow,translate] duration-200 hover:border-primary/50 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring motion-safe:hover:-translate-y-1"
     >
       <div className="relative aspect-video overflow-hidden bg-surface">
         <div className="h-full w-full transition-transform duration-300 motion-safe:group-hover:scale-[1.04]">

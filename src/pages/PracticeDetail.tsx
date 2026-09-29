@@ -202,7 +202,7 @@ export function PracticeDetail() {
       </button>
 
       {practice.status === "hidden" && (
-        <p className="mt-4 rounded-md border border-border bg-surface px-3 py-2 text-sm text-muted-foreground">
+        <p className="mt-4 rounded-md border border-border bg-card px-3 py-2 text-sm text-muted-foreground">
           숨긴 사례입니다. 작성자와 운영진에게만 보여요.
         </p>
       )}
@@ -221,7 +221,7 @@ export function PracticeDetail() {
               key={c.id}
               className={
                 c.parentId
-                  ? "rounded-md bg-secondary px-2 py-0.5 text-xs text-secondary-foreground"
+                  ? "rounded-md border border-border bg-card px-2 py-0.5 text-xs text-secondary-foreground"
                   : "rounded-md bg-brand-muted px-2 py-0.5 text-xs font-semibold text-brand-muted-foreground"
               }
             >
@@ -416,7 +416,7 @@ function hostOf(url: string): string {
 function LockedNotice({ loggedIn, from }: { loggedIn: boolean; from: string }) {
   return (
     <section className="mt-8 border-t pt-8">
-      <div className="flex flex-col items-center gap-3 rounded-lg border border-border bg-surface px-6 py-10 text-center">
+      <div className="flex flex-col items-center gap-3 rounded-lg border border-border bg-card px-6 py-10 text-center">
         <Lock className="size-6 text-muted-foreground" aria-hidden />
         <p className="text-base font-semibold">인증교사만 열람할 수 있는 사례입니다</p>
         <p className="text-sm text-muted-foreground">

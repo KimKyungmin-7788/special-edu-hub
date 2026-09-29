@@ -44,7 +44,7 @@ export function MyAppList() {
 
   if (apps.length === 0) {
     return (
-      <div className="mt-2 rounded-lg border border-border bg-surface p-6 text-center">
+      <div className="mt-2 rounded-lg border border-border bg-card p-6 text-center">
         <p className="text-sm text-muted-foreground">아직 등록한 앱이 없어요.</p>
         <Link
           to="/apps/subject"

@@ -83,7 +83,7 @@ function OpenList() {
   }
   if (items.length === 0) {
     return (
-      <p className="mt-2 rounded-lg border border-border bg-surface p-6 text-center text-sm text-muted-foreground">
+      <p className="mt-2 rounded-lg border border-border bg-card p-6 text-center text-sm text-muted-foreground">
         대기 중인 문의가 없습니다.
       </p>
     )
@@ -126,7 +126,7 @@ function HandledList() {
   }
   if (items.length === 0) {
     return (
-      <p className="mt-2 rounded-lg border border-border bg-surface p-6 text-center text-sm text-muted-foreground">
+      <p className="mt-2 rounded-lg border border-border bg-card p-6 text-center text-sm text-muted-foreground">
         처리한 문의가 없습니다.
       </p>
     )
@@ -214,7 +214,7 @@ function OpenCard({
   }
 
   return (
-    <li className="rounded-lg border border-border bg-surface p-4">
+    <li className="rounded-lg border border-border bg-card p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <InquiryBody inquiry={inquiry} />
@@ -253,7 +253,7 @@ function OpenCard({
 /** 처리 내역 카드 — 처리일 + 메모. */
 function HandledCard({ inquiry }: { inquiry: Inquiry }) {
   return (
-    <li className="rounded-lg border border-border bg-surface p-4">
+    <li className="rounded-lg border border-border bg-card p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="mb-2">

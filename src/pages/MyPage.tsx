@@ -191,7 +191,7 @@ export function MyPage() {
       <div
         role="tablist"
         aria-label="마이페이지 메뉴"
-        className="mt-6 grid grid-cols-4 divide-x divide-border overflow-hidden rounded-lg border border-border"
+        className="mt-6 grid grid-cols-4 divide-x divide-border overflow-hidden rounded-lg border border-border bg-card"
       >
         <MyTabButton selected={tab === "bookmarks"} onClick={() => setTab("bookmarks")}>
           즐겨찾기
@@ -270,7 +270,7 @@ export function MyPage() {
 
       {/* 미인증 안내 — 교사인증 유도(준비 중인 /verify 로) */}
       {!loadingProfile && profile && !profile.isTeacherVerified && (
-        <div className="mt-6 rounded-lg border border-border bg-surface p-4">
+        <div className="mt-6 rounded-lg border border-border bg-card p-4">
           <p className="text-sm font-medium text-foreground">
             교사 인증을 마치면 앱 등록·글쓰기 권한이 부여됩니다.
           </p>

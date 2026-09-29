@@ -57,7 +57,7 @@ export function VerifyForm({
   return (
     <div className="flex flex-col gap-6">
       {/* 절차 안내 */}
-      <div className="rounded-md border border-border bg-muted/40 p-4">
+      <div className="rounded-md border border-border bg-card p-4">
         <p className="text-sm font-semibold">
           {mode === "reapply" ? "재신청 방법" : "인증 방법"}
         </p>

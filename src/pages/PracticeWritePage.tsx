@@ -110,7 +110,7 @@ export function PracticeWritePage() {
 
 function Notice({ title, body, to, cta }: { title: string; body: string; to: string; cta: string }) {
   return (
-    <div className="rounded-lg border border-border bg-muted/40 p-6">
+    <div className="rounded-lg border border-border bg-card p-6">
       <div className="flex items-start gap-3">
         <ShieldCheck className="mt-0.5 size-5 text-muted-foreground" aria-hidden />
         <div className="flex flex-col gap-1">

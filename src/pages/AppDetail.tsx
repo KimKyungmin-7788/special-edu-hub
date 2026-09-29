@@ -275,7 +275,7 @@ export function AppDetail() {
             {tags.map((t) => (
               <li
                 key={t}
-                className="rounded-md bg-secondary px-2 py-0.5 text-xs text-secondary-foreground"
+                className="rounded-md border border-border bg-card px-2 py-0.5 text-xs text-secondary-foreground"
               >
                 {t}
               </li>
@@ -454,7 +454,7 @@ export function AppDetail() {
 function LockedNotice({ loggedIn, from }: { loggedIn: boolean; from: string }) {
   return (
     <section className="mt-8 border-t pt-8">
-      <div className="flex flex-col items-center gap-3 rounded-lg border border-border bg-surface px-6 py-10 text-center">
+      <div className="flex flex-col items-center gap-3 rounded-lg border border-border bg-card px-6 py-10 text-center">
         <Lock className="size-6 text-muted-foreground" aria-hidden />
         <p className="text-base font-semibold">인증교사만 열람할 수 있는 자료입니다</p>
         <p className="text-sm text-muted-foreground">
