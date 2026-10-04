@@ -18,7 +18,8 @@ import {
   type SynonymGroup,
 } from "./search.js"
 
-export type { Result, Standard, Strength, SchoolLevel } from "./search.js"
+export type { ExplainWord, QueryTerm, Result, Standard, Strength, SchoolLevel } from "./search.js"
+export { explainWords } from "./search.js"
 
 /** 한 자료에 고를 수 있는 성취기준 최대 개수 (DB check 36 과 같은 값) */
 export const ACHIEVEMENT_CODES_MAX = 20

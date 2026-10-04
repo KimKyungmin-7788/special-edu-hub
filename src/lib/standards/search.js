@@ -169,6 +169,20 @@ function rawTokens(text) {
   return out;
 }
 
+// 화면 설명용: 문장의 낱말마다 어떻게 처리했는지 돌려준다 (검색 점수에는 쓰지 않음)
+//   kind: core(핵심어) | low(앱 형식·일반어라 약하게) | stop(뺀 말), rest: 떼어 낸 조사·어미
+export function explainWords(text) {
+  const out = [];
+  for (const w of normalize(text).split(" ").filter(Boolean)) {
+    const t = STOP_WORDS.has(w) ? "" : stripParticle(w);
+    let kind = "core";
+    if (!t || STOP_WORDS.has(t)) kind = "stop";
+    else if (FORMAT_WORDS.has(w) || FORMAT_WORDS.has(t) || GENERIC_WORDS.has(w) || GENERIC_WORDS.has(t)) kind = "low";
+    out.push({ word: w, token: t || w, rest: t && w.startsWith(t) ? w.slice(t.length) : "", kind });
+  }
+  return out;
+}
+
 export function parseQuery(query, index) {
   const parts = typeof query === "string"
     ? [{ text: query, mult: 1.0, from: "app" }]
@@ -229,11 +243,12 @@ function tokenScore(doc, tok, index) {
 //   강함: 드문 핵심어 2개 이상, 또는 드문 핵심어 1개 + (수업 주제의 드문 말 또는 드문 유의어) 일치
 //   보통: 드문 핵심어 1개, 또는 드문 유의어 일치, 또는 흔한 핵심어 3개 이상
 //   약함: 흔한 말·조작어로만 일치
-export function strengthOf(r, top) {
+export function strengthOf(r, top, bothParts = true) {
   const coreRare = new Set(r.matched.filter((m) => m.source === "query" && m.core && m.rare).map((m) => m.word));
   const coreAll = new Set(r.matched.filter((m) => m.source === "query" && m.core).map((m) => m.word));
   const synRare = new Set(r.matched.filter((m) => m.source !== "query" && m.rare).map((m) => m.word));
-  const topicRare = r.matched.some((m) => m.from === "topic" && m.rare && (m.core || m.source !== "query"));
+  // 수업 주제 가산은 주제·앱 설명을 모두 입력했을 때만 (한 칸만 쓰면 모든 결과가 '강함'이 되므로)
+  const topicRare = bothParts && r.matched.some((m) => m.from === "topic" && m.rare && (m.core || m.source !== "query"));
   if (coreRare.size >= 2 || (coreRare.size >= 1 && (topicRare || synRare.size >= 1))) return "강함";
   if (coreRare.size === 1 || synRare.size >= 1 || coreAll.size >= 3) return "보통";
   return "약함";
@@ -249,6 +264,7 @@ export function search(query, index, opts = {}) {
     subjects = null,     // ["실과", ...] 필터
   } = opts;
   const terms = parseQuery(query, index);
+  const bothParts = typeof query !== "string" && !!(query.topic || "").trim() && !!(query.app || "").trim();
   if (!terms.length) return { terms, results: [], grouped: [] };
 
   // 1차: 성취기준마다 검색어별 일치 계산
@@ -304,7 +320,7 @@ export function search(query, index, opts = {}) {
     if (!best) break;
     used.add(best);
     perSubj.set(best.standard.subject, (perSubj.get(best.standard.subject) || 0) + 1);
-    results.push({ ...best, relevance: best.score / top, strength: strengthOf(best, top) });
+    results.push({ ...best, relevance: best.score / top, strength: strengthOf(best, top, bothParts) });
   }
 
   // 학교급 -> 교과 순으로 정리 (각 묶음 안은 점수순)

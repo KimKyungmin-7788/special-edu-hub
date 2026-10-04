@@ -5,7 +5,9 @@ import { SegmentedToggle, chipClass, fieldInput } from "@/components/form/FormPa
 import { cn } from "@/lib/utils"
 import {
   ACHIEVEMENT_CODES_MAX,
+  explainWords,
   searchStandards,
+  type QueryTerm,
   type Result,
   type SchoolLevel,
   type Strength,
@@ -53,6 +55,7 @@ export function StandardsFinderModal({
   const [checked, setChecked] = useState<string[]>(selected)
   const [grouped, setGrouped] = useState<Grouped>([])
   const [count, setCount] = useState(0)
+  const [terms, setTerms] = useState<QueryTerm[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const reqId = useRef(0)
@@ -74,6 +77,7 @@ export function StandardsFinderModal({
     if (!q.topic && !q.app) {
       setGrouped([])
       setCount(0)
+      setTerms([])
       return
     }
     const id = ++reqId.current
@@ -84,6 +88,7 @@ export function StandardsFinderModal({
         if (id !== reqId.current) return
         setGrouped(res.grouped)
         setCount(res.results.length)
+        setTerms(res.terms)
         setError("")
       } catch (e) {
         if (id !== reqId.current) return
@@ -160,6 +165,7 @@ export function StandardsFinderModal({
             />
           )}
         </div>
+        <QueryWords text={mode === "app" ? appText : topic} terms={terms} />
         <div className="flex flex-wrap items-center gap-2" role="group" aria-label="학교급">
           {LEVELS.map((lv) => (
             <button
@@ -242,6 +248,72 @@ export function StandardsFinderModal({
         </div>
       </div>
     </Modal>
+  )
+}
+
+/**
+ * 입력한 문장을 검색어로 어떻게 바꿨는지 보여준다 (독립 검색 앱과 같은 풀이).
+ * - 검색에 쓴 단어: 조사·어미는 흐리게, 앱 형식·일반어처럼 약하게 반영한 말은 점선
+ * - 함께 찾은 단어: 유의어 사전으로 넓혀 찾은 말 (어느 말에서 왔는지 함께)
+ */
+function QueryWords({ text, terms }: { text: string; terms: QueryTerm[] }) {
+  const seen = new Set<string>()
+  const words = explainWords(text.trim()).filter(
+    (w) => w.kind !== "stop" && !seen.has(w.token) && Boolean(seen.add(w.token)),
+  )
+  if (!text.trim() || words.length === 0) return null
+  const groups = new Map<string, string[]>()
+  for (const t of terms) {
+    const m = /^유의어\((.+)\)$/.exec(t.source)
+    if (!m) continue
+    const list = groups.get(m[1]) ?? []
+    if (list.length < 4) list.push(t.token)
+    groups.set(m[1], list)
+  }
+  const syn = [...groups].slice(0, 4)
+  const chip = "rounded-md px-1.5 py-0.5 text-xs"
+  return (
+    <div className="grid gap-1.5 rounded-xl border border-border bg-background p-3 text-xs" aria-live="polite">
+      <div className="grid grid-cols-[5.5rem_1fr] items-baseline gap-2">
+        <span className="text-muted-foreground">검색에 쓴 단어</span>
+        <span className="flex flex-wrap gap-1">
+          {words.map((w) =>
+            w.kind === "low" ? (
+              <span
+                key={w.token}
+                title="앱 형식·일반어라 적게 반영해요"
+                className={cn(chip, "border border-dashed border-border text-muted-foreground")}
+              >
+                {w.token}
+                {w.rest && <span className="opacity-50">{w.rest}</span>}
+              </span>
+            ) : (
+              <span key={w.token} className={cn(chip, "bg-brand-muted font-semibold text-brand-muted-foreground")}>
+                {w.token}
+                {w.rest && <span className="font-normal opacity-50">{w.rest}</span>}
+              </span>
+            ),
+          )}
+        </span>
+      </div>
+      {syn.length > 0 && (
+        <div className="grid grid-cols-[5.5rem_1fr] items-baseline gap-2">
+          <span className="text-muted-foreground">함께 찾은 단어</span>
+          <span className="flex flex-wrap items-center gap-1">
+            {syn.map(([from, list]) => (
+              <span key={from} className="inline-flex flex-wrap items-center gap-1">
+                <span className="text-muted-foreground">{from} →</span>
+                {list.map((x) => (
+                  <span key={x} className={cn(chip, "bg-secondary text-secondary-foreground")}>
+                    {x}
+                  </span>
+                ))}
+              </span>
+            ))}
+          </span>
+        </div>
+      )}
+    </div>
   )
 }
 

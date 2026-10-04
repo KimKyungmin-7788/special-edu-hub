@@ -47,6 +47,9 @@ export type Match = {
 export type Scored = { standard: Standard; score: number; matched: Match[] }
 export type Result = Scored & { relevance: number; strength: Strength }
 
+/** 화면 설명용: 문장의 낱말마다 검색어로 어떻게 처리했는지 (core 핵심어 · low 약하게 반영 · stop 뺀 말) */
+export type ExplainWord = { word: string; token: string; rest: string; kind: "core" | "low" | "stop" }
+
 export type SearchIndex = { readonly __brand: "SearchIndex" }
 
 export type SearchQuery = string | { topic?: string; app?: string }
@@ -72,6 +75,7 @@ export function normalize(s: string): string
 export function stripParticle(tok: string): string
 export function buildIndex(standards: Standard[], synonyms?: SynonymGroup[]): SearchIndex
 export function parseQuery(query: SearchQuery, index: SearchIndex): QueryTerm[]
-export function strengthOf(r: Scored, top: number): Strength
+export function strengthOf(r: Scored, top: number, bothParts?: boolean): Strength
 export function search(query: SearchQuery, index: SearchIndex, opts?: SearchOptions): SearchResponse
 export function buildPrompt(query: string, results: { standard: Standard }[], allStandards?: Standard[] | null): string
+export function explainWords(text: string): ExplainWord[]
