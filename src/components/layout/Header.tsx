@@ -5,6 +5,7 @@ import { site } from "@/config/site"
 import { SiteLogo } from "@/config/logo"
 import { CONTAINER } from "@/config/layout"
 import { Nav } from "@/components/layout/Nav"
+import { WriteButton } from "@/components/app/WriteButton"
 import { useAuth } from "@/lib/auth"
 import { cn } from "@/lib/utils"
 
@@ -14,7 +15,7 @@ import { cn } from "@/lib/utils"
  *  좁은 화면     : [로고·누리집명] ··· [로그인/아바타] [☰] → 아래로 펼쳐지는 메뉴 패널
  * 인증 영역은 세션 상태로 분기:
  *   로딩 중 → 비움(깜빡임 방지) / 비로그인 → 로그인·회원가입
- *   로그인 → 아바타+닉네임 드롭다운(마이페이지·관리·로그아웃)
+ *   로그인 → [글쓰기] + 아바타+닉네임 드롭다운(마이페이지·관리·로그아웃)
  */
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
@@ -143,6 +144,7 @@ function AuthArea() {
           관리
         </Link>
       )}
+      <WriteButton className="mr-1 h-9 px-3" />
       <AccountMenu
         displayName={displayName}
         avatarUrl={profile?.avatarUrl ?? null}

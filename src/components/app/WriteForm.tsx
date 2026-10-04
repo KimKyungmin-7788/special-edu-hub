@@ -6,7 +6,7 @@ import {
   type FormEvent,
 } from "react"
 import { Link, useNavigate } from "react-router-dom"
-import { Crop, ImagePlus, Search, X } from "lucide-react"
+import { Crop, ImagePlus, Search, Sparkles, X } from "lucide-react"
 import {
   getCategory,
   getSubcategories,
@@ -34,7 +34,6 @@ import {
   CharCounter,
   FormField,
   FormPanel,
-  SegmentedToggle,
   SelectBox,
   fieldInput,
   fieldTextarea,
@@ -45,18 +44,9 @@ const VISIBILITY_OPTIONS: { value: AppVisibility; label: string }[] = [
   { value: "teachers", label: "인증교사만" },
 ]
 
-const USE_CASE_OPTIONS: { value: Exclude<UseCaseType, "">; label: string; hint: string }[] = [
-  {
-    value: "field",
-    label: "현장 활용 사례",
-    hint: "수업이나 업무에서 실제로 써 보니 어땠는지, 학생 반응과 함께 구체적으로 적어 주세요.",
-  },
-  {
-    value: "expected",
-    label: "예상되는 현장 변화",
-    hint: "아직 수업에서 써 보지 않았다면, 이 자료로 기대하는 변화와 반응을 적어 주세요.",
-  },
-]
+/** 활용사례 안내 — '예상되는 현장 변화'는 2026-10-05 폼에서 뺐다(기존 자료의 값은 그대로 둔다). */
+const USE_CASE_HINT =
+  "수업이나 업무에서 실제로 써 보니 어땠는지, 학생 반응과 함께 구체적으로 적어 주세요."
 
 const INTENT_MAX = 1000
 const USE_CASE_MAX = 2000
@@ -69,7 +59,7 @@ const clip = (text: string, max: number) => Array.from(text).slice(0, max).join(
 /**
  * 자료 등록/수정 폼 (2026-09-29 개편).
  * 순서: 앱 이름 → 앱 링크 → 한줄 설명(+성취기준 찾기) → 카테고리(교과·하위 주제·관련 성취기준·연관 교과)
- *       → 교육적 의도(필수) → 활용사례(선택, 종류 토글) → 자세한 설명 → 썸네일 → 공개 범위.
+ *       → 교육적 의도(필수) → 활용사례(선택) → 자세한 설명 → 썸네일 → 공개 범위.
  * 관련 성취기준은 검색 모달·직접 입력 모달로 고른 코드 목록만 받는다(35의 자유 입력 메모 칸은 뺐다 —
  * 기존 메모 값은 수정 때 건드리지 않고 상세 페이지에는 그대로 보인다).
  * 교과는 진입 경로(categoryId)에서 미리 골라져 오지만 폼에서 바꿀 수 있다.
@@ -141,9 +131,9 @@ export function WriteForm({
   const [finderOpen, setFinderOpen] = useState(false)
   const [manualOpen, setManualOpen] = useState(false)
   const [intent, setIntent] = useState(app?.educationalIntent ?? "")
-  const [useCaseType, setUseCaseType] = useState<Exclude<UseCaseType, "">>(
-    app?.useCaseType === "expected" ? "expected" : "field",
-  )
+  // 새 글은 항상 '현장 활용 사례'. 예전에 '예상되는 현장 변화'로 쓴 자료는 수정해도 그 종류를 유지.
+  const useCaseType: Exclude<UseCaseType, ""> =
+    app?.useCaseType === "expected" ? "expected" : "field"
   const [useCase, setUseCase] = useState(app?.useCase ?? "")
   const [content, setContent] = useState(app?.description ?? "")
   const [visibility, setVisibility] = useState<AppVisibility>(app?.visibility ?? "public")
@@ -285,7 +275,6 @@ export function WriteForm({
     }
   }
 
-  const useCaseHint = USE_CASE_OPTIONS.find((o) => o.value === useCaseType)?.hint
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
@@ -321,7 +310,7 @@ export function WriteForm({
           />
         </FormField>
 
-        <FormField label="한줄 설명" htmlFor="app-summary" hint="목록 카드에서 제목 아래에 보여요.">
+        <FormField label="한줄 설명" htmlFor="app-summary" hint="목록 카드에서 제목 아래에 보이고, 관련 성취기준을 찾을 때도 쓰여요.">
           <input
             id="app-summary"
             className={fieldInput}
@@ -331,14 +320,30 @@ export function WriteForm({
             disabled={submitting}
           />
           <CharCounter count={charCount(summary)} max={SUMMARY_MAX} />
-          <button
-            type="button"
-            onClick={() => setFinderOpen(true)}
-            disabled={submitting}
-            className="inline-flex h-10 items-center gap-2 self-start rounded-xl border border-border bg-background px-3 text-sm hover:bg-accent disabled:opacity-60"
-          >
-            <Search className="size-4" aria-hidden /> 이 설명으로 관련 성취기준 찾기
-          </button>
+          {/* 성취기준 찾기 안내 — 버튼만 두면 작성자가 못 알아채서, 무엇을 해 주는지 문장으로 보여 준다. */}
+          <div className="mt-2 flex flex-col gap-3 rounded-xl border border-border bg-surface p-4 sm:flex-row sm:items-center">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+              <Sparkles className="size-5" aria-hidden />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-foreground">
+                이 한줄 설명으로 관련 성취기준을 찾아 드려요
+              </p>
+              <p className="mt-0.5 text-sm text-muted-foreground">
+                {achievementCodes.length > 0
+                  ? `지금 ${achievementCodes.length}개 골랐어요. 아래 '카테고리'에서 순서를 정리할 수 있어요.`
+                  : "기본 교육과정 성취기준 가운데 비슷한 것을 골라 보여 줘요. 설명을 쓴 뒤 눌러 보세요."}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setFinderOpen(true)}
+              disabled={submitting}
+              className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
+            >
+              <Search className="size-4" aria-hidden /> 성취기준 찾기
+            </button>
+          </div>
         </FormField>
       </FormPanel>
 
@@ -452,17 +457,11 @@ export function WriteForm({
         </FormField>
 
         <FormField label="활용사례" optional>
-          <SegmentedToggle
-            value={useCaseType}
-            options={USE_CASE_OPTIONS}
-            onChange={setUseCaseType}
-            disabled={submitting}
-          />
           <textarea
             aria-label="활용사례 내용"
             rows={5}
-            placeholder={useCaseHint}
-            className={fieldTextarea + " mt-1"}
+            placeholder={USE_CASE_HINT}
+            className={fieldTextarea}
             value={useCase}
             onChange={(e) => setUseCase(clip(e.target.value, USE_CASE_MAX))}
             disabled={submitting}
