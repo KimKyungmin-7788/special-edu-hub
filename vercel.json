@@ -1,6 +1,10 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "rewrites": [{ "source": "/((?!api/).*)", "destination": "/index.html" }],
+  "rewrites": [
+    { "source": "/vibe-setup", "destination": "https://vibecoding-setting.vercel.app/vibe-setup/" },
+    { "source": "/vibe-setup/:path*", "destination": "https://vibecoding-setting.vercel.app/vibe-setup/:path*" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ],
   "functions": {
     "api/practice-draft.ts": { "maxDuration": 120 }
   }

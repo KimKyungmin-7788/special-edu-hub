@@ -23,22 +23,32 @@ export function Nav({
         <ul className="flex flex-col gap-0.5">
           {navItems.map((item) => (
             <li key={item.to}>
-              <NavLink
-                to={item.to}
-                end={item.end}
-                onClick={onNavigate}
-                className={({ isActive }) =>
-                  cn(
-                    "flex items-center justify-between rounded-md px-3 py-2.5 text-[15px] transition-colors",
-                    isActive
-                      ? "bg-brand-soft font-semibold text-primary"
-                      : "text-foreground/80 hover:bg-accent hover:text-foreground",
-                  )
-                }
-              >
-                {item.label}
-                {item.status === "soon" && <SoonBadge />}
-              </NavLink>
+              {item.outsideApp ? (
+                <a
+                  href={item.to}
+                  onClick={onNavigate}
+                  className="flex items-center justify-between rounded-md px-3 py-2.5 text-[15px] text-foreground/80 transition-colors hover:bg-accent hover:text-foreground"
+                >
+                  {item.label}
+                </a>
+              ) : (
+                <NavLink
+                  to={item.to}
+                  end={item.end}
+                  onClick={onNavigate}
+                  className={({ isActive }) =>
+                    cn(
+                      "flex items-center justify-between rounded-md px-3 py-2.5 text-[15px] transition-colors",
+                      isActive
+                        ? "bg-brand-soft font-semibold text-primary"
+                        : "text-foreground/80 hover:bg-accent hover:text-foreground",
+                    )
+                  }
+                >
+                  {item.label}
+                  {item.status === "soon" && <SoonBadge />}
+                </NavLink>
+              )}
             </li>
           ))}
         </ul>
@@ -60,15 +70,26 @@ export function Nav({
 }
 
 function BarLink({ item }: { item: NavItem }) {
+  // 허브 라우터 밖 주소(vercel.json rewrite) — 일반 a 태그로 전체 페이지 이동, 활성 표시 없음
+  if (item.outsideApp) {
+    return (
+      <a
+        href={item.to}
+        className="relative flex items-center gap-1.5 px-2.5 2xl:px-3.5 text-[15px] font-medium whitespace-nowrap text-foreground/70 transition-colors hover:text-foreground after:absolute after:inset-x-2.5 2xl:after:inset-x-3.5 after:-bottom-px after:h-0.5 after:rounded-full after:bg-transparent after:transition-colors hover:after:bg-border"
+      >
+        {item.label}
+      </a>
+    )
+  }
   return (
     <NavLink
       to={item.to}
       end={item.end}
       className={({ isActive }) =>
         cn(
-          "group relative flex items-center gap-1.5 px-3.5 text-[15px] whitespace-nowrap transition-colors",
+          "group relative flex items-center gap-1.5 px-2.5 2xl:px-3.5 text-[15px] whitespace-nowrap transition-colors",
           // 현재 메뉴 표시: 헤더 아래 테두리 위에 겹치는 2px 밑줄
-          "after:absolute after:inset-x-3.5 after:-bottom-px after:h-0.5 after:rounded-full after:transition-colors",
+          "after:absolute after:inset-x-2.5 2xl:after:inset-x-3.5 after:-bottom-px after:h-0.5 after:rounded-full after:transition-colors",
           isActive
             ? "font-semibold text-primary after:bg-primary"
             : "font-medium text-foreground/70 hover:text-foreground after:bg-transparent hover:after:bg-border",
