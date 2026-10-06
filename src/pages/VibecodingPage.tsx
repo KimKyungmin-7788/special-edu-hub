@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from "react-router-dom"
-import { CONTAINER } from "@/config/layout"
+import { WIDE_CONTAINER } from "@/config/layout"
 import { vibecoding, vibecodingPath } from "@/config/vibecoding"
 import { cn } from "@/lib/utils"
 
@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils"
 export function VibecodingPage() {
   return (
     <div
-      className={`${CONTAINER} grid grid-cols-1 gap-4 py-6 lg:grid-cols-[minmax(0,1fr)_14rem] lg:gap-6`}
+      className={`${WIDE_CONTAINER} grid grid-cols-1 gap-4 py-6 lg:grid-cols-[minmax(0,1fr)_12rem] lg:gap-5`}
     >
       <div className="min-w-0">
         <Outlet />
