@@ -1,102 +1,134 @@
-export type Tool = "claude" | "codex"
+export type Tool = "claude" | "codex";
 
 export const TOOL_NAME: Record<Tool, string> = {
   claude: "Claude Code",
   codex: "Codex",
-}
+};
 
 export interface StepLink {
-  label: string
+  label: string;
   /** 새 탭으로 여는 주소. dialog가 있으면 없어도 돼요 */
-  href?: string
-  note?: string
+  href?: string;
+  note?: string;
   /** 정하면 [열기]를 눌렀을 때 새 탭 대신 이 안내 창이 떠요 */
-  dialog?: StepDialog
+  dialog?: StepDialog;
 }
 
 /** [열기]로 띄우는 안내 창 */
 export interface StepDialog {
-  title: string
-  steps: string[]
-  command?: StepCommand
+  title: string;
+  steps: string[];
+  command?: StepCommand;
   /** 창 아래에 붙는 참고 링크(새 탭) */
-  more?: { label: string; href: string }
+  more?: { label: string; href: string };
 }
 
 export interface StepCheck {
-  id: string
-  label: string
+  id: string;
+  label: string;
   /** Claude Code·Codex에 그대로 붙여 넣을 문장. 있으면 항목 옆에 [문장 복사]가 생겨요 */
-  ask?: string
+  ask?: string;
 }
 
 export interface StepHelp {
   /** 막힌 상황 (칩에 보이는 짧은 문장) */
-  situation: string
+  situation: string;
   /** Claude Code·Codex에 붙여 넣을 프롬프트 */
-  prompt: string
+  prompt: string;
 }
 
 /** 왼쪽 칸에 넣는 안내 그림. 좌표는 원본 이미지 픽셀 기준 */
 export interface StepGuide {
-  src: string
-  alt: string
-  width: number
-  height: number
+  src: string;
+  alt: string;
+  width: number;
+  height: number;
   /** 주황 점선을 두를 곳. 그림에 이미 표시가 있으면 비워 둬요 */
-  highlight?: { x: number; y: number; w: number; h: number }
-  label?: string
+  highlight?: { x: number; y: number; w: number; h: number };
+  label?: string;
   /** 누르지 않아도 되는 곳을 흐리게 덮고 안내 문구를 얹어요 */
-  dim?: { x: number; y: number; w: number; h: number; text: string }
+  dim?: { x: number; y: number; w: number; h: number; text: string };
   /** 그림 위에 붙는 짧은 설명 (예: "① [+] → 커넥터") */
-  caption?: string
+  caption?: string;
   /** 작은 그림에서 점선·이름표 크기를 줄여요. 기본 1 */
-  markScale?: number
+  markScale?: number;
   /** 이름표 자리를 직접 정해요. 비우면 아래 → 오른쪽 → 위 순서로 자동 */
-  labelSide?: "below" | "right" | "above"
+  labelSide?: "below" | "right" | "above";
 }
 
 export interface StepFlowItem {
-  text: string
-  note?: string
+  text: string;
+  note?: string;
   /** 복사해서 보낼 문장 */
-  copy?: string
+  copy?: string;
   /** 새 탭으로 여는 링크 */
-  link?: { label: string; href: string }
+  link?: { label: string; href: string };
 }
 
 /** 복사해서 붙여 넣는 명령어 한 줄 */
 export interface StepCommand {
-  label: string
-  code: string
+  label: string;
+  code: string;
 }
 
 export interface StepBody {
   /** 화면 왼쪽 설명. 2~3문장 */
-  lead: string[]
+  lead: string[];
   /** 여러 장이면 왼쪽부터 순서대로 나란히 보여요 */
-  guide?: StepGuide | StepGuide[]
+  guide?: StepGuide | StepGuide[];
   /** 번호를 붙여 차례대로 보여 주는 할 일. 링크·그림 대신 써요 */
-  flow?: StepFlowItem[]
+  flow?: StepFlowItem[];
   /** 왼쪽 칸 맨 아래 "앞으로는 이렇게 말해요" 상자 */
-  tip?: { title: string; phrase: string }
-  links: StepLink[]
-  checks: StepCheck[]
-  help: StepHelp[]
+  tip?: { title: string; phrase: string };
+  links: StepLink[];
+  checks: StepCheck[];
+  help: StepHelp[];
 }
 
 export interface Step {
-  id: string
+  id: string;
   /** 진행 막대에 보이는 짧은 이름 */
-  short: string
-  title: string
+  short: string;
+  title: string;
   /** 단계 제목 옆 브랜드 로고(public/logos). "tool"이면 고른 도구 로고. 없으면 단계 표시만 */
-  logo?: string
+  logo?: string;
   /** 도구와 상관없이 같은 내용 */
-  body?: StepBody
+  body?: StepBody;
   /** 클코·코덱스에 따라 내용이 갈라지는 단계 */
-  byTool?: Partial<Record<Tool, StepBody>>
+  byTool?: Partial<Record<Tool, StepBody>>;
 }
+
+/** 시작 전에 미리 가입해 두면 좋은 곳. 가입 순서대로예요. */
+export interface Signup {
+  name: string;
+  /** "Google로 가입"처럼 "~로 가입" 형태로 써요 */
+  via: string;
+  /** public/logos 파일 이름 */
+  logos: string[];
+  /** label이 "가입"이면 화면에 "가입하기"로 보여요 */
+  links: { label: string; href: string }[];
+}
+
+export const SIGNUPS: Signup[] = [
+  {
+    name: "Claude 또는 ChatGPT",
+    via: "Google로 가입",
+    logos: ["claude", "chatgpt"],
+    // 데스크톱 앱을 받으면서 Google 계정으로 가입해요. ChatGPT 앱에 Codex가 들어 있어요.
+    links: [
+      { label: "Claude 앱 받기", href: "https://claude.com/download" },
+      { label: "ChatGPT 앱 받기", href: "https://chatgpt.com/ko-KR/codex/" },
+    ],
+  },
+  { name: "깃허브", via: "Google로 가입", logos: ["github"], links: [{ label: "가입", href: "https://github.com/signup" }] },
+  {
+    name: "슈파베이스",
+    via: "깃허브로 가입",
+    logos: ["supabase"],
+    links: [{ label: "가입", href: "https://supabase.com/dashboard/sign-up" }],
+  },
+  { name: "버셀", via: "깃허브로 가입", logos: ["vercel"], links: [{ label: "가입", href: "https://vercel.com/signup" }] },
+];
 
 export const STEPS: Step[] = [
   {
@@ -133,28 +165,18 @@ export const STEPS: Step[] = [
           },
         ],
         links: [
-          {
-            label: "Claude 앱 다운로드",
-            href: "https://claude.com/download",
-            note: "Windows용 다운로드 버튼을 눌러요",
-          },
+          { label: "Claude 앱 다운로드", href: "https://claude.com/download", note: "Windows용 다운로드 버튼을 눌러요" },
         ],
         checks: [
           { id: "install-claude-app", label: "Claude 앱을 설치했어요" },
-          {
-            id: "install-claude-login",
-            label: "유료 구독한 계정으로 로그인했어요",
-          },
-          {
-            id: "install-claude-code",
-            label: "왼쪽 위 </> 버튼을 눌러 Code 탭을 열었어요",
-          },
+          { id: "install-claude-login", label: "유료 구독한 계정으로 로그인했어요" },
+          { id: "install-claude-code", label: "왼쪽 위 </> 버튼을 눌러 Code 탭을 열었어요" },
         ],
         help: [
           {
             situation: "설치 파일이 안 열려요",
             prompt:
-              'Claude 데스크톱 앱 설치 파일을 받았는데 실행이 안 돼요. 제 컴퓨터는 Windows예요. 화면에 뜬 메시지는 "[메시지를 그대로 적어 주세요]"예요. 코딩을 모르는 사람도 따라 할 수 있게 해결 방법을 순서대로 알려 주세요.',
+              "Claude 데스크톱 앱 설치 파일을 받았는데 실행이 안 돼요. 제 컴퓨터는 Windows예요. 화면에 뜬 메시지는 \"[메시지를 그대로 적어 주세요]\"예요. 코딩을 모르는 사람도 따라 할 수 있게 해결 방법을 순서대로 알려 주세요.",
           },
           {
             situation: "Code 탭이 안 보여요",
@@ -185,10 +207,7 @@ export const STEPS: Step[] = [
         ],
         checks: [
           { id: "install-codex-app", label: "ChatGPT 앱을 설치했어요" },
-          {
-            id: "install-codex-login",
-            label: "유료 구독한 계정으로 로그인했어요",
-          },
+          { id: "install-codex-login", label: "유료 구독한 계정으로 로그인했어요" },
           { id: "install-codex-mode", label: "앱에서 Codex를 열 수 있어요" },
         ],
         help: [
@@ -200,7 +219,7 @@ export const STEPS: Step[] = [
           {
             situation: "설치가 안 돼요",
             prompt:
-              'ChatGPT 데스크톱 앱을 설치하려는데 잘 안 돼요. 제 컴퓨터는 Windows예요. 화면에 뜬 메시지는 "[메시지를 그대로 적어 주세요]"예요. 코딩을 모르는 사람도 따라 할 수 있게 해결 방법을 순서대로 알려 주세요.',
+              "ChatGPT 데스크톱 앱을 설치하려는데 잘 안 돼요. 제 컴퓨터는 Windows예요. 화면에 뜬 메시지는 \"[메시지를 그대로 적어 주세요]\"예요. 코딩을 모르는 사람도 따라 할 수 있게 해결 방법을 순서대로 알려 주세요.",
           },
           {
             situation: "Classic이 받아졌어요",
@@ -216,10 +235,25 @@ export const STEPS: Step[] = [
     short: "Git 설치",
     title: "기록 저장소 Git을 설치해요",
     body: {
-      lead: [
-        "Git은 작업한 기록을 차곡차곡 저장해 두는 프로그램이에요. 잘못돼도 예전 상태로 되돌릴 수 있어요.",
-        "아래 그림의 링크 하나만 눌러 설치 파일을 받아요.",
-        "설치 파일을 실행하고, 설정은 바꾸지 말고 [Next]만 눌러 끝까지 설치해요.",
+      lead: ["Git은 작업한 기록을 차곡차곡 저장해 두는 프로그램이에요. 잘못돼도 예전 상태로 되돌릴 수 있어요."],
+      flow: [
+        {
+          text: "Git 설치 파일을 받아요",
+          note: "아래 그림처럼 맨 위 [Click here to download] 하나만 눌러요.",
+          link: { label: "다운로드 페이지 열기", href: "https://git-scm.com/install/windows" },
+        },
+        {
+          text: "설치 파일을 열고 [Next]만 눌러 끝까지 설치해요",
+          note: "설정은 바꾸지 않아도 돼요.",
+        },
+        {
+          text: "{도구}를 완전히 껐다가 다시 켜요",
+          note: "그래야 방금 설치한 Git을 찾을 수 있어요.",
+        },
+        {
+          text: "확인 문장을 보내서 버전이 나오면 끝이에요",
+          copy: "내 컴퓨터에 Git이 설치되어 있는지 확인하고 버전을 알려 줘. 명령은 네가 직접 실행해 줘.",
+        },
       ],
       guide: {
         src: "guides/git-windows.png",
@@ -228,29 +262,13 @@ export const STEPS: Step[] = [
         height: 397,
         highlight: { x: 36, y: 135, w: 168, h: 22 },
         label: "이것만 누르기",
-        dim: {
-          x: 22,
-          y: 191,
-          w: 689,
-          h: 206,
-          text: "아래 링크들은 누르지 않아도 돼요",
-        },
+        dim: { x: 22, y: 191, w: 689, h: 206, text: "아래 링크들은 누르지 않아도 돼요" },
       },
-      links: [
-        {
-          label: "Git 다운로드",
-          href: "https://git-scm.com/install/windows",
-          note: "맨 위 [Click here to download]만 눌러요",
-        },
-      ],
+      links: [],
       checks: [
-        { id: "git-install", label: "내 컴퓨터에 Git을 설치했어요" },
+        { id: "git-install", label: "[Next]만 눌러 Git 설치를 끝냈어요" },
         { id: "git-restart", label: "{도구}를 껐다가 다시 켰어요" },
-        {
-          id: "git-verify",
-          label: "{도구}에 확인 문장을 보냈더니 Git 버전이 나왔어요",
-          ask: "내 컴퓨터에 Git이 설치되어 있는지 확인하고 버전을 알려 줘.",
-        },
+        { id: "git-verify", label: "확인 문장을 보냈더니 Git 버전이 나왔어요" },
       ],
       help: [
         {
@@ -284,21 +302,9 @@ export const STEPS: Step[] = [
         height: 540,
         highlight: { x: 114, y: 130, w: 572, h: 40 },
         label: "이것만 누르기",
-        dim: {
-          x: 0,
-          y: 180,
-          w: 800,
-          h: 360,
-          text: "이메일로 가입해도 되지만, Google이 더 쉬워요",
-        },
+        dim: { x: 0, y: 180, w: 800, h: 360, text: "이메일로 가입해도 되지만, Google이 더 쉬워요" },
       },
-      links: [
-        {
-          label: "깃허브 가입하기",
-          href: "https://github.com/signup",
-          note: "무료(Free) 요금제면 충분해요",
-        },
-      ],
+      links: [{ label: "깃허브 가입하기", href: "https://github.com/signup", note: "무료(Free) 요금제면 충분해요" }],
       checks: [
         { id: "github-signup", label: "Google 계정으로 깃허브에 가입했어요" },
         { id: "github-username", label: "사용자 이름(Username)을 정했어요" },
@@ -330,9 +336,7 @@ export const STEPS: Step[] = [
     logo: "tool",
     byTool: {
       claude: {
-        lead: [
-          "앞으로 만들 앱이 이 폴더에 저장돼요. 다음 단계부터는 폴더를 연 이 대화창에서 이어서 해요. 창을 닫아도 왼쪽 목록에서 다시 열 수 있어요.",
-        ],
+        lead: ["첫 프로젝트 폴더예요. 5~7단계 연결은 이 폴더를 연 대화창에서 이어서 해요. 창을 닫아도 왼쪽 목록에서 다시 열 수 있어요."],
         guide: [
           {
             src: "guides/claude-new-session.png",
@@ -357,42 +361,36 @@ export const STEPS: Step[] = [
           },
         ],
         flow: [
-          {
-            text: "C 드라이브에 프로젝트 폴더를 만들어요",
-            note: "파일 탐색기 → [내 PC] → [로컬 디스크 (C:)] → 빈 곳 오른쪽 클릭 → [새로 만들기] → [폴더]. 이름은 영어로 my-first-app 처럼 지어요.",
-          },
+        {
+          text: "C 드라이브에 프로젝트 폴더를 만들어요",
+          note: "파일 탐색기 → [내 PC] → [로컬 디스크 (C:)] → 빈 곳 오른쪽 클릭 → [새로 만들기] → [폴더]. 이름은 영어로 my-first-app 처럼 지어요.",
+        },
           {
             text: "Code 탭에서 [새로 생성] → [폴더 없음] → [폴더 열기…]로 그 폴더를 골라요",
             note: "입력창 위 [로컬]이 선택돼 있으면 돼요.",
           },
-          {
-            text: "첫 프롬프트로 폴더를 준비하고 점검해요",
-            copy: "이 폴더에 작업 기록을 저장할 수 있게 Git을 설정해 줘(git init). 끝나면 Git을 찾을 수 있는지, 이 폴더에 파일을 만들 수 있는지 확인해서 알려 줘.",
-            note: "폴더에 작업 기록장을 붙이는 일이에요. 그래야 되돌리기와 깃허브 올리기를 할 수 있어요.",
-          },
+        {
+          text: "첫 프롬프트로 폴더를 준비하고 점검해요",
+          copy: "이 폴더에 작업 기록을 저장할 수 있게 Git을 설정해 줘(git init). 명령은 네가 직접 실행해 줘. 끝나면 Git을 찾을 수 있는지, 이 폴더에 파일을 만들 수 있는지 확인해서 알려 줘.",
+          note: "폴더에 작업 기록장을 붙이는 일이에요. PowerShell은 열지 않아도 되고, 실행해도 되는지 물으면 [허용]을 눌러요.",
+        },
         ],
         links: [],
         checks: [
-          {
-            id: "folder-make",
-            label: "C 드라이브에 영어 이름 폴더를 만들었어요",
-          },
+          { id: "folder-make", label: "C 드라이브에 영어 이름 폴더를 만들었어요" },
           { id: "folder-open", label: "Claude Code에서 그 폴더를 열었어요" },
-          {
-            id: "folder-first",
-            label: "Git 설정과 폴더 점검이 끝났다고 답이 왔어요",
-          },
+          { id: "folder-first", label: "Git 설정과 폴더 점검이 끝났다고 답이 왔어요" },
         ],
         help: [
+          {
+            situation: "점검에서 안 된대요",
+            prompt:
+              "방금 안 된다고 했는데, 무엇이 안 됐는지 하나씩 쉽게 설명해 줘. 내가 직접 해야 할 일과 네가 해 줄 수 있는 일을 나눠서 고치고, 다 고치면 같은 점검을 다시 해 줘.",
+          },
           {
             situation: "폴더 이름을 한글로 했어요",
             prompt:
               "Windows에서 바이브코딩 프로젝트 폴더 이름을 한글로 만들었어요. 영어 이름으로 바꾸는 게 좋은지, 바꾼다면 어떻게 하면 되는지 쉽게 알려 주세요.",
-          },
-          {
-            situation: "바탕 화면에 만들었어요",
-            prompt:
-              "Windows 바탕 화면(또는 문서 폴더)에 프로젝트 폴더를 만들었어요. OneDrive와 동기화되면 문제가 생길 수 있다고 들었는데, C 드라이브로 옮겨야 하는지와 옮기는 방법을 알려 주세요.",
           },
           {
             situation: "폴더 고르는 칸이 없어요",
@@ -402,9 +400,7 @@ export const STEPS: Step[] = [
         ],
       },
       codex: {
-        lead: [
-          "앞으로 만들 앱이 이 폴더에 저장돼요. 다음 단계부터는 폴더를 연 이 대화창에서 이어서 해요. 창을 닫아도 왼쪽 목록에서 다시 열 수 있어요.",
-        ],
+        lead: ["첫 프로젝트 폴더예요. 5~7단계 연결은 이 폴더를 연 대화창에서 이어서 해요. 창을 닫아도 왼쪽 목록에서 다시 열 수 있어요."],
         guide: [
           {
             src: "guides/codex-new-chat.png",
@@ -441,45 +437,36 @@ export const STEPS: Step[] = [
           },
         ],
         flow: [
-          {
-            text: "C 드라이브에 프로젝트 폴더를 만들어요",
-            note: "파일 탐색기 → [내 PC] → [로컬 디스크 (C:)] → 빈 곳 오른쪽 클릭 → [새로 만들기] → [폴더]. 이름은 영어로 my-first-app 처럼 지어요.",
-          },
+        {
+          text: "C 드라이브에 프로젝트 폴더를 만들어요",
+          note: "파일 탐색기 → [내 PC] → [로컬 디스크 (C:)] → 빈 곳 오른쪽 클릭 → [새로 만들기] → [폴더]. 이름은 영어로 my-first-app 처럼 지어요.",
+        },
           {
             text: "Codex에서 [새 채팅] → [프로젝트 선택] → [새 프로젝트]를 눌러요",
             note: "소스 폴더의 [추가]로 만든 폴더를 고르고 [프로젝트 만들기]를 눌러요.",
           },
-          {
-            text: "첫 프롬프트로 폴더를 준비하고 점검해요",
-            copy: "이 폴더에 작업 기록을 저장할 수 있게 Git을 설정해 줘(git init). 끝나면 Git을 찾을 수 있는지, 이 폴더에 파일을 만들 수 있는지 확인해서 알려 줘.",
-            note: "폴더에 작업 기록장을 붙이는 일이에요. 그래야 되돌리기와 깃허브 올리기를 할 수 있어요.",
-          },
+        {
+          text: "첫 프롬프트로 폴더를 준비하고 점검해요",
+          copy: "이 폴더에 작업 기록을 저장할 수 있게 Git을 설정해 줘(git init). 명령은 네가 직접 실행해 줘. 끝나면 Git을 찾을 수 있는지, 이 폴더에 파일을 만들 수 있는지 확인해서 알려 줘.",
+          note: "폴더에 작업 기록장을 붙이는 일이에요. PowerShell은 열지 않아도 되고, 실행해도 되는지 물으면 [허용]을 눌러요.",
+        },
         ],
         links: [],
         checks: [
-          {
-            id: "folder-make",
-            label: "C 드라이브에 영어 이름 폴더를 만들었어요",
-          },
-          {
-            id: "folder-open",
-            label: "Codex에서 그 폴더를 프로젝트로 열었어요",
-          },
-          {
-            id: "folder-first",
-            label: "Git 설정과 폴더 점검이 끝났다고 답이 왔어요",
-          },
+          { id: "folder-make", label: "C 드라이브에 영어 이름 폴더를 만들었어요" },
+          { id: "folder-open", label: "Codex에서 그 폴더를 프로젝트로 열었어요" },
+          { id: "folder-first", label: "Git 설정과 폴더 점검이 끝났다고 답이 왔어요" },
         ],
         help: [
+          {
+            situation: "점검에서 안 된대요",
+            prompt:
+              "방금 안 된다고 했는데, 무엇이 안 됐는지 하나씩 쉽게 설명해 줘. 내가 직접 해야 할 일과 네가 해 줄 수 있는 일을 나눠서 고치고, 다 고치면 같은 점검을 다시 해 줘.",
+          },
           {
             situation: "폴더 이름을 한글로 했어요",
             prompt:
               "Windows에서 바이브코딩 프로젝트 폴더 이름을 한글로 만들었어요. 영어 이름으로 바꾸는 게 좋은지, 바꾼다면 어떻게 하면 되는지 쉽게 알려 주세요.",
-          },
-          {
-            situation: "바탕 화면에 만들었어요",
-            prompt:
-              "Windows 바탕 화면(또는 문서 폴더)에 프로젝트 폴더를 만들었어요. OneDrive와 동기화되면 문제가 생길 수 있다고 들었는데, C 드라이브로 옮겨야 하는지와 옮기는 방법을 알려 주세요.",
           },
           {
             situation: "폴더를 못 고르겠어요",
@@ -496,54 +483,44 @@ export const STEPS: Step[] = [
     title: "{도구}와 깃허브를 연결해요",
     logo: "github",
     body: {
-      lead: [
-        "연결해 두면 {도구}가 내 작업을 깃허브에 대신 올려 줘요. 처음 한 번만 하면 돼요.",
-      ],
+      lead: ["연결해 두면 {도구}가 내 작업을 깃허브에 대신 올려 줘요. 처음 한 번만 하면 돼요."],
       flow: [
         {
           text: "폴더를 연 대화창에 이 문장을 보내요",
-          copy: "Windows에 Git과 함께 설치된 Git Credential Manager로 깃허브에 로그인해 줘. git credential-manager github login 명령을 쓰고, 로그인 창이 뜨면 내가 따라 할 수 있게 알려 줘.",
-          note: "명령 실행을 허락해 달라고 하면 허용해요.",
+          copy: "깃허브 로그인을 기기 코드 방식으로만 해 줘. 이번 명령에만 환경 변수 GCM_GITHUB_AUTHMODES=device, GCM_GUI_PROMPT=0 을 붙여서 git credential-manager github login 을 네가 직접 실행해 줘. 출력에 나오는 8자리 코드를 바로 나에게 알려 주고, 내가 브라우저에서 승인할 때까지 기다려 줘. 다른 로그인 방법은 안내하지 마.",
+          note: "PowerShell은 열지 않아도 돼요. 실행해도 되는지 물으면 [허용]을 눌러요.",
         },
         {
-          text: "깃허브 로그인 창이 뜨면 브라우저로 로그인을 골라요",
-          note: "2단계에서 설치한 Git에 들어 있는 로그인 창이에요.",
+          text: "{도구}가 알려 준 8자리 코드를 복사해요",
+          note: "ABCD-1234 처럼 생겼어요.",
         },
         {
-          text: "브라우저에서 깃허브에 로그인하고 승인해요",
-          note: "처음이면 앱 승인(Authorize) 화면이 나와요. 승인하면 끝이에요.",
+          text: "브라우저에서 코드를 넣고 승인해요",
+          note: "로그인 화면이 나오면 먼저 로그인하고, 코드를 넣은 뒤 승인(Authorize)해요.",
+          link: { label: "github.com/login/device 열기", href: "https://github.com/login/device" },
         },
         {
           text: "확인 문장을 보내서 내 아이디가 나오면 끝이에요",
-          copy: "깃허브 로그인이 잘 됐는지 확인하고, 로그인된 내 깃허브 아이디를 알려 줘.",
+          copy: "깃허브 로그인이 잘 됐는지 확인하고, 로그인된 내 깃허브 아이디를 알려 줘. 명령은 네가 직접 실행해 줘.",
         },
       ],
-      tip: {
-        title: "앞으로는 이렇게 말하면 돼요",
-        phrase: "지금까지 작업한 것 깃허브에 올려줘",
-      },
+      tip: { title: "앞으로는 이렇게 말하면 돼요", phrase: "지금까지 작업한 것 깃허브에 올려줘" },
       links: [],
       checks: [
-        { id: "connect-send", label: "로그인 문장을 {도구}에 보냈어요" },
-        {
-          id: "connect-auth",
-          label: "브라우저에서 깃허브에 로그인하고 승인했어요",
-        },
-        {
-          id: "connect-verify",
-          label: "확인 문장을 보냈더니 내 깃허브 아이디가 나왔어요",
-        },
+        { id: "connect-send", label: "{도구}에게서 8자리 코드를 받았어요" },
+        { id: "connect-auth", label: "기기 로그인 페이지에 코드를 넣고 승인했어요" },
+        { id: "connect-verify", label: "확인 문장을 보냈더니 내 깃허브 아이디가 나왔어요" },
       ],
       help: [
         {
-          situation: "로그인 창이 안 떠요",
+          situation: "코드가 안 나와요",
           prompt:
-            "Windows에서 Git Credential Manager로 깃허브에 로그인하려는데 로그인 창이 뜨지 않아요. Git이 최신 버전인지, Git Credential Manager가 설정되어 있는지 확인하고 다시 로그인하게 도와주세요.",
+            "깃허브 로그인 명령을 실행했는데 8자리 코드가 보이지 않아요. 같은 명령(GCM_GITHUB_AUTHMODES=device, GCM_GUI_PROMPT=0, git credential-manager github login)을 다시 실행해서, 출력에 나오는 코드를 기다리지 말고 바로 알려 줘.",
         },
         {
-          situation: "명령을 못 찾는대요",
+          situation: "다른 방법을 알려 줘요",
           prompt:
-            "git credential-manager 명령을 찾을 수 없다고 나와요. Windows용 Git을 설치할 때 기본 설정 그대로 설치했어요. 무엇을 확인하고 어떻게 다시 설치하면 되는지 순서대로 알려 주세요.",
+            "다른 로그인 방법 말고 기기 코드 방식으로만 해 줘. github.com/login/device 에 넣을 8자리 코드를 받을 수 있게 명령을 다시 실행해 줘.",
         },
         {
           situation: "비밀번호·토큰을 달래요",
@@ -560,25 +537,17 @@ export const STEPS: Step[] = [
     logo: "supabase",
     byTool: {
       claude: {
-        lead: [
-          "슈파베이스는 앱의 데이터(글, 점수, 로그인 등)를 저장하는 곳이에요. 연결하면 Claude Code가 직접 만들고 관리해 줘요.",
-        ],
+        lead: ["슈파베이스는 앱의 데이터(글, 점수, 로그인 등)를 저장하는 곳이에요. 연결하면 Claude Code가 직접 만들고 관리해 줘요."],
         flow: [
           {
             text: "슈파베이스에 가입해요",
             note: "[Continue with GitHub]를 누르면 3단계에서 만든 깃허브 계정으로 바로 가입돼요.",
-            link: {
-              label: "가입 페이지 열기",
-              href: "https://supabase.com/dashboard/sign-up",
-            },
+            link: { label: "가입 페이지 열기", href: "https://supabase.com/dashboard/sign-up" },
           },
           {
             text: "Claude 커넥터 목록에서 Supabase를 찾아 연결해요",
             note: "왼쪽 메뉴 [Customize] → [Connectors] → [Discover]에서 Supabase를 검색하고 [Connect to Claude]를 눌러요.",
-            link: {
-              label: "커넥터 목록 열기",
-              href: "https://claude.ai/customize/connectors",
-            },
+            link: { label: "커넥터 목록 열기", href: "https://claude.ai/customize/connectors" },
           },
           {
             text: "브라우저에서 로그인하고 승인해요",
@@ -591,18 +560,9 @@ export const STEPS: Step[] = [
         ],
         links: [],
         checks: [
-          {
-            id: "supabase-signup",
-            label: "깃허브 계정으로 슈파베이스에 가입했어요",
-          },
-          {
-            id: "supabase-connect",
-            label: "커넥터 목록에서 Supabase를 연결하고 승인했어요",
-          },
-          {
-            id: "supabase-verify",
-            label: "확인 문장을 보냈더니 내 조직 이름이 나왔어요",
-          },
+          { id: "supabase-signup", label: "깃허브 계정으로 슈파베이스에 가입했어요" },
+          { id: "supabase-connect", label: "커넥터 목록에서 Supabase를 연결하고 승인했어요" },
+          { id: "supabase-verify", label: "확인 문장을 보냈더니 내 조직 이름이 나왔어요" },
         ],
         help: [
           {
@@ -623,17 +583,12 @@ export const STEPS: Step[] = [
         ],
       },
       codex: {
-        lead: [
-          "슈파베이스는 앱의 데이터(글, 점수, 로그인 등)를 저장하는 곳이에요. 연결하면 Codex가 직접 만들고 관리해 줘요.",
-        ],
+        lead: ["슈파베이스는 앱의 데이터(글, 점수, 로그인 등)를 저장하는 곳이에요. 연결하면 Codex가 직접 만들고 관리해 줘요."],
         flow: [
           {
             text: "슈파베이스에 가입해요",
             note: "[Continue with GitHub]를 누르면 3단계에서 만든 깃허브 계정으로 바로 가입돼요.",
-            link: {
-              label: "가입 페이지 열기",
-              href: "https://supabase.com/dashboard/sign-up",
-            },
+            link: { label: "가입 페이지 열기", href: "https://supabase.com/dashboard/sign-up" },
           },
           {
             text: "ChatGPT 앱 [설정] → [MCP servers] → [Add server]를 눌러요",
@@ -651,18 +606,9 @@ export const STEPS: Step[] = [
         ],
         links: [],
         checks: [
-          {
-            id: "supabase-signup",
-            label: "깃허브 계정으로 슈파베이스에 가입했어요",
-          },
-          {
-            id: "supabase-connect",
-            label: "MCP servers에 Supabase를 추가하고 승인했어요",
-          },
-          {
-            id: "supabase-verify",
-            label: "확인 문장을 보냈더니 내 조직 이름이 나왔어요",
-          },
+          { id: "supabase-signup", label: "깃허브 계정으로 슈파베이스에 가입했어요" },
+          { id: "supabase-connect", label: "MCP servers에 Supabase를 추가하고 승인했어요" },
+          { id: "supabase-verify", label: "확인 문장을 보냈더니 내 조직 이름이 나왔어요" },
         ],
         help: [
           {
@@ -691,25 +637,17 @@ export const STEPS: Step[] = [
     logo: "vercel",
     byTool: {
       claude: {
-        lead: [
-          "버셀은 만든 앱을 인터넷 주소로 공개해 주는 곳이에요. 연결하면 {도구}가 배포하고, 오류 기록도 직접 확인해 줘요.",
-        ],
+        lead: ["버셀은 만든 앱을 인터넷 주소로 공개해 주는 곳이에요. 연결하면 {도구}가 배포하고, 오류 기록도 직접 확인해 줘요."],
         flow: [
           {
             text: "버셀에 가입해요",
             note: "[Continue with GitHub]로 가입하고, 요금제는 무료인 Hobby를 골라요.",
-            link: {
-              label: "가입 페이지 열기",
-              href: "https://vercel.com/signup",
-            },
+            link: { label: "가입 페이지 열기", href: "https://vercel.com/signup" },
           },
           {
             text: "Claude 커넥터 목록에서 Vercel을 찾아 연결해요",
             note: "왼쪽 메뉴 [Customize] → [Connectors] → [Discover]에서 Vercel을 검색하고 [Connect to Claude]를 눌러요.",
-            link: {
-              label: "커넥터 목록 열기",
-              href: "https://claude.ai/customize/connectors",
-            },
+            link: { label: "커넥터 목록 열기", href: "https://claude.ai/customize/connectors" },
           },
           {
             text: "브라우저에서 로그인하고 승인해요",
@@ -723,14 +661,8 @@ export const STEPS: Step[] = [
         links: [],
         checks: [
           { id: "vercel-signup", label: "깃허브 계정으로 버셀에 가입했어요" },
-          {
-            id: "vercel-connect",
-            label: "커넥터 목록에서 Vercel을 연결하고 승인했어요",
-          },
-          {
-            id: "vercel-verify",
-            label: "확인 문장을 보냈더니 내 팀 이름이 나왔어요",
-          },
+          { id: "vercel-connect", label: "커넥터 목록에서 Vercel을 연결하고 승인했어요" },
+          { id: "vercel-verify", label: "확인 문장을 보냈더니 내 팀 이름이 나왔어요" },
         ],
         help: [
           {
@@ -751,17 +683,12 @@ export const STEPS: Step[] = [
         ],
       },
       codex: {
-        lead: [
-          "버셀은 만든 앱을 인터넷 주소로 공개해 주는 곳이에요. 연결하면 {도구}가 배포하고, 오류 기록도 직접 확인해 줘요.",
-        ],
+        lead: ["버셀은 만든 앱을 인터넷 주소로 공개해 주는 곳이에요. 연결하면 {도구}가 배포하고, 오류 기록도 직접 확인해 줘요."],
         flow: [
           {
             text: "버셀에 가입해요",
             note: "[Continue with GitHub]로 가입하고, 요금제는 무료인 Hobby를 골라요.",
-            link: {
-              label: "가입 페이지 열기",
-              href: "https://vercel.com/signup",
-            },
+            link: { label: "가입 페이지 열기", href: "https://vercel.com/signup" },
           },
           {
             text: "ChatGPT 앱 [설정] → [MCP servers] → [Add server]를 눌러요",
@@ -780,14 +707,8 @@ export const STEPS: Step[] = [
         links: [],
         checks: [
           { id: "vercel-signup", label: "깃허브 계정으로 버셀에 가입했어요" },
-          {
-            id: "vercel-connect",
-            label: "MCP servers에 Vercel을 추가하고 승인했어요",
-          },
-          {
-            id: "vercel-verify",
-            label: "확인 문장을 보냈더니 내 팀 이름이 나왔어요",
-          },
+          { id: "vercel-connect", label: "MCP servers에 Vercel을 추가하고 승인했어요" },
+          { id: "vercel-verify", label: "확인 문장을 보냈더니 내 팀 이름이 나왔어요" },
         ],
         help: [
           {
@@ -811,78 +732,79 @@ export const STEPS: Step[] = [
   },
   {
     id: "start",
-    short: "첫 앱 만들기",
-    title: "첫 앱을 만들어 봐요",
+    short: "아카이브 과제",
+    title: "과제: 내 교육자료 아카이브 만들기",
     logo: "tool",
     body: {
-      lead: [
-        "준비가 끝났어요. 같은 대화창에서 말로 앱을 만들고, 미리 보고, 인터넷에 공개해 봐요.",
-      ],
+      lead: ["앱 하나에 폴더 하나. 문장 하나를 보내면 {도구}가 질문하고(grill me), {규칙파일}에 정리한 뒤 만들어요."],
       flow: [
         {
-          text: "만들고 싶은 앱을 한 문장으로 말해요",
-          note: "[ ] 안을 바꿔서 보내요. 예: 우리 반 자리 바꾸기 뽑기, 오늘의 칭찬 스티커판",
-          copy: "[만들고 싶은 앱]을 간단한 웹앱으로 만들어 줘. 처음 해 보는 거라 무엇을 하는지 쉽게 설명해 주고, 다 만들면 미리 볼 수 있게 실행해 줘.",
+          text: "새 폴더 C:\\my-archive 를 만들어 새 대화로 열어요",
+          note: "4단계와 같은 방법이에요. 연결(깃허브·슈파베이스·버셀)은 다시 하지 않아도 돼요.",
+          copy: "이 폴더에 작업 기록을 저장할 수 있게 Git을 설정해 줘(git init). 명령은 네가 직접 실행해 줘. 끝나면 Git을 찾을 수 있는지, 이 폴더에 파일을 만들 수 있는지 확인해서 알려 줘.",
         },
         {
-          text: "{도구} 안의 브라우저에서 미리 봐요",
-          note: '고치고 싶은 곳이 있으면 "버튼을 더 크게 해 줘"처럼 말로 부탁해요.',
+          text: "과제 문장을 보내고 질문에 하나씩 답해요",
+          note: "모르면 \"네 추천대로\". {규칙파일} 정리를 보여 주며 \"만들까요?\"라고 물으면 \"만들어\"라고 답해요.",
+          copy: "교사용 수업 자료 아카이브 사이트를 만들고 싶어. 선생님들이 자료(제목·설명·링크)를 모아 두고 검색·카테고리·태그로 찾아 쓰는 사이트가 목표야. 바로 만들지 말고 먼저 나를 인터뷰해 줘(grill me). 질문은 한 번에 하나씩, 보기와 네 추천을 함께 주고 7개 이내로 해. 사이트 이름, 혼자 쓰는지 여럿이 쓰는지, 카테고리, 누가 등록·삭제하는지, 학생 개인정보를 넣지 않는 방법은 꼭 물어봐. 끝나면 정한 내용을 이 폴더의 {규칙파일}에 정리해서 보여 주고 \"만들까요?\"라고 물어봐. 첫 버전은 자료 등록·목록·검색·카테고리만 넣고, 태그·파일 올리기는 {규칙파일}에 '나중에 더할 기능'으로 적어 둬. 내가 \"만들어\"라고 하면 Supabase에 무료 프로젝트와 표, 보안 규칙을 만들고 화면을 연결해서 미리 보기로 실행해 줘. 비밀 키(service_role)는 쓰지 마.",
         },
         {
-          text: "깃허브에 올려요",
-          copy: "지금까지 작업한 것 깃허브에 올려줘",
+          text: "자료를 등록하고 새로고침해도 남는지 봐요",
+          note: "슈파베이스 표(Table Editor)에도 보이면 백엔드가 동작하는 거예요.",
+          link: { label: "슈파베이스 열기", href: "https://supabase.com/dashboard/projects" },
         },
         {
-          text: "버셀로 공개하고 주소를 받아요",
-          note: "학생 이름 같은 개인정보는 넣지 않은 앱만 공개해요.",
-          copy: "이 프로젝트를 버셀에 배포하고, 다른 사람이 열 수 있는 주소를 알려 줘.",
+          text: "깃허브에 올리고 버셀로 공개해요",
+          note: "학생 이름·사진 같은 개인정보는 등록하지 않아요.",
+          copy: "지금까지 작업한 것 깃허브에 올려줘. 그다음 버셀에 배포해 줘. Supabase 주소와 공개 키는 버셀 환경 변수로 넣고, 다른 사람이 열 수 있는 주소를 알려 줘.",
         },
       ],
       links: [],
       checks: [
-        { id: "start-ask", label: "만들고 싶은 앱을 {도구}에 말했어요" },
-        { id: "start-preview", label: "미리 보기에서 내 앱이 보여요" },
-        { id: "start-push", label: "깃허브에 올렸어요" },
-        { id: "start-deploy", label: "버셀 주소로 내 앱이 열려요" },
+        { id: "start-grill", label: "질문에 답했더니 {규칙파일} 파일이 생겼어요" },
+        { id: "start-save", label: "자료를 등록하고 새로고침해도 남아 있어요" },
+        { id: "start-deploy", label: "깃허브에 올리고, 버셀 주소에서 내 아카이브가 열려요" },
       ],
       help: [
         {
-          situation: "오류가 났어요",
+          situation: "질문이 너무 많아요",
           prompt:
-            "방금 오류가 났어요. 오류 내용을 확인해서 원인을 쉽게 설명해 주고, 고쳐 줘. 고친 뒤에는 다시 미리 볼 수 있게 실행해 줘.",
+            "질문은 여기까지 해 줘. 지금까지 답한 내용에 네 추천을 더해서 나머지를 채우고, 정한 내용을 {규칙파일}에 정리해서 보여 줘. 아직 코드는 만들지 마.",
         },
         {
-          situation: "미리 보기가 안 보여요",
+          situation: "저장이 안 돼요",
           prompt:
-            "만든 앱을 미리 보고 싶은데 화면이 보이지 않아요. 앱을 실행해서 {도구} 안의 브라우저로 열어 주고, 안 되면 내가 어떤 주소를 열면 되는지 알려 줘.",
+            "자료를 등록했는데 저장이 안 되거나 새로고침하면 사라져요. Supabase 표와 보안 규칙(RLS), 화면 연결을 확인해서 원인을 쉽게 설명하고 고쳐 줘. 비밀 키(service_role)는 쓰지 마.",
         },
         {
-          situation: "배포 주소가 안 열려요",
+          situation: "배포하면 목록이 비어요",
           prompt:
-            "버셀에 배포했는데 주소를 열면 오류가 나거나 빈 화면이 보여요. 버셀 배포 기록과 오류 내용을 확인해서 원인을 쉽게 설명하고 고쳐 줘.",
+            "버셀 주소에서는 자료 목록이 비어 있거나 오류가 나요. 버셀 환경 변수에 Supabase 주소와 공개 키가 들어갔는지 확인하고, 빠졌으면 넣은 뒤 다시 배포해 줘.",
         },
       ],
     },
   },
-]
+];
 
 /** 문구 속 {도구}를 고른 도구 이름(Claude Code·Codex)으로 바꿔요 */
 function fillTool<T>(value: T, tool: Tool | null): T {
-  const name = tool ? TOOL_NAME[tool] : "Claude Code·Codex"
-  return JSON.parse(JSON.stringify(value).replaceAll("{도구}", name)) as T
+  const name = tool ? TOOL_NAME[tool] : "Claude Code·Codex";
+  // 프로젝트 규칙 파일: Claude Code는 CLAUDE.md, Codex는 AGENTS.md를 대화마다 읽어요.
+  const rules = tool === "codex" ? "AGENTS.md" : tool === "claude" ? "CLAUDE.md" : "CLAUDE.md·AGENTS.md";
+  return JSON.parse(JSON.stringify(value).replaceAll("{도구}", name).replaceAll("{규칙파일}", rules)) as T;
 }
 
 export function bodyFor(step: Step, tool: Tool | null): StepBody | undefined {
-  const body = step.body ?? (tool ? step.byTool?.[tool] : undefined)
-  return body && fillTool(body, tool)
+  const body = step.body ?? (tool ? step.byTool?.[tool] : undefined);
+  return body && fillTool(body, tool);
 }
 
 /** 단계 로고 파일 이름. 없으면 undefined */
 export function logoFor(step: Step, tool: Tool | null): string | undefined {
-  if (step.logo !== "tool") return step.logo
-  return tool === "codex" ? "chatgpt" : tool === "claude" ? "claude" : undefined
+  if (step.logo !== "tool") return step.logo;
+  return tool === "codex" ? "chatgpt" : tool === "claude" ? "claude" : undefined;
 }
 
 export function titleFor(step: Step, tool: Tool | null): string {
-  return fillTool(step.title, tool)
+  return fillTool(step.title, tool);
 }

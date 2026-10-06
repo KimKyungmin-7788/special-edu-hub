@@ -1,5 +1,11 @@
 import { useSearchParams } from "react-router-dom"
-import type { ReactNode } from "react"
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react"
 import { Check, Flag } from "lucide-react"
 import {
   STEPS,
@@ -27,6 +33,7 @@ export function VibeSetup() {
   // 도구를 고르기 전에는 항상 시작 화면이에요.
   const index = tool ? found : -1
   const step = index >= 0 ? STEPS[index] : null
+  const { scrollRef, forceDense } = useFitDense(`${tool}|${index}`)
 
   const go = (i: number) => {
     if (i < 0) setParams({})
@@ -52,8 +59,8 @@ export function VibeSetup() {
   }
 
   return (
-    <div className="flex flex-col overflow-hidden rounded-xl border bg-card shadow-sm lg:h-[calc(100svh-7rem)] lg:min-h-[36rem]">
-      <div className="flex h-14 shrink-0 items-center gap-3 border-b px-3 sm:px-4">
+    <div className="flex flex-col overflow-hidden rounded-xl border bg-card shadow-sm lg:h-[calc(100svh-5.5rem)] lg:min-h-[36rem]">
+      <div className="flex h-12 shrink-0 items-center gap-3 border-b px-3 sm:px-4">
         <nav aria-label="진행 단계" className="min-w-0 flex-1 overflow-x-auto">
           <ol className="flex items-center gap-1">
             <StepTab
@@ -84,7 +91,10 @@ export function VibeSetup() {
         )}
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto bg-surface">
+      <div
+        ref={scrollRef}
+        className="min-h-0 flex-1 overflow-y-auto bg-surface"
+      >
         {step ? (
           <StepView
             step={step}
@@ -108,6 +118,7 @@ export function VibeSetup() {
             nextLabel={index < STEPS.length - 1 ? STEPS[index + 1].short : null}
             onPrev={() => go(index - 1)}
             onNext={() => go(index + 1)}
+            forceDense={forceDense}
           />
         ) : (
           <Landing onPick={pick} />
@@ -115,6 +126,38 @@ export function VibeSetup() {
       </div>
     </div>
   )
+}
+
+/**
+ * 넓은 화면(lg↑, 본문 칸 높이 고정)에서 단계 내용이 칸을 넘치면 촘촘 모드를 켠다.
+ * 단계·도구·창 크기·글꼴 로딩이 바뀌면 끈 상태로 다시 잰다(그리기 전에 끝나 깜빡이지 않음).
+ */
+function useFitDense(key: string) {
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const [forceDense, setForceDense] = useState(false)
+  const [measure, setMeasure] = useState(0)
+
+  const remeasure = () => {
+    setForceDense(false)
+    setMeasure((m) => m + 1)
+  }
+
+  useLayoutEffect(remeasure, [key])
+
+  useEffect(() => {
+    window.addEventListener("resize", remeasure)
+    void document.fonts?.ready.then(remeasure)
+    return () => window.removeEventListener("resize", remeasure)
+  }, [])
+
+  useLayoutEffect(() => {
+    const el = scrollRef.current
+    if (!el || forceDense) return
+    if (!window.matchMedia("(min-width: 1024px)").matches) return
+    if (el.scrollHeight > el.clientHeight + 1) setForceDense(true)
+  }, [forceDense, measure])
+
+  return { scrollRef, forceDense }
 }
 
 function StepTab({
@@ -141,7 +184,7 @@ function StepTab({
         disabled={disabled}
         aria-current={current ? "step" : undefined}
         className={
-          "flex h-14 items-center gap-1 border-b-2 px-1.5 text-sm transition-colors disabled:cursor-default " +
+          "flex h-12 items-center gap-1 border-b-2 px-1.5 text-sm transition-colors disabled:cursor-default " +
           (current
             ? "border-primary font-semibold text-foreground"
             : "border-transparent text-muted-foreground enabled:hover:text-foreground")

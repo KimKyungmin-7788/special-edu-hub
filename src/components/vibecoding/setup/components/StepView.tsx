@@ -14,6 +14,7 @@ import { GuideImage } from "./GuideImage"
 import { LinkDialog } from "./LinkDialog"
 import { HelpPrompt } from "./HelpPrompt"
 import { vibecoding } from "@/config/vibecoding"
+import { cn } from "@/lib/utils"
 
 interface Props {
   step: Step
@@ -33,6 +34,8 @@ interface Props {
   nextLabel: string | null
   onPrev: () => void
   onNext: () => void
+  /** 화면에 다 안 들어가면 true — 할 일이 5개 미만이어도 촘촘하게 보여 줘요(허브 전용) */
+  forceDense?: boolean
 }
 
 export function StepView({
@@ -48,15 +51,16 @@ export function StepView({
   nextLabel,
   onPrev,
   onNext,
+  forceDense = false,
 }: Props) {
   const total = body?.checks.length ?? 0
   const doneCount = body ? body.checks.filter((c) => checks[c.id]).length : 0
   const allDone = total > 0 && doneCount === total
 
   return (
-    <div className="grid w-full grid-cols-1 gap-6 p-4 sm:p-6 lg:h-full lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+    <div className="grid w-full grid-cols-1 gap-6 p-4 sm:p-6 lg:h-full lg:gap-5 lg:py-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
       {/* 왼쪽: 읽고, 그림 보고, 링크 열기 */}
-      <section className="flex min-h-0 flex-col rounded-2xl border-2 border-primary bg-card p-6 shadow-sm">
+      <section className="flex min-h-0 flex-col rounded-2xl border-2 border-primary bg-card p-6 shadow-sm lg:p-5">
         <div className="flex items-center gap-3">
           {logo && (
             <img
@@ -98,7 +102,9 @@ export function StepView({
               </div>
             )}
 
-            {body.flow && <FlowList items={body.flow} />}
+            {body.flow && (
+              <FlowList items={body.flow} forceDense={forceDense} />
+            )}
 
             {body.guide ? (
               <div className="mt-4 flex min-h-0 flex-1 gap-3">
@@ -143,8 +149,8 @@ export function StepView({
 
       {/* 오른쪽: 할 일 체크, 막혔을 때 */}
       {body && (
-        <div className="flex min-h-0 flex-col gap-6">
-          <section className="rounded-2xl border bg-card p-5 shadow-sm">
+        <div className="flex min-h-0 flex-col gap-6 lg:gap-4">
+          <section className="rounded-2xl border bg-card p-5 shadow-sm lg:p-4">
             <div className="flex items-center justify-between gap-3">
               <h3 className="text-base font-bold">할 일 체크</h3>
               <span
@@ -378,13 +384,25 @@ function StepNav({
 }
 
 /** 번호 순서대로 하는 일. 문장 복사·링크 열기를 그 자리에 붙여요 */
-function FlowList({ items }: { items: StepFlowItem[] }) {
+function FlowList({
+  items,
+  forceDense,
+}: {
+  items: StepFlowItem[]
+  forceDense: boolean
+}) {
+  // 할 일이 5개 이상이면 한 화면에 들어가도록 촘촘하게 보여 줘요. 복사는 항상 전체 문장이에요.
+  // 허브에서는 헤더·사이드바만큼 칸이 작아서, 화면에 안 들어갈 때도 촘촘하게 해요(forceDense).
+  const dense = items.length >= 5 || forceDense
   return (
-    <ol className="mt-3 space-y-2">
+    <ol className={dense ? "mt-2 space-y-1.5" : "mt-3 space-y-2"}>
       {items.map((item, i) => (
         <li
           key={item.text}
-          className="flex gap-3 rounded-xl border bg-surface px-3.5 py-2.5"
+          className={cn(
+            "flex gap-3 rounded-xl border bg-surface px-3.5",
+            dense ? "py-2" : "py-2.5",
+          )}
         >
           <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
             {i + 1}
@@ -394,13 +412,29 @@ function FlowList({ items }: { items: StepFlowItem[] }) {
               {item.text}
             </p>
             {item.note && (
-              <p className="mt-0.5 text-sm text-muted-foreground">
+              <p
+                className={cn(
+                  "mt-0.5 text-muted-foreground",
+                  dense ? "text-xs" : "text-sm",
+                )}
+              >
                 {item.note}
               </p>
             )}
             {item.copy && (
-              <div className="mt-1.5 flex items-center gap-3 rounded-lg bg-background px-3 py-1.5 ring-1 ring-border">
-                <p className="min-w-0 flex-1 text-sm leading-snug">
+              <div
+                className={cn(
+                  "flex items-center gap-3 rounded-lg bg-background px-3 ring-1 ring-border",
+                  dense ? "mt-1 py-1" : "mt-1.5 py-1.5",
+                )}
+              >
+                <p
+                  title={item.copy}
+                  className={cn(
+                    "min-w-0 flex-1 text-sm leading-snug",
+                    dense ? "line-clamp-1" : "line-clamp-2",
+                  )}
+                >
                   “{item.copy}”
                 </p>
                 <AskCopy text={item.copy} bare />

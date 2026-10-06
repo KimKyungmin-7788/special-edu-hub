@@ -6,7 +6,7 @@ import {
   CreditCard,
   ExternalLink,
 } from "lucide-react"
-import { TOOL_NAME, type Tool } from "../steps"
+import { SIGNUPS, TOOL_NAME, type Tool } from "../steps"
 import { vibecoding } from "@/config/vibecoding"
 
 const CHOICES: {
@@ -26,42 +26,6 @@ const CHOICES: {
     service: "ChatGPT",
     plan: "Plus 이상",
     pricing: "https://chatgpt.com/pricing",
-  },
-]
-
-/** 시작 전에 미리 가입해 두면 좋은 곳. 가입 순서대로예요. */
-const SIGNUPS: {
-  name: string
-  via: string
-  logos: string[]
-  links: { label: string; href: string }[]
-}[] = [
-  {
-    name: "Claude 또는 ChatGPT",
-    via: "Google로 가입",
-    logos: ["claude", "chatgpt"],
-    links: [
-      { label: "Claude", href: "https://claude.ai/login" },
-      { label: "ChatGPT", href: "https://chatgpt.com/" },
-    ],
-  },
-  {
-    name: "깃허브",
-    via: "Google로 가입",
-    logos: ["github"],
-    links: [{ label: "가입", href: "https://github.com/signup" }],
-  },
-  {
-    name: "슈파베이스",
-    via: "깃허브로 가입",
-    logos: ["supabase"],
-    links: [{ label: "가입", href: "https://supabase.com/dashboard/sign-up" }],
-  },
-  {
-    name: "버셀",
-    via: "깃허브로 가입",
-    logos: ["vercel"],
-    links: [{ label: "가입", href: "https://vercel.com/signup" }],
   },
 ]
 
