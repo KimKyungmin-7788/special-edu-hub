@@ -13,6 +13,8 @@ import { cn } from "@/lib/utils"
  * 상단 고정 헤더.
  *  넓은 화면(xl↑): [로고·누리집명] [주 메뉴(밑줄 강조)] ··· [관리 · 계정 메뉴]
  *  좁은 화면     : [로고·누리집명] ··· [로그인/아바타] [☰] → 아래로 펼쳐지는 메뉴 패널
+ * 넓은 화면에서 주 메뉴가 칸을 넘치면(윈도우 글꼴이 더 넓음·로그인 버튼 등) 모양은 그대로 두고
+ * 단계적으로 촘촘하게 만든다 → useHeaderDensity 참고.
  * 인증 영역은 세션 상태로 분기:
  *   로딩 중 → 비움(깜빡임 방지) / 비로그인 → 로그인·회원가입
  *   로그인 → [글쓰기] + 아바타+닉네임 드롭다운(마이페이지·관리·로그아웃)
@@ -20,7 +22,7 @@ import { cn } from "@/lib/utils"
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
   const { pathname } = useLocation()
-  const navFits = useNavFits()
+  const { navBoxRef, rightRef, density } = useHeaderDensity()
 
   // 페이지가 바뀌면 모바일 메뉴 닫기
   useEffect(() => setMenuOpen(false), [pathname])
@@ -29,7 +31,7 @@ export function Header() {
   useEffect(() => {
     if (!menuOpen) return
     const mq = window.matchMedia("(min-width: 1280px)")
-    const onChange = () => mq.matches && navFits.fits && setMenuOpen(false)
+    const onChange = () => mq.matches && setMenuOpen(false)
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMenuOpen(false)
     mq.addEventListener("change", onChange)
     window.addEventListener("keydown", onKey)
@@ -37,27 +39,27 @@ export function Header() {
       mq.removeEventListener("change", onChange)
       window.removeEventListener("keydown", onKey)
     }
-  }, [menuOpen, navFits.fits])
+  }, [menuOpen])
 
   return (
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85">
-      <div className={cn(CONTAINER, "flex h-16 items-center gap-6")}>
-        <Brand />
+      <div
+        className={cn(
+          CONTAINER,
+          "flex h-16 items-center",
+          density >= 3 ? "gap-3" : "gap-6",
+        )}
+      >
+        <Brand hideWordmark={density >= 4} />
 
-        {/* 넘치면 자리는 그대로 두고 숨긴다(계속 재서 다시 들어가면 보이게) */}
-        <div
-          ref={navFits.ref}
-          aria-hidden={!navFits.fits}
-          inert={!navFits.fits}
-          className={cn(
-            "hidden h-full min-w-0 flex-1 xl:block",
-            !navFits.fits && "invisible",
-          )}
-        >
-          <Nav variant="bar" />
+        <div ref={navBoxRef} className="hidden h-full min-w-0 flex-1 xl:block">
+          <Nav variant="bar" density={density} />
         </div>
 
-        <div className="ml-auto flex shrink-0 items-center gap-1">
+        <div
+          ref={rightRef}
+          className="ml-auto flex shrink-0 items-center gap-1"
+        >
           <AuthArea />
           <button
             type="button"
@@ -65,10 +67,7 @@ export function Header() {
             aria-expanded={menuOpen}
             aria-controls="mobile-menu"
             aria-label={menuOpen ? "메뉴 닫기" : "메뉴 열기"}
-            className={cn(
-              "-mr-2 ml-1 flex size-10 items-center justify-center rounded-md text-foreground hover:bg-accent",
-              navFits.fits && "xl:hidden",
-            )}
+            className="-mr-2 ml-1 flex size-10 items-center justify-center rounded-md text-foreground hover:bg-accent xl:hidden"
           >
             {menuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
           </button>
@@ -78,10 +77,7 @@ export function Header() {
       {menuOpen && (
         <div
           id="mobile-menu"
-          className={cn(
-            "absolute inset-x-0 top-full max-h-[calc(100svh-4rem)] overflow-y-auto border-b bg-background shadow-sm",
-            navFits.fits && "xl:hidden",
-          )}
+          className="absolute inset-x-0 top-full max-h-[calc(100svh-4rem)] overflow-y-auto border-b bg-background shadow-sm xl:hidden"
         >
           <div className={cn(CONTAINER, "py-3")}>
             <Nav variant="list" onNavigate={() => setMenuOpen(false)} />
@@ -92,32 +88,48 @@ export function Header() {
   )
 }
 
-/**
- * 가로 주 메뉴가 제 칸에 다 들어가는지 잰다.
- * 칸(flex-1) 크기가 바뀔 때(창 크기·로그인 버튼·글꼴 로딩)마다 다시 재므로 기기 글꼴 차이에도 겹치지 않는다.
- * 칸이 화면에 없으면(xl 미만) 폭이 0 이라 '들어감'으로 본다 — 그때는 원래대로 ☰ 이 보인다.
- */
-function useNavFits() {
-  const ref = useRef<HTMLDivElement>(null)
-  const [fits, setFits] = useState(true)
+/** 촘촘함 최대 단계(Nav density 1·2 + 헤더 간격 3 + 로고 옆 글자 숨김 4). 오른쪽 영역 크기는 바꾸지 않는다(재측정 반복 방지). */
+const MAX_DENSITY = 4
 
-  useLayoutEffect(() => {
-    const box = ref.current
-    const list = box?.querySelector("ul")
-    if (!box || !list) return
-    const check = () => setFits(list.scrollWidth <= box.clientWidth + 1)
-    const ro = new ResizeObserver(check)
-    ro.observe(box)
-    check()
-    void document.fonts?.ready.then(check)
-    return () => ro.disconnect()
+/**
+ * 넓은 화면에서 주 메뉴가 제 칸에 다 들어가도록 촘촘함 단계를 고른다.
+ * 창 크기·오른쪽(로그인) 영역 크기·글꼴 로딩이 바뀌면 0 부터 다시 재고,
+ * 넘치는 동안 한 단계씩 올린다(그리기 전에 끝나 깜빡이지 않음).
+ * 메뉴 칸이 화면에 없으면(xl 미만, 폭 0) 넘치지 않는 것으로 본다.
+ */
+function useHeaderDensity() {
+  const navBoxRef = useRef<HTMLDivElement>(null)
+  const rightRef = useRef<HTMLDivElement>(null)
+  const [density, setDensity] = useState(0)
+  const [measure, setMeasure] = useState(0)
+
+  useEffect(() => {
+    const reset = () => {
+      setDensity(0)
+      setMeasure((m) => m + 1)
+    }
+    window.addEventListener("resize", reset)
+    const ro = new ResizeObserver(reset)
+    if (rightRef.current) ro.observe(rightRef.current)
+    void document.fonts?.ready.then(reset)
+    return () => {
+      window.removeEventListener("resize", reset)
+      ro.disconnect()
+    }
   }, [])
 
-  return { ref, fits }
+  useLayoutEffect(() => {
+    const box = navBoxRef.current
+    const list = box?.querySelector("ul")
+    if (!box || !list || density >= MAX_DENSITY) return
+    if (list.scrollWidth > box.clientWidth + 1) setDensity((d) => d + 1)
+  }, [density, measure])
+
+  return { navBoxRef, rightRef, density }
 }
 
 /** 로고 + 2줄 워드마크(config 단일 소스 — 윗줄 eyebrow, 아랫줄 title, 없으면 name). */
-function Brand() {
+function Brand({ hideWordmark = false }: { hideWordmark?: boolean }) {
   const { eyebrow } = site.headerBrand
   const title = site.headerBrand.title || site.name
   return (
@@ -127,7 +139,12 @@ function Brand() {
       aria-label={`${[eyebrow, title].filter(Boolean).join(" ")} 홈`}
     >
       <SiteLogo className="size-9 shrink-0" />
-      <span className="flex min-w-0 flex-col justify-center gap-0.5">
+      <span
+        className={cn(
+          "flex min-w-0 flex-col justify-center gap-0.5",
+          hideWordmark && "xl:sr-only",
+        )}
+      >
         {eyebrow && (
           <span className="truncate text-[11px] leading-none font-medium tracking-tight text-muted-foreground sm:text-xs">
             {eyebrow}
