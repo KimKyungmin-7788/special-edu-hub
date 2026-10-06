@@ -24,6 +24,9 @@ import { NotFound } from "@/pages/NotFound"
 import { PracticeList } from "@/pages/PracticeList"
 import { PracticeDetail } from "@/pages/PracticeDetail"
 import { PracticeWritePage } from "@/pages/PracticeWritePage"
+import { VibecodingPage } from "@/pages/VibecodingPage"
+import { VibeSetup } from "@/components/vibecoding/setup/VibeSetup"
+import { vibecoding, vibecodingPath } from "@/config/vibecoding"
 
 function App() {
   useEffect(() => {
@@ -57,6 +60,16 @@ function App() {
             <Route path="practices/write" element={<PracticeWritePage />} />
             <Route path="practices/:id" element={<PracticeDetail />} />
             <Route path="practices/:id/edit" element={<PracticeWritePage />} />
+            {/* 바이브코딩: 오른쪽 사이드바 + 하위 페이지. /vibecoding 은 첫 하위 페이지로 */}
+            <Route path="vibecoding" element={<VibecodingPage />}>
+              <Route
+                index
+                element={<Navigate to={vibecodingPath(vibecoding.pages[0].slug)} replace />}
+              />
+              <Route path="setup" element={<VibeSetup />} />
+            </Route>
+            {/* 옛 주소(단독 튜토리얼을 넘겨주던 때) → 허브 하위 페이지로 */}
+            <Route path="vibe-setup/*" element={<Navigate to={vibecodingPath("setup")} replace />} />
 
             {/* 자리만 / 준비 중 */}
             <Route path="board" element={<ComingSoon title="자유게시판" />} />

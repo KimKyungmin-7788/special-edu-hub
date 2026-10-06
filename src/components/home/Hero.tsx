@@ -133,14 +133,6 @@ function SlideContent({
                 label={slide.ctaLabel}
                 className="bg-hero-cta text-hero-cta-foreground"
               />
-            ) : slide.ctaOutsideApp ? (
-              // 허브 라우터 밖 주소(vercel.json rewrite) — Link 를 쓰면 허브 안에서 길을 찾다 404
-              <a
-                href={slide.ctaHref}
-                className="inline-block rounded-md bg-hero-cta px-4 py-2 text-sm font-semibold text-hero-cta-foreground transition-opacity hover:opacity-90"
-              >
-                {slide.ctaLabel}
-              </a>
             ) : (
               <Link
                 to={slide.ctaHref ?? "/apps/subject"}

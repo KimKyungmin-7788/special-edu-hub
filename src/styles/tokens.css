@@ -62,6 +62,10 @@
   --cta: #fcd34d;
   --cta-foreground: #1b3d22; /* 대비 8.4:1 */
 
+  /* 안내 그림의 "여기를 누르세요" 표시 전용(바이브코딩 시작 준비). 다른 곳엔 쓰지 않는다. */
+  --annotate: #c2410c;
+  --annotate-foreground: #ffffff;
+
   /* 히어로 배너 — 브랜드 초록 계열(연두빛 배경 + 짙은 초록 글씨 + 노랑 버튼). */
   --hero: var(--brand-soft); /* 배경 */
   --hero-foreground: #1b3d22; /* 제목 */
