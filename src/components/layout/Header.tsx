@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { Link, useLocation } from "react-router-dom"
 import { ChevronDown, LogOut, Menu, Settings, User, X } from "lucide-react"
 import { site } from "@/config/site"
@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils"
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
   const { pathname } = useLocation()
+  const navFits = useNavFits()
 
   // 페이지가 바뀌면 모바일 메뉴 닫기
   useEffect(() => setMenuOpen(false), [pathname])
@@ -28,7 +29,7 @@ export function Header() {
   useEffect(() => {
     if (!menuOpen) return
     const mq = window.matchMedia("(min-width: 1280px)")
-    const onChange = () => mq.matches && setMenuOpen(false)
+    const onChange = () => mq.matches && navFits.fits && setMenuOpen(false)
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMenuOpen(false)
     mq.addEventListener("change", onChange)
     window.addEventListener("keydown", onKey)
@@ -36,14 +37,23 @@ export function Header() {
       mq.removeEventListener("change", onChange)
       window.removeEventListener("keydown", onKey)
     }
-  }, [menuOpen])
+  }, [menuOpen, navFits.fits])
 
   return (
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85">
       <div className={cn(CONTAINER, "flex h-16 items-center gap-6")}>
         <Brand />
 
-        <div className="hidden h-full min-w-0 flex-1 xl:block">
+        {/* 넘치면 자리는 그대로 두고 숨긴다(계속 재서 다시 들어가면 보이게) */}
+        <div
+          ref={navFits.ref}
+          aria-hidden={!navFits.fits}
+          inert={!navFits.fits}
+          className={cn(
+            "hidden h-full min-w-0 flex-1 xl:block",
+            !navFits.fits && "invisible",
+          )}
+        >
           <Nav variant="bar" />
         </div>
 
@@ -55,7 +65,10 @@ export function Header() {
             aria-expanded={menuOpen}
             aria-controls="mobile-menu"
             aria-label={menuOpen ? "메뉴 닫기" : "메뉴 열기"}
-            className="-mr-2 ml-1 flex size-10 items-center justify-center rounded-md text-foreground hover:bg-accent xl:hidden"
+            className={cn(
+              "-mr-2 ml-1 flex size-10 items-center justify-center rounded-md text-foreground hover:bg-accent",
+              navFits.fits && "xl:hidden",
+            )}
           >
             {menuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
           </button>
@@ -65,7 +78,10 @@ export function Header() {
       {menuOpen && (
         <div
           id="mobile-menu"
-          className="absolute inset-x-0 top-full max-h-[calc(100svh-4rem)] overflow-y-auto border-b bg-background shadow-sm xl:hidden"
+          className={cn(
+            "absolute inset-x-0 top-full max-h-[calc(100svh-4rem)] overflow-y-auto border-b bg-background shadow-sm",
+            navFits.fits && "xl:hidden",
+          )}
         >
           <div className={cn(CONTAINER, "py-3")}>
             <Nav variant="list" onNavigate={() => setMenuOpen(false)} />
@@ -74,6 +90,30 @@ export function Header() {
       )}
     </header>
   )
+}
+
+/**
+ * 가로 주 메뉴가 제 칸에 다 들어가는지 잰다.
+ * 칸(flex-1) 크기가 바뀔 때(창 크기·로그인 버튼·글꼴 로딩)마다 다시 재므로 기기 글꼴 차이에도 겹치지 않는다.
+ * 칸이 화면에 없으면(xl 미만) 폭이 0 이라 '들어감'으로 본다 — 그때는 원래대로 ☰ 이 보인다.
+ */
+function useNavFits() {
+  const ref = useRef<HTMLDivElement>(null)
+  const [fits, setFits] = useState(true)
+
+  useLayoutEffect(() => {
+    const box = ref.current
+    const list = box?.querySelector("ul")
+    if (!box || !list) return
+    const check = () => setFits(list.scrollWidth <= box.clientWidth + 1)
+    const ro = new ResizeObserver(check)
+    ro.observe(box)
+    check()
+    void document.fonts?.ready.then(check)
+    return () => ro.disconnect()
+  }, [])
+
+  return { ref, fits }
 }
 
 /** 로고 + 2줄 워드마크(config 단일 소스 — 윗줄 eyebrow, 아랫줄 title, 없으면 name). */
