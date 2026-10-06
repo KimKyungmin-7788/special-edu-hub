@@ -3,7 +3,8 @@ import { Link, useLocation } from "react-router-dom"
 import { ChevronDown, LogOut, Menu, Settings, User, X } from "lucide-react"
 import { site } from "@/config/site"
 import { SiteLogo } from "@/config/logo"
-import { CONTAINER } from "@/config/layout"
+import { CONTAINER, WIDE_CONTAINER } from "@/config/layout"
+import { vibecoding } from "@/config/vibecoding"
 import { Nav } from "@/components/layout/Nav"
 import { WriteButton } from "@/components/app/WriteButton"
 import { useAuth } from "@/lib/auth"
@@ -22,7 +23,11 @@ import { cn } from "@/lib/utils"
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
   const { pathname } = useLocation()
-  const { navBoxRef, rightRef, density } = useHeaderDensity()
+  // 넓은 작업 화면(바이브코딩)에서는 헤더도 본문 폭에 맞춘다
+  const container = pathname.startsWith(vibecoding.basePath)
+    ? WIDE_CONTAINER
+    : CONTAINER
+  const { navBoxRef, rightRef, density } = useHeaderDensity(container)
 
   // 페이지가 바뀌면 모바일 메뉴 닫기
   useEffect(() => setMenuOpen(false), [pathname])
@@ -45,7 +50,7 @@ export function Header() {
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85">
       <div
         className={cn(
-          CONTAINER,
+          container,
           "flex h-16 items-center",
           density >= 3 ? "gap-3" : "gap-6",
         )}
@@ -79,7 +84,7 @@ export function Header() {
           id="mobile-menu"
           className="absolute inset-x-0 top-full max-h-[calc(100svh-4rem)] overflow-y-auto border-b bg-background shadow-sm xl:hidden"
         >
-          <div className={cn(CONTAINER, "py-3")}>
+          <div className={cn(container, "py-3")}>
             <Nav variant="list" onNavigate={() => setMenuOpen(false)} />
           </div>
         </div>
@@ -93,11 +98,11 @@ const MAX_DENSITY = 4
 
 /**
  * 넓은 화면에서 주 메뉴가 제 칸에 다 들어가도록 촘촘함 단계를 고른다.
- * 창 크기·오른쪽(로그인) 영역 크기·글꼴 로딩이 바뀌면 0 부터 다시 재고,
+ * 창 크기·오른쪽(로그인) 영역 크기·글꼴 로딩·헤더 폭(layout)이 바뀌면 0 부터 다시 재고,
  * 넘치는 동안 한 단계씩 올린다(그리기 전에 끝나 깜빡이지 않음).
  * 메뉴 칸이 화면에 없으면(xl 미만, 폭 0) 넘치지 않는 것으로 본다.
  */
-function useHeaderDensity() {
+function useHeaderDensity(layout: string) {
   const navBoxRef = useRef<HTMLDivElement>(null)
   const rightRef = useRef<HTMLDivElement>(null)
   const [density, setDensity] = useState(0)
@@ -117,6 +122,12 @@ function useHeaderDensity() {
       ro.disconnect()
     }
   }, [])
+
+  // 페이지에 따라 헤더 폭이 바뀌면(바이브코딩 ↔ 일반) 다시 잰다
+  useLayoutEffect(() => {
+    setDensity(0)
+    setMeasure((m) => m + 1)
+  }, [layout])
 
   useLayoutEffect(() => {
     const box = navBoxRef.current
