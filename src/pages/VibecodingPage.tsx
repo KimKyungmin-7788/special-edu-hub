@@ -29,7 +29,7 @@ function VibecodingSidebar() {
           {vibecoding.title}
         </h2>
         <ul className="flex gap-1 overflow-x-auto lg:flex-col">
-          {vibecoding.pages.map((page) => (
+          {vibecoding.pages.map((page, i) => (
             <li key={page.slug} className="shrink-0">
               <NavLink
                 to={vibecodingPath(page.slug)}
@@ -42,7 +42,9 @@ function VibecodingSidebar() {
                   )
                 }
               >
-                {page.label}
+                <span>
+                  {i + 1}. {page.label}
+                </span>
                 {page.status === "soon" && (
                   <span className="rounded-sm bg-muted px-1 py-px text-[10px] leading-4 font-medium text-muted-foreground">
                     준비중

@@ -180,10 +180,16 @@ export type WhySlide =
 
 export const WHY_TITLE = "왜 바이브코딩인가?";
 
+/** 왜 바이브코딩인가? 표지 */
+export const WHY_COVER = {
+  eyebrow: "들어가며",
+  lead: "도구를 설치하기 전에, 우리가 왜 이것을 배우는지 먼저 함께 생각해 봐요.",
+};
+
 export const WHY: WhySlide[] = [
   {
     kind: "reasons",
-    id: "why",
+    id: "why-reasons",
     short: "교사가 만드는 이유",
     title: "교사의 아이디어에 기술이 더해지면, 가능성은 무한해져요",
     lead: "코딩을 몰라도 AI와 대화하며 내 수업에 필요한 것을 직접 만들 수 있어요.",

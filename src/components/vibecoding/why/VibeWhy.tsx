@@ -5,22 +5,26 @@ import { vibecodingPath } from "@/config/vibecoding"
 import { WHY, WHY_TITLE } from "@/components/vibecoding/setup/steps"
 import { SlideFrame } from "@/components/vibecoding/setup/components/SlideFrame"
 import { WhyView } from "@/components/vibecoding/setup/components/WhyView"
+import { WhyCover } from "@/components/vibecoding/setup/components/WhyCover"
 
 /**
  * 왜 바이브코딩인가?(/vibecoding/why) — 바이브코딩 배우기의 첫 하위 페이지.
  * 내용은 환경구축과 같은 steps.ts(WHY)에서 읽고, 화면도 같은 16:9 슬라이드(SlideFrame·WhyView)를 쓴다.
- * 몇 번째 장인지는 ?p= 로만 관리. 마지막 장에서 환경구축으로 넘어간다.
+ * 표지 + 3장. 몇 번째 장인지는 ?p= 로만 관리(표지는 p 없음). 마지막 장에서 환경구축으로 넘어간다.
  */
 export function VibeWhy() {
   const [params, setParams] = useSearchParams()
   const navigate = useNavigate()
   const n = Number(params.get("p"))
-  const index = Number.isInteger(n) && n >= 1 && n <= WHY.length ? n - 1 : 0
-  const last = index === WHY.length - 1
+  /** 표지(0) + 슬라이드(1~) */
+  const count = WHY.length + 1
+  const index = Number.isInteger(n) && n >= 1 && n <= count ? n - 1 : 0
+  const last = index === count - 1
+  const slide = index > 0 ? WHY[index - 1] : null
 
   const go = (i: number) => {
     if (i < 0) return
-    if (i >= WHY.length) navigate(vibecodingPath("setup"))
+    if (i >= count) navigate(vibecodingPath("setup"))
     else setParams(i === 0 ? {} : { p: String(i + 1) })
   }
 
@@ -37,15 +41,17 @@ export function VibeWhy() {
     return () => window.removeEventListener("keydown", onKey)
   })
 
-  const view = (
+  const view = slide ? (
     <WhyView
-      slide={WHY[index]}
-      number={index + 1}
+      slide={slide}
+      number={index}
       total={WHY.length}
       nextLabel={last ? "환경구축 시작하기" : "다음"}
-      onPrev={index > 0 ? () => go(index - 1) : undefined}
+      onPrev={() => go(index - 1)}
       onNext={() => go(index + 1)}
     />
+  ) : (
+    <WhyCover onStart={() => go(1)} />
   )
 
   return (
@@ -61,15 +67,19 @@ export function VibeWhy() {
           footer={
             <footer className="flex h-10 shrink-0 items-center gap-4 border-t bg-background px-5 text-sm text-muted-foreground">
               <span className="min-w-0 flex-1 truncate">
-                {WHY_TITLE} · {WHY[index].short}
+                {WHY_TITLE} · {slide ? slide.short : "표지"}
               </span>
               <div className="flex items-center gap-1.5" aria-hidden>
-                {WHY.map((w, i) => (
+                {Array.from({ length: count }, (_, i) => (
                   <span
-                    key={w.id}
+                    key={i}
                     className={
                       "h-1.5 rounded-full transition-all " +
-                      (i === index ? "w-5 bg-primary" : "w-1.5 bg-border")
+                      (i === index
+                        ? "w-5 bg-primary"
+                        : i === 0
+                          ? "w-1.5 bg-hero-accent/60"
+                          : "w-1.5 bg-border")
                     }
                   />
                 ))}
@@ -85,7 +95,7 @@ export function VibeWhy() {
                   <ArrowLeft aria-hidden className="size-4" />
                 </button>
                 <span className="tabular-nums">
-                  {index + 1} / {WHY.length}
+                  {index + 1} / {count}
                 </span>
                 <button
                   type="button"
