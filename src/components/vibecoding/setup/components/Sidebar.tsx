@@ -38,7 +38,11 @@ interface Props {
   onGo: (pageIndex: number) => void
   /** 들어가며(왜 바이브코딩인가?) 슬라이드들 */
   /** 없으면(허브처럼 따로 페이지가 있을 때) 목차에서 빼요 */
-  intro?: { title: string; items: { label: string; pageIndex: number }[] }
+  intro?: {
+    title: string
+    /** 들어가며 표지 */ pageIndex: number
+    items: { label: string; pageIndex: number }[]
+  }
   /** 도구 고르는 시작 화면의 위치 */
   landingIndex: number
   /** 접힌 목차: 글자는 빼고 장 번호와 단계 번호만 보여요 */
@@ -136,9 +140,14 @@ export function Sidebar({
 
   return (
     <aside
+      // 접힌 목차의 빈 곳을 누르면 펼쳐요. 번호·버튼은 원래대로 그 자리로 가요.
+      onClick={(e) => {
+        if (collapsed && !(e.target as HTMLElement).closest("button"))
+          onToggle()
+      }}
       className={
         "flex shrink-0 flex-col border-r bg-background transition-[width] duration-200 " +
-        (collapsed ? "w-14" : "w-64")
+        (collapsed ? "w-14 cursor-pointer" : "w-64")
       }
     >
       {collapsed ? (
@@ -185,11 +194,19 @@ export function Sidebar({
         {pageItem(0, "표지", BookMarked)}
         {intro && (
           <div className={collapsed ? "mt-2" : "mt-4"}>
-            <p
+            <button
+              type="button"
+              onClick={() => onGo(intro.pageIndex)}
+              aria-current={current === intro.pageIndex ? "page" : undefined}
               title={collapsed ? intro.title : undefined}
               className={
-                "text-sm font-bold text-foreground/70 " +
-                (collapsed ? "py-1 text-center text-xs" : "px-3 py-1.5")
+                "w-full rounded-xl text-sm font-bold transition-colors " +
+                (collapsed
+                  ? "py-1 text-center text-xs "
+                  : "px-3 py-1.5 text-left ") +
+                (current === intro.pageIndex
+                  ? "bg-brand-muted text-brand-muted-foreground"
+                  : "text-foreground/70 hover:bg-accent")
               }
             >
               {collapsed ? (
@@ -200,7 +217,7 @@ export function Sidebar({
               ) : (
                 intro.title
               )}
-            </p>
+            </button>
             <ol className={collapsed ? "mt-0.5" : "mt-1 space-y-0.5"}>
               {intro.items.map((it, i) => (
                 <li key={it.pageIndex}>

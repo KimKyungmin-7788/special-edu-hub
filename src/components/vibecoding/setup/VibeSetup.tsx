@@ -64,8 +64,9 @@ export function VibeSetup() {
   const [params, setParams] = useSearchParams()
   const { tool, checks, toggleCheck, setTool } = useProgress()
   const wide = useWide()
-  // 넓은 화면은 목차를 펼쳐 두고, 노트북 화면은 슬라이드를 크게 보이도록 접어 둬요.
-  const [tocOpen, setTocOpen] = useState(() => window.innerWidth >= 1440)
+  // 허브는 왼쪽 메뉴(12rem)가 따로 있어서, 목차까지 펼치면 슬라이드가 작아져요.
+  // 그래서 아주 넓은 화면(1920px 이상)에서만 펼쳐 두고, 나머지는 접어서 슬라이드를 크게 보여요.
+  const [tocOpen, setTocOpen] = useState(() => window.innerWidth >= 1920)
   // 도구를 고르기 전에 목차로 가려던 곳. 창에서 도구를 고르면 그리로 가요.
   const [askFor, setAskFor] = useState<number | null>(null)
 
@@ -220,7 +221,11 @@ export function VibeSetup() {
         onToggle={() => setTocOpen((o) => !o)}
       />
 
-      <div className="flex min-w-0 flex-1 p-3">
+      {/* 목차가 펼쳐져 있을 때 슬라이드 쪽을 누르면 목차를 접어요. */}
+      <div
+        className="flex min-w-0 flex-1 p-3"
+        onPointerDown={() => tocOpen && setTocOpen(false)}
+      >
         <SlideFrame
           footer={
             <footer className="flex h-10 shrink-0 items-center gap-4 border-t bg-background px-5 text-sm text-muted-foreground">
