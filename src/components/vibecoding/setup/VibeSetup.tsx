@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { useSearchParams } from "react-router-dom"
-import { ArrowLeft, ArrowRight, PanelLeftOpen } from "lucide-react"
+import { ArrowLeft, ArrowRight } from "lucide-react"
 import {
   CHAPTERS,
   STEPS,
@@ -127,7 +127,11 @@ export function VibeSetup() {
     current.kind === "title" ? (
       <TitleCover
         chapters={CHAPTERS.map((c) => ({ chapter: c, count: c.steps.length }))}
-        onStart={() => go(LANDING)}
+        onStart={() => {
+          // 시작하면 슬라이드를 크게 보도록 목차를 접어요.
+          setTocOpen(false)
+          go(LANDING)
+        }}
       />
     ) : current.kind === "landing" ? (
       <Landing onPick={pick} />
@@ -188,45 +192,30 @@ export function VibeSetup() {
 
   return (
     <div className="flex h-[calc(100svh-5.5rem)] min-h-[36rem] overflow-hidden rounded-xl border bg-surface shadow-sm">
-      {/* 접으면 같은 자리에 여는 버튼만 남겨요. */}
-      {!tocOpen && (
-        <div className="flex w-12 shrink-0 flex-col items-center border-r bg-background pt-3">
-          <button
-            type="button"
-            onClick={() => setTocOpen(true)}
-            aria-label="목차 열기"
-            title="목차 열기"
-            className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
-          >
-            <PanelLeftOpen aria-hidden className="size-4" />
-          </button>
-        </div>
-      )}
-      {tocOpen && (
-        <Sidebar
-          chapters={CHAPTERS.map((c, ci) => ({
-            chapter: c,
-            number: ci + 1,
-            pageIndex: PAGES.findIndex((p) => p.id === c.id),
-            steps: c.steps.map((sid) => {
-              const i = STEPS.findIndex((s) => s.id === sid)
-              return {
-                no: i + 1,
-                short: STEPS[i].short,
-                pageIndex: PAGES.findIndex((p) => p.id === sid),
-                done: isDone(i),
-              }
-            }),
-          }))}
-          current={page}
-          locked={!tool}
-          toolName={tool ? TOOL_NAME[tool] : null}
-          doneCount={doneCount}
-          total={STEPS.length}
-          onGo={go}
-          onClose={() => setTocOpen(false)}
-        />
-      )}
+      <Sidebar
+        chapters={CHAPTERS.map((c, ci) => ({
+          chapter: c,
+          number: ci + 1,
+          pageIndex: PAGES.findIndex((p) => p.id === c.id),
+          steps: c.steps.map((sid) => {
+            const i = STEPS.findIndex((s) => s.id === sid)
+            return {
+              no: i + 1,
+              short: STEPS[i].short,
+              pageIndex: PAGES.findIndex((p) => p.id === sid),
+              done: isDone(i),
+            }
+          }),
+        }))}
+        current={page}
+        locked={!tool}
+        toolName={tool ? TOOL_NAME[tool] : null}
+        doneCount={doneCount}
+        total={STEPS.length}
+        onGo={go}
+        collapsed={!tocOpen}
+        onToggle={() => setTocOpen((o) => !o)}
+      />
 
       <div className="flex min-w-0 flex-1 p-3">
         <SlideFrame
