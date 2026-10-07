@@ -412,7 +412,12 @@ function FlowList({
             {i + 1}
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-[15px] font-semibold leading-snug">
+            <p className="flex items-center gap-2 text-[15px] font-semibold leading-snug">
+              {item.tag && (
+                <span className="shrink-0 rounded-md bg-brand-muted px-1.5 py-0.5 text-xs font-bold text-brand-muted-foreground">
+                  {item.tag}
+                </span>
+              )}
               {item.text}
             </p>
             {item.note && (
@@ -439,7 +444,7 @@ function FlowList({
                     dense ? "line-clamp-1" : "line-clamp-2",
                   )}
                 >
-                  “{item.copy}”
+                  “{item.preview ?? item.copy}”
                 </p>
                 <AskCopy text={item.copy} bare />
               </div>
