@@ -3,9 +3,16 @@ import {
   BookOpen,
   Check,
   Flag,
+  HeartHandshake,
+  Laptop,
+  Lightbulb,
   PanelLeftClose,
   PanelLeftOpen,
+  type LucideIcon,
 } from "lucide-react"
+
+/** 들어가며 슬라이드 아이콘(순서대로) */
+const INTRO_ICONS: LucideIcon[] = [Lightbulb, Laptop, HeartHandshake]
 import type { Chapter } from "../steps"
 
 export interface TocStep {
@@ -29,6 +36,11 @@ interface Props {
   doneCount: number
   total: number
   onGo: (pageIndex: number) => void
+  /** 들어가며(왜 바이브코딩인가?) 슬라이드들 */
+  /** 없으면(허브처럼 따로 페이지가 있을 때) 목차에서 빼요 */
+  intro?: { title: string; items: { label: string; pageIndex: number }[] }
+  /** 도구 고르는 시작 화면의 위치 */
+  landingIndex: number
   /** 접힌 목차: 글자는 빼고 장 번호와 단계 번호만 보여요 */
   collapsed: boolean
   onToggle: () => void
@@ -37,6 +49,8 @@ interface Props {
 /** 전자책 목차처럼 보이는 왼쪽 사이드바. 접으면 번호만 남는 좁은 띠가 돼요. */
 export function Sidebar({
   chapters,
+  intro,
+  landingIndex,
   current,
   locked,
   toolName,
@@ -48,7 +62,7 @@ export function Sidebar({
 }: Props) {
   const item = (active: boolean) =>
     "group flex w-full items-center rounded-xl text-left text-[15px] transition-colors " +
-    (collapsed ? "justify-center py-1.5 " : "gap-3 px-3 py-2 ") +
+    (collapsed ? "justify-center py-0.5 " : "gap-3 px-3 py-2 ") +
     (active
       ? "bg-brand-muted font-bold text-brand-muted-foreground"
       : "text-foreground/85 hover:bg-accent")
@@ -65,6 +79,22 @@ export function Sidebar({
   /** 접혔을 때는 글자를 화면에서 숨기고, 화면 읽기 프로그램과 마우스 풍선 도움말로만 알려요 */
   const label = (text: string) =>
     collapsed ? <span className="sr-only">{text}</span> : text
+
+  /** 번호 없이 아이콘으로 표시하는 항목(표지·들어가며·시작) */
+  const pageItem = (index: number, text: string, Icon: LucideIcon) => (
+    <button
+      type="button"
+      onClick={() => onGo(index)}
+      aria-current={current === index ? "page" : undefined}
+      title={collapsed ? text : undefined}
+      className={item(current === index)}
+    >
+      <span className={badge(current === index)}>
+        <Icon aria-hidden className="size-3.5" />
+      </span>
+      {label(text)}
+    </button>
+  )
 
   const toggle = (
     <button
@@ -151,36 +181,48 @@ export function Sidebar({
           (collapsed ? "px-1.5" : "px-2")
         }
       >
-        <button
-          type="button"
-          onClick={() => onGo(0)}
-          aria-current={current === 0 ? "page" : undefined}
-          title={collapsed ? "표지" : undefined}
-          className={item(current === 0)}
-        >
-          <span className={badge(current === 0)}>
-            <BookMarked aria-hidden className="size-3.5" />
-          </span>
-          {label("표지")}
-        </button>
-        <button
-          type="button"
-          onClick={() => onGo(1)}
-          aria-current={current === 1 ? "page" : undefined}
-          title={collapsed ? "시작" : undefined}
-          className={item(current === 1)}
-        >
-          <span className={badge(current === 1)}>
-            <Flag aria-hidden className="size-3.5" />
-          </span>
-          {label("시작")}
-        </button>
+        {/* 표지 → 들어가며 → 시작: 도구를 고르기 전에도 볼 수 있어요 */}
+        {pageItem(0, "표지", BookMarked)}
+        {intro && (
+          <div className={collapsed ? "mt-2" : "mt-4"}>
+            <p
+              title={collapsed ? intro.title : undefined}
+              className={
+                "text-sm font-bold text-foreground/70 " +
+                (collapsed ? "py-1 text-center text-xs" : "px-3 py-1.5")
+              }
+            >
+              {collapsed ? (
+                <>
+                  <span aria-hidden>왜?</span>
+                  <span className="sr-only">{intro.title}</span>
+                </>
+              ) : (
+                intro.title
+              )}
+            </p>
+            <ol className={collapsed ? "mt-0.5" : "mt-1 space-y-0.5"}>
+              {intro.items.map((it, i) => (
+                <li key={it.pageIndex}>
+                  {pageItem(
+                    it.pageIndex,
+                    it.label,
+                    INTRO_ICONS[i] ?? Lightbulb,
+                  )}
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
+        <div className={intro ? (collapsed ? "mt-2" : "mt-4") : ""}>
+          {pageItem(landingIndex, "시작", Flag)}
+        </div>
 
         {chapters.map(({ chapter, number, pageIndex, steps }) => (
           <div
             key={chapter.id}
             className={
-              (collapsed ? "mt-3" : "mt-4") + (locked ? " opacity-55" : "")
+              (collapsed ? "mt-2" : "mt-4") + (locked ? " opacity-55" : "")
             }
           >
             <button
@@ -189,8 +231,10 @@ export function Sidebar({
               aria-current={current === pageIndex ? "page" : undefined}
               title={collapsed ? `${number}장. ${chapter.short}` : undefined}
               className={
-                "w-full rounded-xl py-1.5 text-sm font-bold transition-colors " +
-                (collapsed ? "text-center text-xs " : "px-3 text-left ") +
+                "w-full rounded-xl text-sm font-bold transition-colors " +
+                (collapsed
+                  ? "py-1 text-center text-xs "
+                  : "px-3 py-1.5 text-left ") +
                 (current === pageIndex
                   ? "bg-brand-muted text-brand-muted-foreground"
                   : "text-foreground/70 hover:bg-accent")
@@ -203,7 +247,7 @@ export function Sidebar({
                 `. ${chapter.short}`
               )}
             </button>
-            <ol className="mt-1 space-y-0.5">
+            <ol className={collapsed ? "mt-0.5" : "mt-1 space-y-0.5"}>
               {steps.map((s) => (
                 <li key={s.no}>
                   <button

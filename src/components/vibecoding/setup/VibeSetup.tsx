@@ -57,6 +57,7 @@ function useWide() {
 /**
  * 바이브코딩 최소한의 환경구축(/vibecoding/setup). 원래 vibecoding-setting 단독 앱이던 것을 허브로 옮겼다.
  * 현재 위치는 ?step= 으로만 관리(도구를 고르기 전에는 표지·시작만, 목차를 누르면 도구부터 고르게 함).
+ * "왜 바이브코딩인가?"는 따로 하위 페이지(/vibecoding/why, VibeWhy)라 여기선 빼요.
  * 허브 헤더 아래 한 칸: [목차] + [16:9 슬라이드]. 넓은 화면에선 화면 높이에 맞춰 스크롤 없이 보이게 한다.
  */
 export function VibeSetup() {
@@ -75,7 +76,8 @@ export function VibeSetup() {
 
   const go = (i: number) => {
     const target = PAGES[Math.max(0, Math.min(i, PAGES.length - 1))]
-    if (!tool && target.kind !== "title" && target.kind !== "landing") {
+    // 도구를 고르기 전에도 표지·시작은 볼 수 있어요.
+    if (!tool && (target.kind === "cover" || target.kind === "step")) {
       setAskFor(PAGES.indexOf(target))
       return
     }
@@ -130,7 +132,7 @@ export function VibeSetup() {
         onStart={() => {
           // 시작하면 슬라이드를 크게 보도록 목차를 접어요.
           setTocOpen(false)
-          go(LANDING)
+          go(page + 1)
         }}
       />
     ) : current.kind === "landing" ? (
@@ -207,6 +209,7 @@ export function VibeSetup() {
             }
           }),
         }))}
+        landingIndex={LANDING}
         current={page}
         locked={!tool}
         toolName={tool ? TOOL_NAME[tool] : null}

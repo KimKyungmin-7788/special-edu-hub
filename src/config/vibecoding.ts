@@ -18,7 +18,8 @@ export const vibecoding = {
   /** 하위 페이지 그림·로고 위치(public/vibecoding/) */
   assetBase: "/vibecoding/",
   pages: [
-    { slug: "setup", label: "바이브코딩 최소한의 환경구축", status: "active" },
+    { slug: "why", label: "왜 바이브코딩인가?", status: "active" },
+    { slug: "setup", label: "바이브코딩 환경구축", status: "active" },
   ] satisfies VibecodingPage[] as VibecodingPage[],
 }
 

@@ -13,6 +13,7 @@ import type { Step, StepBody, StepFlowItem, StepLink } from "../steps"
 import { GuideImage } from "./GuideImage"
 import { LinkDialog } from "./LinkDialog"
 import { HelpPrompt } from "./HelpPrompt"
+import { RescueButton } from "./Rescue"
 import { vibecoding } from "@/config/vibecoding"
 import { cn } from "@/lib/utils"
 
@@ -74,6 +75,9 @@ export function StepView({
               {index + 1}단계
             </span>
             <h1 className="mt-1 text-2xl font-bold tracking-tight">{title}</h1>
+          </div>
+          <div className="ml-auto self-start">
+            <RescueButton where={helpWhere} />
           </div>
         </div>
 

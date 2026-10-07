@@ -130,6 +130,131 @@ export const SIGNUPS: Signup[] = [
   { name: "버셀", via: "깃허브로 가입", logos: ["vercel"], links: [{ label: "가입", href: "https://vercel.com/signup" }] },
 ];
 
+/** 어느 단계에서든 막혔을 때 쓰는 프롬프트. 표지와 단계마다 복사 버튼으로 보여요. */
+export const RESCUE = {
+  title: "문제해결 만능 프롬프트",
+  /** [ ] 안은 선생님이 바꿔 넣는 자리 */
+  prompt:
+    "[발생한 문제 붙여넣기] 하다가 막혔는데, 원인을 쉬운 말로 설명하고, 명령은 네가 직접 실행하고 다 해 줘. 내가 해야 할 일은 한 번에 하나씩 쉬운 말로 알려 줘.",
+  tip: "오류 화면은 Win + Shift + S로 캡처해서 함께 붙여 넣어요. 비밀번호·API 키는 붙여 넣지 않아요.",
+};
+
+/** 들어가며: 왜 바이브코딩인가? (표지와 도구 고르기 사이, 도구를 고르지 않아도 볼 수 있어요) */
+export interface WhyPoint {
+  /** 화면 아이콘 이름 (WhyView에서 고름) */
+  icon: "fix" | "idea" | "folder" | "history" | "cloud" | "robot" | "heart" | "target" | "share" | "shield" | "chat";
+  title: string;
+  desc?: string;
+}
+
+export type WhySlide =
+  | {
+      kind: "reasons";
+      id: string;
+      short: string;
+      title: string;
+      lead: string;
+      /** 바이브코딩이라는 말의 뜻과 유래 */
+      define: { term: string; text: string; origin: string };
+      points: WhyPoint[];
+    }
+  | {
+      kind: "compare";
+      id: string;
+      short: string;
+      title: string;
+      lead: string;
+      before: { label: string; tools: string; points: WhyPoint[] };
+      after: { label: string; tools: string; points: WhyPoint[] };
+      closing: string;
+    }
+  | {
+      kind: "teacher";
+      id: string;
+      short: string;
+      title: string;
+      lead: string;
+      points: WhyPoint[];
+      closing: { label: string; text: string };
+    };
+
+export const WHY_TITLE = "왜 바이브코딩인가?";
+
+export const WHY: WhySlide[] = [
+  {
+    kind: "reasons",
+    id: "why",
+    short: "교사가 만드는 이유",
+    title: "교사의 아이디어에 기술이 더해지면, 가능성은 무한해져요",
+    lead: "코딩을 몰라도 AI와 대화하며 내 수업에 필요한 것을 직접 만들 수 있어요.",
+    define: {
+      term: "바이브코딩",
+      text: "만들고 싶은 것을 말로 설명하면 AI가 코드를 써 주는 방식이에요.",
+      origin: "2025년 2월, AI 연구자 안드레이 카파시가 처음 붙인 이름이에요.",
+    },
+    points: [
+      {
+        icon: "fix",
+        title: "현장의 문제를 직접 해결해요",
+        desc: "우리 반, 우리 아이들에게 꼭 맞는 도구가 없을 때 기다리지 않고 직접 만들어요.",
+      },
+      {
+        icon: "idea",
+        title: "상상하던 것을 현실로 구체화해요",
+        desc: "‘이런 자료가 있으면 좋겠다’던 생각을 실제로 쓸 수 있는 앱으로 만들어요.",
+      },
+    ],
+  },
+  {
+    kind: "compare",
+    id: "why-pc",
+    short: "채팅창에서 내 PC로",
+    title: "채팅창을 넘어, 내 PC에서 내 코드로",
+    lead: "처음엔 대부분 채팅창에서 시작해요. 그런데 만들수록 한계가 보여요.",
+    before: {
+      label: "채팅창에서 만들 때",
+      tools: "제미나이 · 구글 AI 스튜디오 · Claude 채팅",
+      points: [
+        { icon: "chat", title: "코드가 대화 속에만 있어 내 것 같지 않아요" },
+        { icon: "history", title: "고치고 키울수록 관리하기 어려워요" },
+        { icon: "share", title: "나누려면 코드를 따로 옮겨야 해요" },
+      ],
+    },
+    after: {
+      label: "내 PC의 AI 에이전트와 만들 때",
+      tools: "Claude Code · Codex",
+      points: [
+        { icon: "folder", title: "코드가 내 폴더에 파일로 남아요", desc: "AI가 내 폴더의 파일을 직접 읽고 고쳐요." },
+        { icon: "history", title: "버전을 기록하고 언제든 되돌려요", desc: "Git이 고친 기록을 차곡차곡 남겨요." },
+        {
+          icon: "cloud",
+          title: "보관·데이터·공유까지 이어져요",
+          desc: "깃허브에 보관하고, 슈파베이스에 데이터를 담고, 버셀로 주소를 만들어요.",
+        },
+        { icon: "robot", title: "명령도 AI가 직접 실행해요", desc: "백엔드를 만들고 배포하는 일까지 맡길 수 있어요." },
+      ],
+    },
+    closing: "버전을 올려 가며 다듬다 보면, 완성도 있는 교육자료가 돼요.",
+  },
+  {
+    kind: "teacher",
+    id: "why-teacher",
+    short: "개발자이기 전에 교사",
+    title: "우리는 개발자이기 전에 교사예요",
+    lead: "AI 기술은 도구일 뿐, 교사의 본질이 아니에요.",
+    points: [
+      { icon: "heart", title: "좋은 교육자료는 좋은 기술이 아니라, 교육적 고민과 깊이에서 나와요." },
+      { icon: "target", title: "화려한 기술이 없어도, 내가 가르치는 아이들에게 맞는 자료라면 그게 정답이에요." },
+      { icon: "share", title: "무엇이든 자신 있게 나누고 공유하며 함께 성장해요." },
+      { icon: "shield", title: "AI가 만든 결과는 교사가 직접 확인해요. 학생 개인정보는 넣지 않아요." },
+    ],
+    closing: {
+      label: "그래서 이 연수는",
+      text: "교사의 교육적 고민을 기술의 제약 없이 AI 에이전트와 함께 구현할 수 있도록, 최소한의 환경을 함께 갖춰요.",
+    },
+  },
+];
+
 /** 목차의 장. 장마다 표지 슬라이드가 한 장씩 있어요. */
 export interface Chapter {
   /** 주소에 쓰는 이름 (?step=ch1) */

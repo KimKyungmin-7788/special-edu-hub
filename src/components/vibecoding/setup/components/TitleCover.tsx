@@ -1,6 +1,7 @@
 import { ArrowRight, ListChecks, Monitor } from "lucide-react"
 import { vibecoding } from "@/config/vibecoding"
 import type { Chapter } from "../steps"
+import { RescueCard } from "./Rescue"
 
 interface Props {
   /** 장마다 이름과 단계 수 */
@@ -42,7 +43,11 @@ export function TitleCover({ chapters, onStart }: Props) {
           </li>
         </ul>
 
-        <div className="mt-10">
+        <div className="mt-6">
+          <RescueCard />
+        </div>
+
+        <div className="mt-8">
           <button
             type="button"
             onClick={onStart}
