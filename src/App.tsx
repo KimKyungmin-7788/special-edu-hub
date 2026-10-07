@@ -27,6 +27,7 @@ import { PracticeWritePage } from "@/pages/PracticeWritePage"
 import { VibecodingPage } from "@/pages/VibecodingPage"
 import { VibeSetup } from "@/components/vibecoding/setup/VibeSetup"
 import { VibeWhy } from "@/components/vibecoding/why/VibeWhy"
+import { VibeSurvey } from "@/components/vibecoding/survey/VibeSurvey"
 import { vibecoding, vibecodingPath } from "@/config/vibecoding"
 
 function App() {
@@ -69,6 +70,7 @@ function App() {
               />
               <Route path="why" element={<VibeWhy />} />
               <Route path="setup" element={<VibeSetup />} />
+              <Route path="survey" element={<VibeSurvey />} />
             </Route>
             {/* 옛 주소(단독 튜토리얼을 넘겨주던 때) → 허브 하위 페이지로 */}
             <Route path="vibe-setup/*" element={<Navigate to={vibecodingPath("setup")} replace />} />

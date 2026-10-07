@@ -1,6 +1,10 @@
 import { NavLink, Outlet } from "react-router-dom"
 import { WIDE_CONTAINER } from "@/config/layout"
-import { vibecoding, vibecodingPath } from "@/config/vibecoding"
+import {
+  vibecoding,
+  vibecodingNumbers,
+  vibecodingPath,
+} from "@/config/vibecoding"
 import { cn } from "@/lib/utils"
 
 /**
@@ -30,7 +34,10 @@ function VibecodingSidebar() {
         </h2>
         <ul className="flex gap-1 overflow-x-auto lg:flex-col">
           {vibecoding.pages.map((page, i) => (
-            <li key={page.slug} className="shrink-0">
+            <li
+              key={page.slug}
+              className={cn("shrink-0", page.sub && "lg:pl-4")}
+            >
               <NavLink
                 to={vibecodingPath(page.slug)}
                 className={({ isActive }) =>
@@ -43,7 +50,7 @@ function VibecodingSidebar() {
                 }
               >
                 <span>
-                  {i + 1}. {page.label}
+                  {vibecodingNumbers[i]}. {page.label}
                 </span>
                 {page.status === "soon" && (
                   <span className="rounded-sm bg-muted px-1 py-px text-[10px] leading-4 font-medium text-muted-foreground">
