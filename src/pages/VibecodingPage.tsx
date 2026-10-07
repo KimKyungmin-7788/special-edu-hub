@@ -4,26 +4,26 @@ import { vibecoding, vibecodingPath } from "@/config/vibecoding"
 import { cn } from "@/lib/utils"
 
 /**
- * 바이브코딩 영역(/vibecoding/*) 틀 — 왼쪽 본문(하위 페이지) + 오른쪽 사이드바(하위 페이지 목록).
+ * 바이브코딩 영역(/vibecoding/*) 틀 — 왼쪽 사이드바(하위 페이지 목록) + 오른쪽 본문(하위 페이지).
  * 좁은 화면에서는 사이드바가 본문 위 가로 칩 줄로 바뀐다.
  * 메뉴는 config/vibecoding.ts 한 곳에서 불러온다.
  */
 export function VibecodingPage() {
   return (
     <div
-      className={`${WIDE_CONTAINER} grid grid-cols-1 gap-4 py-6 lg:grid-cols-[minmax(0,1fr)_12rem] lg:gap-5 lg:py-3`}
+      className={`${WIDE_CONTAINER} grid grid-cols-1 gap-4 py-6 lg:grid-cols-[12rem_minmax(0,1fr)] lg:gap-5 lg:py-3`}
     >
+      <VibecodingSidebar />
       <div className="min-w-0">
         <Outlet />
       </div>
-      <VibecodingSidebar />
     </div>
   )
 }
 
 function VibecodingSidebar() {
   return (
-    <aside aria-label={`${vibecoding.title} 메뉴`} className="order-first lg:order-none">
+    <aside aria-label={`${vibecoding.title} 메뉴`}>
       <nav className="rounded-xl border bg-card p-2 shadow-sm lg:sticky lg:top-20 lg:p-3">
         <h2 className="hidden px-2 pb-2 text-sm font-bold text-foreground lg:block">
           {vibecoding.title}
