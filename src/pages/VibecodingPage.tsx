@@ -35,7 +35,7 @@ function VibecodingSidebar() {
                 to={vibecodingPath(page.slug)}
                 className={({ isActive }) =>
                   cn(
-                    "flex items-center justify-between gap-2 rounded-md px-3 py-2 text-sm whitespace-nowrap transition-colors",
+                    "flex items-center justify-between gap-2 rounded-md px-3 py-2 text-sm whitespace-nowrap transition-colors lg:whitespace-normal",
                     isActive
                       ? "bg-brand-soft font-semibold text-primary"
                       : "text-foreground/80 hover:bg-accent hover:text-foreground",

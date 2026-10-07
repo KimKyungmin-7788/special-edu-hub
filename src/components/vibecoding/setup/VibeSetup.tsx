@@ -55,7 +55,7 @@ function useWide() {
 }
 
 /**
- * 바이브코딩 환경구축(/vibecoding/setup). 원래 vibecoding-setting 단독 앱이던 것을 허브로 옮겼다.
+ * 바이브코딩 최소한의 환경구축(/vibecoding/setup). 원래 vibecoding-setting 단독 앱이던 것을 허브로 옮겼다.
  * 현재 위치는 ?step= 으로만 관리(도구를 고르기 전에는 표지·시작만, 목차를 누르면 도구부터 고르게 함).
  * 허브 헤더 아래 한 칸: [목차] + [16:9 슬라이드]. 넓은 화면에선 화면 높이에 맞춰 스크롤 없이 보이게 한다.
  */
