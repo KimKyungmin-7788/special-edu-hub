@@ -6,10 +6,10 @@ import {
   CreditCard,
   ExternalLink,
 } from "lucide-react"
-import { SIGNUPS, TOOL_NAME, type Tool } from "../steps"
 import { vibecoding } from "@/config/vibecoding"
+import { SIGNUPS, TOOL_NAME, type Tool } from "../steps"
 
-const CHOICES: {
+export const CHOICES: {
   tool: Tool
   service: string
   plan: string
@@ -31,46 +31,38 @@ const CHOICES: {
 
 export function Landing({ onPick }: { onPick: (tool: Tool) => void }) {
   return (
-    <div className="mx-auto flex min-h-full w-full max-w-5xl flex-col items-center justify-center px-4 py-8 text-center">
-      <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-        <span className="text-primary">바이브코딩</span>을 위한
-        <br />
-        <span className="text-primary">최소한의 환경 세팅</span>을 함께 해 봐요
+    <div className="mx-auto flex h-full w-full max-w-5xl flex-col items-center justify-center px-4 py-6 text-center">
+      <h1 className="text-4xl font-bold leading-tight tracking-tight sm:text-5xl">
+        Claude 또는 ChatGPT{" "}
+        <span className="text-primary underline decoration-[3px] underline-offset-8">
+          유료 계정
+        </span>
+        이 필요해요
       </h1>
 
-      <p className="mt-6 inline-flex items-center gap-2 rounded-full bg-brand-muted px-5 py-2 text-base font-semibold text-brand-muted-foreground ring-1 ring-brand-line">
-        <CreditCard aria-hidden className="size-4" />
-        <span>
-          Claude 또는 ChatGPT{" "}
-          <strong className="font-extrabold text-primary underline decoration-2 underline-offset-4">
-            유료 구독
-          </strong>
-          이 필요해요
-        </span>
+      <p className="mt-4 inline-flex items-center gap-2.5 text-2xl font-bold text-foreground/80 sm:text-3xl">
+        <CreditCard aria-hidden className="size-7 text-primary" />
+        무엇을 사용 중인지 선택하면 바로 시작해요
       </p>
 
-      <h2 className="mt-8 text-base font-semibold text-muted-foreground">
-        어떤 것을 사용 중인가요? 선택하면 바로 시작해요.
-      </h2>
-
-      <div className="mt-4 grid w-full max-w-4xl grid-cols-1 gap-5 sm:grid-cols-2">
+      <div className="mt-8 grid w-full max-w-2xl grid-cols-1 gap-4 sm:grid-cols-2">
         {CHOICES.map((c) => (
           <div key={c.tool} className="flex flex-col gap-2">
             <button
               type="button"
               onClick={() => onPick(c.tool)}
-              className="group flex items-center justify-between gap-4 rounded-2xl border-2 bg-card px-8 py-8 text-left shadow-sm transition duration-200 hover:border-primary hover:shadow-lg motion-safe:hover:-translate-y-1"
+              className="group flex items-center justify-between gap-3 rounded-2xl border-2 bg-card px-5 py-4 text-left shadow-sm transition duration-200 hover:border-primary hover:shadow-lg active:scale-95 motion-safe:hover:-translate-y-1"
             >
               <span>
-                <span className="block text-4xl font-bold tracking-tight group-hover:text-primary">
+                <span className="block text-2xl font-bold tracking-tight group-hover:text-primary">
                   {c.service}
                 </span>
-                <span className="mt-2 block text-sm text-muted-foreground">
+                <span className="mt-1 block text-sm text-muted-foreground">
                   {c.plan} · {TOOL_NAME[c.tool]}로 시작
                 </span>
               </span>
-              <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-transform duration-200 motion-safe:group-hover:translate-x-1">
-                <ArrowRight aria-hidden className="size-6" />
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-transform duration-200 motion-safe:group-hover:translate-x-1">
+                <ArrowRight aria-hidden className="size-5" />
               </span>
             </button>
             <a

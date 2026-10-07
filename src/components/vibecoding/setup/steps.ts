@@ -130,6 +130,44 @@ export const SIGNUPS: Signup[] = [
   { name: "버셀", via: "깃허브로 가입", logos: ["vercel"], links: [{ label: "가입", href: "https://vercel.com/signup" }] },
 ];
 
+/** 목차의 장. 장마다 표지 슬라이드가 한 장씩 있어요. */
+export interface Chapter {
+  /** 주소에 쓰는 이름 (?step=ch1) */
+  id: string;
+  /** 목차에 보이는 이름 */
+  short: string;
+  /** 표지 큰 제목 */
+  title: string;
+  /** 표지 한 줄 설명 */
+  lead: string;
+  /** 이 장에 들어가는 단계 id (STEPS 순서대로) */
+  steps: string[];
+}
+
+export const CHAPTERS: Chapter[] = [
+  {
+    id: "ch1",
+    short: "준비하기",
+    title: "도구를 설치하고 폴더를 준비해요",
+    lead: "{도구}와 Git을 설치하고, 깃허브에 가입한 뒤 첫 프로젝트 폴더를 열어요.",
+    steps: ["install", "git", "github", "folder"],
+  },
+  {
+    id: "ch2",
+    short: "연결하기",
+    title: "깃허브·슈파베이스·버셀을 연결해요",
+    lead: "폴더를 연 대화창 하나에서 세 서비스를 차례로 연결해요. 처음 한 번만 하면 돼요.",
+    steps: ["connect", "supabase", "vercel"],
+  },
+  {
+    id: "ch3",
+    short: "만들기",
+    title: "내 교육자료 아카이브를 만들어 공개해요",
+    lead: "새 폴더에서 그릴 미로 정하고, 백엔드까지 갖춘 사이트를 만들어 인터넷에 올려요.",
+    steps: ["start"],
+  },
+];
+
 export const STEPS: Step[] = [
   {
     id: "install",
@@ -732,7 +770,7 @@ export const STEPS: Step[] = [
   },
   {
     id: "start",
-    short: "아카이브 과제",
+    short: "과제",
     title: "과제: 내 교육자료 아카이브 만들기",
     logo: "tool",
     body: {
@@ -803,6 +841,10 @@ export function bodyFor(step: Step, tool: Tool | null): StepBody | undefined {
 export function logoFor(step: Step, tool: Tool | null): string | undefined {
   if (step.logo !== "tool") return step.logo;
   return tool === "codex" ? "chatgpt" : tool === "claude" ? "claude" : undefined;
+}
+
+export function chapterLead(chapter: Chapter, tool: Tool | null): string {
+  return fillTool(chapter.lead, tool);
 }
 
 export function titleFor(step: Step, tool: Tool | null): string {
