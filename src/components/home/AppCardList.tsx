@@ -27,8 +27,8 @@ export function AppCardList({
   emptyText?: string
   leading?: ReactNode
   reorder?: { onMoveUp: (app: App) => void; onMoveDown: (app: App) => void }
-  /** 큰 화면에서의 열 수. 기본 5(전체 폭 목록), 좌측 사이드바가 있는 페이지는 4, 랜딩 섹션처럼 좁게 쓸 때는 2. */
-  columns?: 2 | 4 | 5
+  /** 큰 화면에서의 열 수. 기본 5(전체 폭 목록), 좌측 사이드바가 있는 페이지는 4, 랜딩 최신 섹션(2/3 폭)은 3. */
+  columns?: 2 | 3 | 4 | 5
   /** 주어지면 헤더 오른쪽에 "더보기" 링크(해당 전체 목록으로). */
   moreHref?: string
   /** true 면 각 카드에 담기(북마크) 토글을 단다(내 담기 상태를 직접 로드·관리). */
@@ -76,30 +76,14 @@ export function AppCardList({
   const gridCols =
     columns === 2
       ? "grid-cols-1 sm:grid-cols-2"
-      : columns === 4
+      : columns === 3
+        ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+        : columns === 4
         ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4"
         : "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
   return (
     <section>
-      {(title || moreHref) && (
-        <div className="mb-4 flex items-center justify-between border-b border-border pb-3">
-          {title && (
-            <h2 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
-              <span aria-hidden className="h-4 w-1 rounded-full bg-primary" />
-              {title}
-            </h2>
-          )}
-          {moreHref && (
-            <Link
-              to={moreHref}
-              className="inline-flex items-center gap-0.5 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-            >
-              더보기
-              <ChevronRight className="size-4" aria-hidden />
-            </Link>
-          )}
-        </div>
-      )}
+      {(title || moreHref) && <SectionHeading title={title} moreHref={moreHref} />}
 
       {!hasContent ? (
         <p className="text-sm text-muted-foreground">{emptyText}</p>
@@ -133,5 +117,28 @@ export function AppCardList({
         </ul>
       )}
     </section>
+  )
+}
+
+/** 목록 섹션 제목 줄 — 왼쪽 제목(초록 막대) / 오른쪽 "더보기". 랜딩 인기 순위 목록과 함께 쓴다. */
+export function SectionHeading({ title, moreHref }: { title?: string; moreHref?: string }) {
+  return (
+    <div className="mb-4 flex items-center justify-between border-b border-border pb-3">
+      {title && (
+        <h2 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
+          <span aria-hidden className="h-4 w-1 rounded-full bg-primary" />
+          {title}
+        </h2>
+      )}
+      {moreHref && (
+        <Link
+          to={moreHref}
+          className="inline-flex items-center gap-0.5 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        >
+          더보기
+          <ChevronRight className="size-4" aria-hidden />
+        </Link>
+      )}
+    </div>
   )
 }
