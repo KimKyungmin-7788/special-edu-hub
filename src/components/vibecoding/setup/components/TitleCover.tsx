@@ -1,4 +1,5 @@
 import { ArrowRight, ListChecks, Monitor } from "lucide-react"
+import { vibecoding } from "@/config/vibecoding"
 import type { Chapter } from "../steps"
 
 interface Props {
@@ -6,6 +7,13 @@ interface Props {
   chapters: { chapter: Chapter; count: number }[]
   onStart: () => void
 }
+
+/** 연수가 끝나면 내 AI에 연결되는 세 플랫폼(로고는 public/logos) */
+const PLATFORMS = [
+  { logo: "github", name: "깃허브", role: "코드를 보관하는" },
+  { logo: "supabase", name: "슈파베이스", role: "데이터를 담는" },
+  { logo: "vercel", name: "버셀", role: "주소를 만들어 주는" },
+]
 
 /** 맨 앞 표지 슬라이드 */
 export function TitleCover({ chapters, onStart }: Props) {
@@ -46,33 +54,40 @@ export function TitleCover({ chapters, onStart }: Props) {
         </div>
       </div>
 
-      {/* 오른쪽: 세 장을 길처럼 이어서 보여 줘요 */}
-      <ol className="flex flex-col justify-center gap-5 px-6 pb-10 lg:w-[460px] lg:shrink-0 lg:pb-0 lg:pr-24 lg:pl-0">
-        {chapters.map(({ chapter, count }, i) => (
-          <li
-            key={chapter.id}
-            className="relative flex items-center gap-4 rounded-2xl bg-card p-5 shadow-sm"
-          >
-            {i < chapters.length - 1 && (
-              <span
-                aria-hidden
-                className="absolute left-[2.625rem] top-full h-5 w-0.5 -translate-x-1/2 bg-brand-line"
+      {/* 오른쪽: 연수 목표 — 끝나면 내 AI에 연결되는 세 플랫폼 */}
+      <section
+        aria-labelledby="cover-goal"
+        className="flex flex-col justify-center px-6 pb-10 lg:w-[500px] lg:shrink-0 lg:pb-0 lg:pl-0 lg:pr-20"
+      >
+        <h2
+          id="cover-goal"
+          className="text-xl font-bold leading-snug text-hero-foreground"
+        >
+          이 연수가 끝나면{" "}
+          <span className="text-primary">3가지 필수 플랫폼</span>을
+          <br />내 AI에 연결할 수 있어요
+        </h2>
+        <ul className="mt-5 flex flex-col gap-3">
+          {PLATFORMS.map((p) => (
+            <li
+              key={p.logo}
+              className="flex items-center gap-4 rounded-2xl bg-card p-4 shadow-sm"
+            >
+              <img
+                src={`${vibecoding.assetBase}logos/${p.logo}.png`}
+                alt=""
+                className="size-12 shrink-0 rounded-xl object-contain ring-1 ring-brand-line"
               />
-            )}
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-lg font-bold text-primary-foreground">
-              {i + 1}
-            </span>
-            <span className="min-w-0">
-              <span className="block text-xs font-semibold text-hero-accent">
-                {i + 1}장 {chapter.short} · {count}단계
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold text-hero-accent">
+                  {p.role}
+                </span>
+                <span className="block text-xl font-bold">{p.name}</span>
               </span>
-              <span className="mt-0.5 block text-base font-bold leading-snug">
-                {chapter.title}
-              </span>
-            </span>
-          </li>
-        ))}
-      </ol>
+            </li>
+          ))}
+        </ul>
+      </section>
     </div>
   )
 }
