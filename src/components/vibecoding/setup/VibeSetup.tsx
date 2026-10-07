@@ -223,7 +223,7 @@ export function VibeSetup() {
             <footer className="flex h-10 shrink-0 items-center gap-4 border-t bg-background px-5 text-sm text-muted-foreground">
               <div className="flex min-w-0 flex-1 items-center gap-2">
                 <span className="truncate">
-                  바이브코딩 시작 준비 · {current.label}
+                  바이브코딩 최소한의 환경구축 · {current.label}
                 </span>
               </div>
               <div className="flex items-center gap-1.5" aria-hidden>

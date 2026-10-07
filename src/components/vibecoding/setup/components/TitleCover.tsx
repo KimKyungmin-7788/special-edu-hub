@@ -17,10 +17,10 @@ export function TitleCover({ chapters, onStart }: Props) {
         <h1 className="text-5xl font-bold leading-tight tracking-tight text-hero-foreground lg:text-7xl">
           바이브코딩
           <br />
-          시작 준비
+          최소한의 환경구축
         </h1>
         <p className="mt-6 text-2xl font-semibold text-hero-accent lg:text-3xl">
-          최소한의 환경 세팅을 함께 해 봐요
+          함께 차근차근 해 봐요
         </p>
 
         <ul className="mt-8 flex flex-wrap gap-2.5 text-sm font-semibold text-brand-muted-foreground">
