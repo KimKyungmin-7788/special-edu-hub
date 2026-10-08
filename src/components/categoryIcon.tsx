@@ -1,5 +1,5 @@
 import { useId, type ComponentType, type SVGProps } from "react"
-import { CalendarHeart, Sparkles, Zap } from "lucide-react"
+import { Sparkles, Zap } from "lucide-react"
 import { handmadeIcons } from "@/components/handmadeIcons"
 
 export type CategoryIcon = ComponentType<SVGProps<SVGSVGElement>>
@@ -63,7 +63,7 @@ function handmade(name: string): CategoryIcon {
 
 /**
  * config 의 icon 문자열 → 아이콘 컴포넌트 매핑.
- * 그리드에 보이는 카테고리는 손그림 아이콘(계기교육은 임시로 lucide), 숨김 카테고리(업무자동화)는 lucide 유지.
+ * 그리드에 보이는 카테고리는 손그림 아이콘, 숨김 카테고리(업무자동화)는 lucide 유지.
  */
 export const iconMap: Record<string, CategoryIcon> = {
   "book-open": handmade("open-book-hangul"),
@@ -75,8 +75,7 @@ export const iconMap: Record<string, CategoryIcon> = {
   sparkles: handmade("puzzle"),
   users: handmade("blackboard-uriban"),
   settings: handmade("laptop"),
-  // 계기교육: 손그림 아이콘이 아직 없어 lucide 로 임시 사용
-  "calendar-heart": CalendarHeart,
+  "calendar-heart": handmade("notebook-calendar"),
   zap: Zap,
 }
 
