@@ -231,6 +231,7 @@ export function WriteForm({
 
     if (title.trim() === "") return setSubmitError("앱 이름을 입력하세요.")
     if (appUrl.trim() === "") return setSubmitError("앱 링크를 입력하세요.")
+    if (summary.trim() === "") return setSubmitError("한줄 설명을 입력하세요.")
     if (!primary) return setSubmitError("교과를 선택하세요.")
     if (hasSubs && subIds.length === 0)
       return setSubmitError(
@@ -312,13 +313,14 @@ export function WriteForm({
           />
         </FormField>
 
-        <FormField label="한줄 설명" htmlFor="app-summary" hint="목록 카드에서 제목 아래에 보이고, 관련 성취기준을 찾을 때도 쓰여요.">
+        <FormField label="한줄 설명" htmlFor="app-summary" required hint="목록 카드에서 제목 아래에 보이고, 관련 성취기준을 찾을 때도 쓰여요.">
           <input
             id="app-summary"
             className={fieldInput}
             placeholder="한 문장으로: 누가, 무엇에 쓰나요?"
             value={summary}
             onChange={(e) => setSummary(clip(e.target.value, SUMMARY_MAX))}
+            required
             disabled={submitting}
           />
           <CharCounter count={charCount(summary)} max={SUMMARY_MAX} />

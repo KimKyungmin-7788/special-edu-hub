@@ -248,6 +248,29 @@ export function charCount(text: string): number {
   return Array.from(text).length
 }
 
+/**
+ * 카드에 보여 줄 한 문장. 한줄 소개가 비어 있으면(예전 글·선택 입력 시절)
+ * 교육적 의도 → 본문 순으로 첫 문장을 대신 쓴다. 화면 표시용일 뿐 DB 는 건드리지 않는다.
+ * 잠긴 자료는 의도·본문이 '' 이라 그대로 빈 문자열.
+ */
+export function cardSummary(app: App): string {
+  if (app.summary.trim()) return app.summary
+  return firstSentence(app.educationalIntent) || firstSentence(htmlText(app.description))
+}
+
+function htmlText(html: string): string {
+  if (!html) return ""
+  return new DOMParser().parseFromString(html, "text/html").body.textContent ?? ""
+}
+
+function firstSentence(text: string): string {
+  const t = text.replace(/\s+/g, " ").trim()
+  if (!t) return ""
+  // 마침표·물음표·느낌표(+공백)에서 끊는다. 없으면 통째로(카드에서 2줄로 잘린다).
+  const m = t.match(/^.+?[.!?。](?=\s|$)/)
+  return m ? m[0] : t
+}
+
 function cleanSummary(text: string): string {
   const s = text.trim()
   if (charCount(s) > SUMMARY_MAX)

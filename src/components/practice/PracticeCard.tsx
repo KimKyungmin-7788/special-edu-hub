@@ -78,7 +78,7 @@ export function PracticeCard({ practice }: { practice: Practice }) {
         {(label || teachersOnly) && (
           <div className="absolute left-2 top-2 flex max-w-[calc(100%-1rem)] items-center gap-1">
             {label && (
-              <span className="truncate rounded-full bg-brand-muted px-2.5 py-0.5 text-xs font-semibold text-brand-muted-foreground shadow-sm ring-1 ring-brand-line">
+              <span className="truncate rounded-full bg-primary px-2.5 py-0.5 text-xs font-bold text-primary-foreground shadow-md ring-1 ring-background/70">
                 {label}
               </span>
             )}

@@ -14,7 +14,7 @@ import {
 import { getCategory } from "@/config/categories"
 import { AppThumbnail } from "@/components/app/AppThumbnail"
 import { ShareDialog } from "@/components/app/ShareDialog"
-import { displayTitle, type App } from "@/lib/apps"
+import { cardSummary, displayTitle, type App } from "@/lib/apps"
 import { cn } from "@/lib/utils"
 
 /** 썸네일 위 글자 버튼(바로가기·공유) — 흰 바탕 알약, 호버 시 초록. */
@@ -91,7 +91,7 @@ export function AppCard({
           {(mainLabel || teachersOnly) && (
             <div className="absolute left-2 top-2 flex max-w-[calc(100%-3rem)] items-center gap-1">
               {mainLabel && (
-                <span className="truncate rounded-full bg-brand-muted px-2.5 py-0.5 text-xs font-semibold text-brand-muted-foreground shadow-sm ring-1 ring-brand-line">
+                <span className="truncate rounded-full bg-primary px-2.5 py-0.5 text-xs font-bold text-primary-foreground shadow-md ring-1 ring-background/70">
                   {mainLabel}
                 </span>
               )}
@@ -177,7 +177,7 @@ export function AppCard({
             {displayTitle(app)}
           </h3>
           <p className="line-clamp-2 min-h-[2lh] text-sm leading-snug text-muted-foreground">
-            {app.summary}
+            {cardSummary(app)}
           </p>
 
           {/* 하단 — 구분선 아래 좌: 작성자 / 우: 수치 */}
