@@ -14,7 +14,7 @@ import {
   Pencil,
   Share2,
 } from "lucide-react"
-import { getCategory, SUBCATEGORIES_ENABLED } from "@/config/categories"
+import { getCategory, subcategoriesEnabledFor } from "@/config/categories"
 import { useAuth } from "@/lib/auth"
 import { getAppsByIds, type App } from "@/lib/apps"
 import {
@@ -186,7 +186,7 @@ export function PracticeDetail() {
   const subjects = practice.categoryIds
     .map((cid) => getCategory(cid))
     .filter((c) => !!c)
-    .filter((c) => SUBCATEGORIES_ENABLED || !c.parentId) // 하위 주제를 꺼 두면 태그도 숨김
+    .filter((c) => !c.parentId || subcategoriesEnabledFor(c.parentId)) // 하위 주제를 꺼 두면 태그도 숨김(월 분류는 표시)
   const name = practice.ownerNickname ?? "선생님"
   const noteById = new Map(links.map((l) => [l.appId, l.note]))
   const body = stripEmptySections(practice.body) // 예전 글의 빈 소제목도 숨김

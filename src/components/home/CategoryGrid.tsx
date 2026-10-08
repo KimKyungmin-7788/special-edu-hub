@@ -9,7 +9,7 @@ function categoryTo(c: Category): string {
 
 /**
  * 카테고리 진입 그리드 — 흰 카드(회색 바탕 위) · 연두 원 안의 손그림 아이콘 · 굵은 과목명.
- * 큰 화면에선 한 줄(9칸), 좁아지면 5칸·3칸. 호버 시 살짝 떠오르며 초록 테두리·원 진해짐.
+ * 큰 화면에선 한 줄(10칸), 좁아지면 5칸·3칸. 호버 시 살짝 떠오르며 초록 테두리·원 진해짐.
  */
 export function CategoryGrid() {
   return (
@@ -18,7 +18,7 @@ export function CategoryGrid() {
         <span aria-hidden className="h-4 w-1 rounded-full bg-primary" />
         카테고리
       </h2>
-      <ul className="grid grid-cols-3 gap-3 sm:grid-cols-5 lg:grid-cols-9">
+      <ul className="grid grid-cols-3 gap-3 sm:grid-cols-5 lg:grid-cols-10">
         {categories
           .filter((c) => !c.hideFromGrid && !c.parentId)
           .map((c) => {

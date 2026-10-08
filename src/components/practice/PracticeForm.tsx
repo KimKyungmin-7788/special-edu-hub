@@ -4,7 +4,7 @@ import {
   getCategory,
   getSubcategories,
   subjectCategories,
-  SUBCATEGORIES_ENABLED,
+  subcategoriesEnabledFor,
 } from "@/config/categories"
 import {
   practiceBodyTemplate,
@@ -159,7 +159,7 @@ export function PracticeForm({
         Object.fromEntries(
           pickedSubjects.map((sid) => [
             sid,
-            SUBCATEGORIES_ENABLED
+            subcategoriesEnabledFor(sid)
               ? draft.subcategoryIds.filter((id) => getCategory(id)?.parentId === sid)
               : [],
           ]),
@@ -348,7 +348,7 @@ export function PracticeForm({
             .map((s) => (
               <div key={s} className="mt-1 rounded-xl border border-border bg-surface p-4">
                 <p className="mb-3 text-sm text-muted-foreground">
-                  {getCategory(s)?.name} 세부 분류 (선택)
+                  {getCategory(s)?.name} {getCategory(s)?.monthly ? "해당 월" : "세부 분류"} (선택)
                 </p>
                 <SubcategorySelect
                   parentId={s}

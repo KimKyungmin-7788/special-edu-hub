@@ -31,6 +31,11 @@ export type Category = {
   shortName?: string
   /** 과목 페이지 상단 배너의 한 줄 소개. */
   tagline?: string
+  /**
+   * 하위 분류가 "월"이다(계기교육). 과목 페이지에 들어가면 이번 달 칩이 먼저 선택되고,
+   * 하위 주제를 꺼 두어도(SUBCATEGORIES_ENABLED=false) 이 과목의 월 칩은 켜 둔다.
+   */
+  monthly?: boolean
 }
 
 export const categories: Category[] = [
@@ -41,9 +46,10 @@ export const categories: Category[] = [
   { id: "career", name: "진로와직업/실과", shortName: "진로/실과", type: "subject", icon: "briefcase", sortOrder: 5, tagline: "학교 너머의 삶과 일을 준비하는 자료" },
   { id: "life", name: "일상생활", type: "subject", icon: "house", sortOrder: 6, tagline: "하루를 스스로 해내는 힘을 기르는 생활 자료" },
   { id: "creative", name: "창체", type: "subject", icon: "sparkles", sortOrder: 7, tagline: "생각을 키우고 경험을 넓히는 창의적 체험활동 자료" },
-  { id: "class", name: "학급경영", type: "subject", icon: "users", sortOrder: 8, tagline: "함께 지내는 교실을 가꾸는 학급경영 자료" },
-  { id: "work", name: "업무혁신", type: "work", icon: "settings", sortOrder: 9, tagline: "교사의 시간을 아껴 주는 업무 도구" },
-  { id: "automation", name: "업무자동화", type: "work", icon: "zap", sortOrder: 10, hideFromGrid: true },
+  { id: "commemorative", name: "계기교육", type: "subject", icon: "calendar-heart", sortOrder: 8, monthly: true, tagline: "기념일과 그날의 의미를 함께 배우는 계기교육 자료" },
+  { id: "class", name: "학급경영", type: "subject", icon: "users", sortOrder: 9, tagline: "함께 지내는 교실을 가꾸는 학급경영 자료" },
+  { id: "work", name: "업무혁신", type: "work", icon: "settings", sortOrder: 10, tagline: "교사의 시간을 아껴 주는 업무 도구" },
+  { id: "automation", name: "업무자동화", type: "work", icon: "zap", sortOrder: 11, hideFromGrid: true },
 
   // ── 국어 하위 분류 (과목 페이지 안에서 칩 필터로만 사용) ──
   { id: "ko-tracing", name: "소근육, 선긋기", type: "subject", icon: "", sortOrder: 101, parentId: "korean" },
@@ -115,6 +121,20 @@ export const categories: Category[] = [
   { id: "ca-life", name: "직업생활", type: "subject", icon: "", sortOrder: 505, parentId: "career" },
   { id: "ca-etc", name: "기타", type: "subject", icon: "", sortOrder: 506, parentId: "career" },
   { id: "ca-basic", name: "기본교육과정", type: "subject", icon: "", sortOrder: 507, parentId: "career" },
+
+  // ── 계기교육 월 분류 (학년도 순서: 3월 → 2월). 하위 주제를 꺼 두어도 항상 켜져 있다. ──
+  { id: "cm-03", name: "3월", type: "subject", icon: "", sortOrder: 801, parentId: "commemorative" },
+  { id: "cm-04", name: "4월", type: "subject", icon: "", sortOrder: 802, parentId: "commemorative" },
+  { id: "cm-05", name: "5월", type: "subject", icon: "", sortOrder: 803, parentId: "commemorative" },
+  { id: "cm-06", name: "6월", type: "subject", icon: "", sortOrder: 804, parentId: "commemorative" },
+  { id: "cm-07", name: "7월", type: "subject", icon: "", sortOrder: 805, parentId: "commemorative" },
+  { id: "cm-08", name: "8월", type: "subject", icon: "", sortOrder: 806, parentId: "commemorative" },
+  { id: "cm-09", name: "9월", type: "subject", icon: "", sortOrder: 807, parentId: "commemorative" },
+  { id: "cm-10", name: "10월", type: "subject", icon: "", sortOrder: 808, parentId: "commemorative" },
+  { id: "cm-11", name: "11월", type: "subject", icon: "", sortOrder: 809, parentId: "commemorative" },
+  { id: "cm-12", name: "12월", type: "subject", icon: "", sortOrder: 810, parentId: "commemorative" },
+  { id: "cm-01", name: "1월", type: "subject", icon: "", sortOrder: 811, parentId: "commemorative" },
+  { id: "cm-02", name: "2월", type: "subject", icon: "", sortOrder: 812, parentId: "commemorative" },
 ]
 
 /** id로 카테고리 조회 (이름·아이콘 렌더링용) */
@@ -137,10 +157,21 @@ export const workCategories = categories.filter(
  */
 export const SUBCATEGORIES_ENABLED = false
 
+/** 이 과목의 하위 분류를 쓰는지. 하위 주제를 꺼 두어도 월 분류(계기교육)는 켜 둔다. */
+export function subcategoriesEnabledFor(parentId: string): boolean {
+  return SUBCATEGORIES_ENABLED || Boolean(getCategory(parentId)?.monthly)
+}
+
 /** 특정 과목의 하위 분류 목록 (sortOrder 순). 없거나 하위 주제를 꺼 두었으면 빈 배열. */
 export function getSubcategories(parentId: string): Category[] {
-  if (!SUBCATEGORIES_ENABLED) return []
+  if (!subcategoriesEnabledFor(parentId)) return []
   return categories
     .filter((c) => c.parentId === parentId)
     .sort((a, b) => a.sortOrder - b.sortOrder)
+}
+
+/** 월 분류 과목에서 오늘 날짜에 해당하는 하위 분류 id (예: "cm-10"). */
+export function currentMonthSubId(parentId: string): string | undefined {
+  const m = String(new Date().getMonth() + 1).padStart(2, "0")
+  return categories.find((c) => c.parentId === parentId && c.id.endsWith(`-${m}`))?.id
 }

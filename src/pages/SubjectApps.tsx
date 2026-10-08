@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { Link, useParams, useSearchParams } from "react-router-dom"
 import { PenLine } from "lucide-react"
-import { getCategory, getSubcategories } from "@/config/categories"
+import { currentMonthSubId, getCategory, getSubcategories } from "@/config/categories"
 import { SubjectSidebar } from "@/components/app/SubjectSidebar"
 import { SubjectBanner } from "@/components/app/SubjectBanner"
 import { AppCardList } from "@/components/home/AppCardList"
@@ -35,9 +35,16 @@ export function SubjectApps() {
   const unknown = Boolean(categoryId && !category)
 
   const subcategories = categoryId ? getSubcategories(categoryId) : []
-  const sub = searchParams.get("sub")
-  // 유효하지 않은 sub 값은 무시(전체로 취급).
+  // 월 분류(계기교육)는 sub 가 없으면 이번 달을 먼저 고른다. '전체'는 ?sub=all 로 구분.
+  const monthly = Boolean(category?.monthly)
+  const sub =
+    searchParams.get("sub") ?? (monthly && categoryId ? currentMonthSubId(categoryId) ?? null : null)
+  // 유효하지 않은 sub 값(all 포함)은 무시(전체로 취급).
   const activeSub = subcategories.some((s) => s.id === sub) ? sub : null
+  // 월 칩이 골라져 있으면 빈 목록 문구에 그 달을 쓴다.
+  const emptyText = monthly && activeSub
+    ? `${getCategory(activeSub)?.name} 자료가 아직 없습니다.`
+    : "이 분류의 앱이 아직 없습니다."
 
   const tab = searchParams.get("tab") === "practices" ? "practices" : "apps"
   const [practices, setPractices] = useState<Practice[]>([])
@@ -96,6 +103,7 @@ export function SubjectApps() {
   function selectSub(next: string | null) {
     const params = new URLSearchParams(searchParams)
     if (next) params.set("sub", next)
+    else if (monthly) params.set("sub", "all") // 지우면 다시 이번 달로 돌아가므로
     else params.delete("sub")
     setSearchParams(params, { replace: true })
   }
@@ -199,7 +207,7 @@ export function SubjectApps() {
                   </p>
                   {shownPractices.length === 0 ? (
                     <p className="text-sm text-muted-foreground">
-                      이 분류의 수업 사례가 아직 없습니다.
+                      {monthly && activeSub ? `${getCategory(activeSub)?.name} 수업 사례` : "이 분류의 수업 사례"}가 아직 없습니다.
                     </p>
                   ) : (
                     <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
@@ -237,7 +245,7 @@ export function SubjectApps() {
                 apps={shownApps}
                 columns={4}
                 contextCategoryId={categoryId}
-                emptyText="이 분류의 앱이 아직 없습니다."
+                emptyText={emptyText}
                 bookmarkable
                 reorder={
                   canReorder

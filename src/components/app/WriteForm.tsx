@@ -233,7 +233,9 @@ export function WriteForm({
     if (appUrl.trim() === "") return setSubmitError("앱 링크를 입력하세요.")
     if (!primary) return setSubmitError("교과를 선택하세요.")
     if (hasSubs && subIds.length === 0)
-      return setSubmitError("하위 주제를 한 개 이상 선택하세요.")
+      return setSubmitError(
+        primary.monthly ? "해당하는 달을 한 개 이상 선택하세요." : "하위 주제를 한 개 이상 선택하세요.",
+      )
     if (intent.trim() === "") return setSubmitError("교육적 의도를 입력하세요.")
 
     setSubmitting(true)
@@ -375,7 +377,15 @@ export function WriteForm({
         </FormField>
 
         {hasSubs && (
-          <FormField label="하위 주제" required hint="한 개 이상 고르세요. 여러 개 고를 수 있어요.">
+          <FormField
+            label={primary?.monthly ? "해당 월" : "하위 주제"}
+            required
+            hint={
+              primary?.monthly
+                ? "이 자료를 쓰는 달을 고르세요. 여러 달에 걸치면 모두 고르세요."
+                : "한 개 이상 고르세요. 여러 개 고를 수 있어요."
+            }
+          >
             <SubcategorySelect
               parentId={primaryId}
               value={subIds}
