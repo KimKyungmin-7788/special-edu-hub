@@ -2,11 +2,15 @@ import { Link } from "react-router-dom"
 import { site } from "@/config/site"
 import { CONTAINER } from "@/config/layout"
 import { cn } from "@/lib/utils"
+import { VisitorStats } from "@/components/layout/VisitorStats"
 
-/** 푸터 — 누리집명 + 안내 문구 + 정책/소개 링크(전부 config에서). */
+/** 푸터 — 방문자 수 띠 + 누리집명 + 안내 문구 + 정책/소개 링크(전부 config에서). */
 export function Footer() {
   return (
     <footer className="border-t bg-background">
+      <div className={cn(CONTAINER, "pt-8")}>
+        <VisitorStats />
+      </div>
       <div
         className={cn(
           CONTAINER,
