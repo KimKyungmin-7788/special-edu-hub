@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /mypage
+Disallow: /login
+Disallow: /signup
+Disallow: /write/
+Disallow: /edit/
+Disallow: /practices/write
+Disallow: /api/
+
+Sitemap: https://special-edu-hub.vercel.app/sitemap.xml
