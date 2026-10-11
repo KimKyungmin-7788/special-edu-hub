@@ -11,6 +11,7 @@ import {
   type PracticeAppLink,
 } from "@/lib/practices"
 import { PracticeForm } from "@/components/practice/PracticeForm"
+import { usePageTitle } from "@/lib/usePageTitle"
 
 /**
  * /practices/write — 사례 쓰기 (인증교사만)
@@ -28,6 +29,7 @@ type State =
 export function PracticeWritePage() {
   const { id } = useParams<{ id: string }>()
   const isEdit = id != null
+  usePageTitle(isEdit ? practiceCopy.editTitle : practiceCopy.writeTitle)
   const { user, isStaff, loading: authLoading } = useAuth()
   const [state, setState] = useState<State>({ kind: "loading" })
 

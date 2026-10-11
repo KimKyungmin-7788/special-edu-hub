@@ -36,6 +36,7 @@ import { ProfileTrigger } from "@/components/profile/ProfileTrigger"
 import { CommentSection } from "@/components/comment/CommentSection"
 import { formatBytes } from "@/components/practice/FileListField"
 import { OwnerAvatar, PracticeCover, formatDate } from "@/components/practice/PracticeCard"
+import { usePageTitle } from "@/lib/usePageTitle"
 
 /**
  * /practices/:id — 수업실천사례 상세 (PRD §13, 묶음 P-3).
@@ -49,6 +50,7 @@ export function PracticeDetail() {
   const location = useLocation()
   const { user, isStaff } = useAuth()
   const [practice, setPractice] = useState<Practice | null | undefined>()
+  usePageTitle(practice?.title)
   const [links, setLinks] = useState<PracticeAppLink[]>([])
   const [apps, setApps] = useState<App[]>([])
   const [copied, setCopied] = useState(false)

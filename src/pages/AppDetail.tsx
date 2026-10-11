@@ -36,6 +36,7 @@ import {
   getMyBookmarkedIds,
   incrementView,
 } from "@/lib/engagement"
+import { usePageTitle } from "@/lib/usePageTitle"
 
 /**
  * 앱 상세 — 제목·개발자·소개 본문·조회수·"앱 열기"(새 탭)·댓글(CommentSection).
@@ -48,6 +49,7 @@ export function AppDetail() {
   const location = useLocation()
   const { user, isAdmin } = useAuth()
   const [app, setApp] = useState<App | undefined>()
+  usePageTitle(app ? displayTitle(app) : undefined)
   const [owner, setOwner] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   // 좋아요·담기 상태/카운트(로컬). app 로드 시 초기화.

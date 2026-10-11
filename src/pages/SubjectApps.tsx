@@ -18,6 +18,7 @@ import { getPractices, type Practice } from "@/lib/practices"
 import { PracticeCard } from "@/components/practice/PracticeCard"
 import { CONTAINER } from "@/config/layout"
 import { cn } from "@/lib/utils"
+import { usePageTitle } from "@/lib/usePageTitle"
 
 /**
  * 과목별 카탈로그.
@@ -33,6 +34,7 @@ export function SubjectApps() {
   const [searchParams, setSearchParams] = useSearchParams()
   const category = categoryId ? getCategory(categoryId) : undefined
   const unknown = Boolean(categoryId && !category)
+  usePageTitle(category?.name ?? "인기")
 
   const subcategories = categoryId ? getSubcategories(categoryId) : []
   // 월 분류(계기교육)는 sub 가 없으면 이번 달을 먼저 고른다. '전체'는 ?sub=all 로 구분.

@@ -7,6 +7,7 @@ import { RegisterCtaCard } from "@/components/app/RegisterCtaCard"
 import { registerCta } from "@/config/registerCta"
 import { getApps, popularityScore, type App } from "@/lib/apps"
 import { CONTAINER } from "@/config/layout"
+import { usePageTitle } from "@/lib/usePageTitle"
 
 /**
  * 랜딩(홈) — Hero + 카테고리 그리드 + 새로 올라온(카드 3열, 2/3 폭) / 인기(순위 목록, 1/3 폭).
@@ -16,6 +17,7 @@ const LATEST_SLOTS = 6 // 카드 3열 × 2줄. 글쓰기 타일이 켜져 있으
 const POPULAR_LIMIT = 8 // 왼쪽 카드 2줄과 높이를 맞추는 개수
 
 export function Home() {
+  usePageTitle()
   const [apps, setApps] = useState<App[]>([])
 
   useEffect(() => {

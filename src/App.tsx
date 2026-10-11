@@ -1,40 +1,36 @@
-import { useEffect } from "react"
+import { lazy } from "react"
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
-import { site } from "@/config/site"
 import { AuthProvider } from "@/lib/auth"
 import { Layout } from "@/components/layout/Layout"
-import { Home } from "@/pages/Home"
-import { SubjectApps } from "@/pages/SubjectApps"
-import { WorkApps } from "@/pages/WorkApps"
-import { LatestApps } from "@/pages/LatestApps"
-import { AppDetail } from "@/pages/AppDetail"
-import { WritePage } from "@/pages/WritePage"
-import { EditPage } from "@/pages/EditPage"
-import { Privacy } from "@/pages/Privacy"
-import { Terms } from "@/pages/Terms"
-import { Contact } from "@/pages/Contact"
-// (전체 카탈로그 페이지는 제거 — 인기/과목별로 대체)
-import { ComingSoon } from "@/pages/ComingSoon"
-import { Login } from "@/pages/Login"
-import { Signup } from "@/pages/Signup"
-import { MyPage } from "@/pages/MyPage"
-import { VerifyPage } from "@/pages/VerifyPage"
-import { AdminPage } from "@/pages/AdminPage"
-import { NotFound } from "@/pages/NotFound"
-import { PracticeList } from "@/pages/PracticeList"
-import { PracticeDetail } from "@/pages/PracticeDetail"
-import { PracticeWritePage } from "@/pages/PracticeWritePage"
-import { VibecodingPage } from "@/pages/VibecodingPage"
-import { VibeSetup } from "@/components/vibecoding/setup/VibeSetup"
-import { VibeWhy } from "@/components/vibecoding/why/VibeWhy"
-import { VibeSurvey } from "@/components/vibecoding/survey/VibeSurvey"
 import { vibecoding, vibecodingPath } from "@/config/vibecoding"
+import { Home } from "@/pages/Home"
+
+// 홈 말고는 그 페이지에 들어갈 때 내려받는다(첫 화면을 가볍게). 받는 동안·실패 시 화면은 Layout 이 맡는다.
+const SubjectApps = lazy(() => import("@/pages/SubjectApps").then((m) => ({ default: m.SubjectApps })))
+const WorkApps = lazy(() => import("@/pages/WorkApps").then((m) => ({ default: m.WorkApps })))
+const LatestApps = lazy(() => import("@/pages/LatestApps").then((m) => ({ default: m.LatestApps })))
+const AppDetail = lazy(() => import("@/pages/AppDetail").then((m) => ({ default: m.AppDetail })))
+const WritePage = lazy(() => import("@/pages/WritePage").then((m) => ({ default: m.WritePage })))
+const EditPage = lazy(() => import("@/pages/EditPage").then((m) => ({ default: m.EditPage })))
+const Privacy = lazy(() => import("@/pages/Privacy").then((m) => ({ default: m.Privacy })))
+const Terms = lazy(() => import("@/pages/Terms").then((m) => ({ default: m.Terms })))
+const Contact = lazy(() => import("@/pages/Contact").then((m) => ({ default: m.Contact })))
+const ComingSoon = lazy(() => import("@/pages/ComingSoon").then((m) => ({ default: m.ComingSoon })))
+const Login = lazy(() => import("@/pages/Login").then((m) => ({ default: m.Login })))
+const Signup = lazy(() => import("@/pages/Signup").then((m) => ({ default: m.Signup })))
+const MyPage = lazy(() => import("@/pages/MyPage").then((m) => ({ default: m.MyPage })))
+const VerifyPage = lazy(() => import("@/pages/VerifyPage").then((m) => ({ default: m.VerifyPage })))
+const AdminPage = lazy(() => import("@/pages/AdminPage").then((m) => ({ default: m.AdminPage })))
+const NotFound = lazy(() => import("@/pages/NotFound").then((m) => ({ default: m.NotFound })))
+const PracticeList = lazy(() => import("@/pages/PracticeList").then((m) => ({ default: m.PracticeList })))
+const PracticeDetail = lazy(() => import("@/pages/PracticeDetail").then((m) => ({ default: m.PracticeDetail })))
+const PracticeWritePage = lazy(() => import("@/pages/PracticeWritePage").then((m) => ({ default: m.PracticeWritePage })))
+const VibecodingPage = lazy(() => import("@/pages/VibecodingPage").then((m) => ({ default: m.VibecodingPage })))
+const VibeSetup = lazy(() => import("@/components/vibecoding/setup/VibeSetup").then((m) => ({ default: m.VibeSetup })))
+const VibeWhy = lazy(() => import("@/components/vibecoding/why/VibeWhy").then((m) => ({ default: m.VibeWhy })))
+const VibeSurvey = lazy(() => import("@/components/vibecoding/survey/VibeSurvey").then((m) => ({ default: m.VibeSurvey })))
 
 function App() {
-  useEffect(() => {
-    document.title = site.name
-  }, [])
-
   return (
     <AuthProvider>
       <BrowserRouter>

@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth"
 import { getProfile } from "@/lib/profile"
 import { getCategory } from "@/config/categories"
 import { WriteForm } from "@/components/app/WriteForm"
+import { usePageTitle } from "@/lib/usePageTitle"
 
 /**
  * /write/:categoryId — 글쓰기 (3단계 묶음 G-1).
@@ -24,6 +25,7 @@ type State =
 export function WritePage() {
   const { categoryId } = useParams<{ categoryId: string }>()
   const category = categoryId ? getCategory(categoryId) : undefined
+  usePageTitle(category ? `${category.name} 글쓰기` : "글쓰기")
   const { user, loading: authLoading } = useAuth()
   const [state, setState] = useState<State>({ kind: "loading" })
 

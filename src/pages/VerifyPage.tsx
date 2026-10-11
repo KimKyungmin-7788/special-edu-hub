@@ -10,6 +10,7 @@ import { VerifyAlreadyCertified } from "@/components/verify/VerifyAlreadyCertifi
 import { VerifyPending } from "@/components/verify/VerifyPending"
 import { VerifyRejected } from "@/components/verify/VerifyRejected"
 import { VerifyForm } from "@/components/verify/VerifyForm"
+import { usePageTitle } from "@/lib/usePageTitle"
 
 /**
  * /verify — 교사인증센터 (2단계 묶음 D-2).
@@ -35,6 +36,7 @@ type PageState =
   | { kind: "revoked" } // 승인 이력은 있지만 인증이 회수됨
 
 export function VerifyPage() {
+  usePageTitle("교사인증센터")
   const { user, loading: authLoading } = useAuth()
   const [pageState, setPageState] = useState<PageState>({ kind: "loading" })
 

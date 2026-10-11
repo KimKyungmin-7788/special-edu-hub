@@ -24,6 +24,7 @@ import { getMyBookmarkedApps, getMyLikedApps } from "@/lib/engagement"
 import { InfoHint } from "@/components/ui/InfoHint"
 import { MessageBox } from "@/components/messages/MessageBox"
 import { getUnreadCount } from "@/lib/messages"
+import { usePageTitle } from "@/lib/usePageTitle"
 
 /**
  * 마이페이지 (/mypage) — 2단계 묶음 B.
@@ -48,6 +49,7 @@ function emptyToNull(v: string): string | null {
 type MyTab = "bookmarks" | "profile" | "activity" | "messages"
 
 export function MyPage() {
+  usePageTitle("마이페이지")
   const { user, loading } = useAuth()
 
   // 상단 탭(즐겨찾기 · 내 프로필 · 내 활동 · 쪽지함). 즐겨찾기가 기본.

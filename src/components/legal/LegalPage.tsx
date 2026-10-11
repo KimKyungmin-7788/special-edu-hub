@@ -1,3 +1,5 @@
+import { usePageTitle } from "@/lib/usePageTitle"
+
 /**
  * 법적 문서(개인정보처리방침·이용약관) 공용 레이아웃.
  * 본문은 데이터(sections)로 받아 동일한 중립 스타일로 렌더한다.
@@ -18,6 +20,7 @@ type LegalPageProps = {
 }
 
 export function LegalPage({ title, effectiveDate, intro, sections }: LegalPageProps) {
+  usePageTitle(title)
   return (
     <div className="mx-auto max-w-3xl px-4 py-12">
       <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>

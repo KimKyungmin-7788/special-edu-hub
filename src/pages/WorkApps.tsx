@@ -3,9 +3,11 @@ import { AppCardList } from "@/components/home/AppCardList"
 import { WriteButton } from "@/components/app/WriteButton"
 import { getAppsByType, type App } from "@/lib/apps"
 import { CONTAINER } from "@/config/layout"
+import { usePageTitle } from "@/lib/usePageTitle"
 
 /** 업무혁신 카탈로그 — 'work' 타입 카테고리 앱을 카드 목록으로. */
 export function WorkApps() {
+  usePageTitle("업무혁신")
   const [apps, setApps] = useState<App[]>([])
 
   useEffect(() => {

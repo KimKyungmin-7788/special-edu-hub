@@ -1,8 +1,10 @@
 import { Link } from "react-router-dom"
 import { CONTAINER } from "@/config/layout"
+import { usePageTitle } from "@/lib/usePageTitle"
 
 /** 잘못된 경로. */
 export function NotFound() {
+  usePageTitle("페이지를 찾을 수 없습니다")
   return (
     <div className={`${CONTAINER} py-24 text-center`}>
       <h1 className="text-2xl font-semibold tracking-tight">

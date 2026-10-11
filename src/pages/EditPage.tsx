@@ -4,6 +4,7 @@ import { useAuth } from "@/lib/auth"
 import { getCategory } from "@/config/categories"
 import { getApp, type App } from "@/lib/apps"
 import { WriteForm } from "@/components/app/WriteForm"
+import { usePageTitle } from "@/lib/usePageTitle"
 
 /**
  * /edit/:appId — 등록한 자료 수정 (5단계).
@@ -18,6 +19,7 @@ type State =
   | { kind: "ready"; app: App; categoryId: string }
 
 export function EditPage() {
+  usePageTitle("자료 수정")
   const { appId } = useParams<{ appId: string }>()
   const { user, isAdmin, loading: authLoading } = useAuth()
   const [state, setState] = useState<State>({ kind: "loading" })

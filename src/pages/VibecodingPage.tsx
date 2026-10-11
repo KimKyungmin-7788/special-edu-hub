@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from "react-router-dom"
+import { NavLink, Outlet, useLocation } from "react-router-dom"
 import { WIDE_CONTAINER } from "@/config/layout"
 import {
   vibecoding,
@@ -6,6 +6,7 @@ import {
   vibecodingPath,
 } from "@/config/vibecoding"
 import { cn } from "@/lib/utils"
+import { usePageTitle } from "@/lib/usePageTitle"
 
 /**
  * 바이브코딩 영역(/vibecoding/*) 틀 — 왼쪽 사이드바(하위 페이지 목록) + 오른쪽 본문(하위 페이지).
@@ -13,6 +14,9 @@ import { cn } from "@/lib/utils"
  * 메뉴는 config/vibecoding.ts 한 곳에서 불러온다.
  */
 export function VibecodingPage() {
+  const { pathname } = useLocation()
+  const current = vibecoding.pages.find((p) => pathname.startsWith(vibecodingPath(p.slug)))
+  usePageTitle(current?.label ?? vibecoding.title)
   return (
     <div
       className={`${WIDE_CONTAINER} grid grid-cols-1 gap-4 py-6 lg:grid-cols-[12rem_minmax(0,1fr)] lg:gap-5 lg:py-3`}

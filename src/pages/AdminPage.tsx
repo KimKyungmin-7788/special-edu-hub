@@ -6,6 +6,7 @@ import { AdminVerifyQueue } from "@/components/admin/AdminVerifyQueue"
 import { AdminMemberList } from "@/components/admin/AdminMemberList"
 import { AdminReportQueue } from "@/components/admin/AdminReportQueue"
 import { AdminInquiryQueue } from "@/components/admin/AdminInquiryQueue"
+import { usePageTitle } from "@/lib/usePageTitle"
 
 /**
  * /admin — 관리자 운영 페이지 (묶음 A).
@@ -20,6 +21,7 @@ import { AdminInquiryQueue } from "@/components/admin/AdminInquiryQueue"
 type AdminTab = "apps" | "verify" | "members" | "reports" | "inquiries"
 
 export function AdminPage() {
+  usePageTitle("관리")
   const { user, isStaff, loading } = useAuth()
   const [tab, setTab] = useState<AdminTab>("apps")
 

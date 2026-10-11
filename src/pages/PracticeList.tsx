@@ -6,6 +6,7 @@ import { practiceCopy } from "@/config/practice"
 import { getPractices, type Practice } from "@/lib/practices"
 import { PracticeCard, PracticeRow } from "@/components/practice/PracticeCard"
 import { cn } from "@/lib/utils"
+import { usePageTitle } from "@/lib/usePageTitle"
 
 type View = "card" | "list"
 const VIEW_KEY = "practices.view"
@@ -23,6 +24,7 @@ function loadView(): View {
  * 교과 칩으로 거르기 · 카드/목록 보기 토글(이 브라우저에 기억) · "사례 쓰기"(권한 안내는 글쓰기 페이지에서).
  */
 export function PracticeList() {
+  usePageTitle(practiceCopy.listTitle)
   const [items, setItems] = useState<Practice[] | null>(null)
   const [subject, setSubject] = useState<string | null>(null)
   const [view, setView] = useState<View>(loadView)

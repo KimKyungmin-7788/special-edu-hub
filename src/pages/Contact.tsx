@@ -5,6 +5,7 @@ import {
   INQUIRY_SUBJECT_MAX,
   INQUIRY_BODY_MAX,
 } from "@/lib/inquiries"
+import { usePageTitle } from "@/lib/usePageTitle"
 
 /**
  * 운영진 문의 페이지(/contact) — 건의·요청·오류 등을 운영진에게 보낸다(트랙 C).
@@ -12,6 +13,7 @@ import {
  * 접수·검증은 lib/inquiries(submit_inquiry RPC = DB)에서. 이 페이지는 입력·표시만.
  */
 export function Contact() {
+  usePageTitle("운영진 문의")
   const [type, setType] = useState<string>(INQUIRY_TYPES[0].code)
   const [subject, setSubject] = useState("")
   const [body, setBody] = useState("")

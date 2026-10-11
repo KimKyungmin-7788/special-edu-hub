@@ -2,9 +2,11 @@ import { useEffect, useState } from "react"
 import { AppCardList } from "@/components/home/AppCardList"
 import { getApps, type App } from "@/lib/apps"
 import { CONTAINER } from "@/config/layout"
+import { usePageTitle } from "@/lib/usePageTitle"
 
 /** 새로 올라온 수업자료 전체 목록 — getApps 기본 정렬(최신순). 랜딩 "새로 올라온 수업자료" 더보기 대상. */
 export function LatestApps() {
+  usePageTitle("새로 올라온 수업자료")
   const [apps, setApps] = useState<App[]>([])
 
   useEffect(() => {
