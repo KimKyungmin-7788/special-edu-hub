@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react"
 import { Link } from "react-router-dom"
 import { Mail, ChevronLeft, ChevronRight } from "lucide-react"
 import { PromoLinks } from "@/components/profile/PromoLinks"
+import { ReceivedLikes } from "@/components/profile/ReceivedLikes"
 import { AppThumbnail } from "@/components/app/AppThumbnail"
 import { useAuth } from "@/lib/auth"
 import { sendMessage, MESSAGE_MAX } from "@/lib/messages"
@@ -12,7 +13,7 @@ import { cn } from "@/lib/utils"
 
 /**
  * 프로필 미리보기 내용 (2단계 묶음 C, E-3).
- * 아바타 · 닉네임 · 교사인증 배지 · (공개 시) 이메일 · 홍보 링크 ·
+ * 아바타 · 닉네임 · 교사인증 배지 · 받은 좋아요 누계 · (공개 시) 이메일 · 홍보 링크 ·
  * 쪽지 보내기(E-3, 본인·비로그인 제외) · "프로필 전체 보기"(준비 중).
  * 홍보 링크는 흑백 브랜드 로고 아이콘 버튼으로 표시(글자 없이, 종류는 aria/title).
  * 모달 동작은 Modal/ProfileTrigger 가 담당하고, 여기는 표시만 한다.
@@ -90,11 +91,14 @@ export function ProfilePreview({ profile, loading, titleId, onClose }: ProfilePr
           >
             {name}
           </h2>
-          {profile.isTeacherVerified && (
-            <span className="mt-1 inline-block rounded-full border border-border bg-surface px-2 py-0.5 text-xs font-medium text-foreground">
-              교사 인증됨
-            </span>
-          )}
+          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+            {profile.isTeacherVerified && (
+              <span className="inline-block rounded-full border border-border bg-surface px-2 py-0.5 text-xs font-medium text-foreground">
+                교사 인증됨
+              </span>
+            )}
+            <ReceivedLikes userId={profile.id} />
+          </div>
         </div>
       </div>
 

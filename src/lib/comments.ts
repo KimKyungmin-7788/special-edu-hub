@@ -10,7 +10,8 @@ import { getCurrentNicknames, mentionedIds, plainMentions } from "@/lib/mentions
  *  - 조회: 공개읽기(미삭제). 작성자 닉네임·아바타를 함께 가져온다(ProfileTrigger 연결용).
  *  - 작성: author_id 는 RLS(with check)가 강제 → 클라가 보낸 값과 무관하게 위조 불가.
  *  - 삭제: delete_comment RPC(본인/운영진만, 소프트삭제). 직접 UPDATE/DELETE 는 막혀 있다.
- *  - 답글 = 1단계(최상위 댓글에만, 39_comment_replies.sql). 수정은 없음.
+ *  - 답글 = 1단계(최상위 댓글에만, 39_comment_replies.sql).
+ *  - 수정 = edit_comment RPC(본인만, '(수정됨)'). 좋아요 = comment_likes 토글(40_comment_likes_edit.sql).
  *  - 멘션 = 본문 안 토큰(lib/mentions). 표시 이름은 현재 닉네임으로 맞춘다.
  */
 
@@ -22,9 +23,14 @@ export type Comment = {
   parentId: string | null
   /** 저장된 본문(멘션 토큰 포함). 표시는 parseMentions 로. */
   body: string
+  createdAt: string
+  /** 수정했으면 그 시각(화면에 '(수정됨)'). */
+  editedAt: string | null
+  likeCount: number
+  /** 내가 좋아요를 눌렀는지(비로그인이면 false). */
+  likedByMe: boolean
   /** 본문에 멘션된 사용자의 현재 닉네임(id → 닉네임). 없으면 토큰 안 이름을 쓴다. */
   mentionNames: Record<string, string>
-  createdAt: string
   author: {
     id: string
     nickname: string | null
@@ -38,6 +44,8 @@ type CommentRow = {
   parent_id: string | null
   body: string
   created_at: string
+  edited_at: string | null
+  like_count: number
   author: {
     id: string
     nickname: string | null
@@ -46,7 +54,7 @@ type CommentRow = {
 }
 
 const SELECT_WITH_AUTHOR =
-  "id, app_id, parent_id, body, created_at, " +
+  "id, app_id, parent_id, body, created_at, edited_at, like_count, " +
   "author:profiles!comments_author_id_fkey(id, nickname, avatar_url)"
 
 function mapComment(row: CommentRow): Comment {
@@ -57,6 +65,9 @@ function mapComment(row: CommentRow): Comment {
     body: row.body,
     mentionNames: {},
     createdAt: row.created_at,
+    editedAt: row.edited_at,
+    likeCount: row.like_count ?? 0,
+    likedByMe: false,
     author: {
       id: row.author?.id ?? "",
       nickname: row.author?.nickname ?? null,
@@ -104,13 +115,17 @@ export async function getComments(target: CommentTarget): Promise<Comment[]> {
     .map(mapComment)
     .filter((c) => !blockedIds.has(c.author.id))
 
-  // 멘션 표시 이름을 현재 닉네임으로(닉네임을 바꿔도 반영되게)
-  const names = await getCurrentNicknames([...new Set(list.flatMap((c) => mentionedIds(c.body)))])
+  // 멘션 표시 이름을 현재 닉네임으로(닉네임을 바꿔도 반영되게) + 내가 누른 좋아요
+  const [names, liked] = await Promise.all([
+    getCurrentNicknames([...new Set(list.flatMap((c) => mentionedIds(c.body)))]),
+    myLikedCommentIds(list.map((c) => c.id)),
+  ])
   for (const c of list) {
     for (const id of mentionedIds(c.body)) {
       const n = names.get(id)
       if (n) c.mentionNames[id] = n
     }
+    c.likedByMe = liked.has(c.id)
   }
   return list
 }
@@ -148,4 +163,50 @@ export async function addComment(
 export async function deleteComment(id: string): Promise<void> {
   const { error } = await supabase.rpc("delete_comment", { p_id: id })
   if (error) throw error
+}
+
+/** 댓글 수정(본인만). body 는 멘션 토큰이 들어간 저장 형식. */
+export async function editComment(id: string, body: string): Promise<void> {
+  const trimmed = body.trim()
+  if (trimmed === "") throw new Error("댓글 내용을 입력하세요.")
+  if (plainMentions(trimmed).length > COMMENT_BODY_MAX)
+    throw new Error(`댓글은 최대 ${COMMENT_BODY_MAX}자까지 가능합니다.`)
+  const { error } = await supabase.rpc("edit_comment", { p_id: id, p_body: trimmed })
+  if (error) throw error
+}
+
+/** 이 댓글들 가운데 내가 좋아요 한 것(비로그인이면 빈 집합). */
+async function myLikedCommentIds(ids: string[]): Promise<Set<string>> {
+  const uid = await currentUserId()
+  if (!uid || ids.length === 0) return new Set()
+  const { data, error } = await supabase
+    .from("comment_likes")
+    .select("comment_id")
+    .eq("user_id", uid)
+    .in("comment_id", ids)
+  if (error) {
+    console.error("[comments] myLikedCommentIds 실패:", error.message)
+    return new Set()
+  }
+  return new Set((data as { comment_id: string }[]).map((r) => r.comment_id))
+}
+
+/** 댓글 좋아요 토글. 누른 뒤 상태(true=좋아요)를 돌려준다. */
+export async function toggleCommentLike(commentId: string, liked: boolean): Promise<boolean> {
+  const uid = await currentUserId()
+  if (!uid) throw new Error("로그인이 필요합니다.")
+  if (liked) {
+    const { error } = await supabase
+      .from("comment_likes")
+      .delete()
+      .eq("user_id", uid)
+      .eq("comment_id", commentId)
+    if (error) throw error
+    return false
+  }
+  const { error } = await supabase
+    .from("comment_likes")
+    .insert({ user_id: uid, comment_id: commentId })
+  if (error) throw error
+  return true
 }

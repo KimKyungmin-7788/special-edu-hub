@@ -27,6 +27,7 @@ import { getUnreadCount } from "@/lib/messages"
 import { usePageTitle } from "@/lib/usePageTitle"
 import { avatarTone, AVATAR_PHOTO } from "@/lib/avatarTone"
 import { cn } from "@/lib/utils"
+import { ReceivedLikes } from "@/components/profile/ReceivedLikes"
 
 /**
  * 마이페이지 (/mypage) — 2단계 묶음 B.
@@ -252,6 +253,7 @@ export function MyPage() {
             미인증
           </span>
         )}
+        <ReceivedLikes userId={user.id} />
 
         {/* 이메일 공개 토글 — 즉시 저장. 안내는 ? 팝업으로. */}
         <div className="ml-auto inline-flex items-center gap-1.5">

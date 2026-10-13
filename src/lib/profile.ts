@@ -80,6 +80,19 @@ export async function getProfile(id: string): Promise<Profile | undefined> {
   return data ? mapRow(data as ProfileRow) : undefined
 }
 
+/**
+ * 받은 좋아요 누계 — 이 사람이 올린 앱·수업실천사례·댓글에 다른 사람이 누른 좋아요 합
+ * (시드 숫자·자기 좋아요 제외, 40_comment_likes_edit.sql). 실패하면 null.
+ */
+export async function getReceivedLikeCount(id: string): Promise<number | null> {
+  const { data, error } = await supabase.rpc("received_like_count", { p_user: id })
+  if (error) {
+    console.error("[profile] getReceivedLikeCount 실패:", error.message)
+    return null
+  }
+  return typeof data === "number" ? data : Number(data ?? 0)
+}
+
 /** 관리자 회원 목록 한 줄 — 필요한 필드만. */
 export type Member = {
   id: string
