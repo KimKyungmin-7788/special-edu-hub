@@ -10,6 +10,7 @@ import { WriteButton } from "@/components/app/WriteButton"
 import { useAuth } from "@/lib/auth"
 import { cn } from "@/lib/utils"
 import { avatarTone, AVATAR_PHOTO } from "@/lib/avatarTone"
+import { NotificationBell } from "@/components/notification/NotificationBell"
 
 /**
  * 상단 고정 헤더.
@@ -213,6 +214,7 @@ function AuthArea() {
           관리
         </Link>
       )}
+      <NotificationBell userId={user.id} />
       <WriteButton className="mr-1 h-9 px-3" />
       <AccountMenu
         displayName={displayName}

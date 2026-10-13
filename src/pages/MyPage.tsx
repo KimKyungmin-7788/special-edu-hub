@@ -5,7 +5,7 @@ import {
   type ChangeEvent,
   type FormEvent,
 } from "react"
-import { Navigate, Link } from "react-router-dom"
+import { Navigate, Link, useSearchParams } from "react-router-dom"
 import { useAuth } from "@/lib/auth"
 import {
   getProfile,
@@ -28,6 +28,7 @@ import { usePageTitle } from "@/lib/usePageTitle"
 import { avatarTone, AVATAR_PHOTO } from "@/lib/avatarTone"
 import { cn } from "@/lib/utils"
 import { ReceivedLikes } from "@/components/profile/ReceivedLikes"
+import { NotificationList } from "@/components/notification/NotificationList"
 
 /**
  * 마이페이지 (/mypage) — 2단계 묶음 B.
@@ -49,14 +50,19 @@ function emptyToNull(v: string): string | null {
   return t === "" ? null : t
 }
 
-type MyTab = "bookmarks" | "profile" | "activity" | "messages"
+type MyTab = "bookmarks" | "profile" | "activity" | "messages" | "notifications"
+const MY_TABS: MyTab[] = ["bookmarks", "profile", "activity", "messages", "notifications"]
 
 export function MyPage() {
   usePageTitle("마이페이지")
   const { user, loading } = useAuth()
 
-  // 상단 탭(즐겨찾기 · 내 프로필 · 내 활동 · 쪽지함). 즐겨찾기가 기본.
-  const [tab, setTab] = useState<MyTab>("bookmarks")
+  // 상단 탭(즐겨찾기 · 내 프로필 · 내 활동 · 쪽지함 · 알림). 즐겨찾기가 기본.
+  // 주소의 ?tab= 으로 바로 열 수 있다(헤더 알림 '전체 보기', 쪽지 알림 등).
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tabParam = searchParams.get("tab") as MyTab | null
+  const tab: MyTab = tabParam && MY_TABS.includes(tabParam) ? tabParam : "bookmarks"
+  const setTab = (t: MyTab) => setSearchParams(t === "bookmarks" ? {} : { tab: t }, { replace: true })
   const [unread, setUnread] = useState(0)
 
   const [profile, setProfile] = useState<Profile | null>(null)
@@ -196,7 +202,7 @@ export function MyPage() {
       <div
         role="tablist"
         aria-label="마이페이지 메뉴"
-        className="mt-6 grid grid-cols-4 divide-x divide-border overflow-hidden rounded-lg border border-border bg-card"
+        className="mt-6 grid grid-cols-5 divide-x divide-border overflow-hidden rounded-lg border border-border bg-card"
       >
         <MyTabButton selected={tab === "bookmarks"} onClick={() => setTab("bookmarks")}>
           즐겨찾기
@@ -221,6 +227,9 @@ export function MyPage() {
               {unread}
             </span>
           )}
+        </MyTabButton>
+        <MyTabButton selected={tab === "notifications"} onClick={() => setTab("notifications")}>
+          알림
         </MyTabButton>
       </div>
 
@@ -463,6 +472,13 @@ export function MyPage() {
       {tab === "messages" && (
         <div className="mt-6">
           <MessageBox onUnreadChange={setUnread} />
+        </div>
+      )}
+
+      {/* 알림 전체 — 헤더 종의 '전체 보기' 가 여기로 온다. */}
+      {tab === "notifications" && (
+        <div className="mt-6">
+          <NotificationList />
         </div>
       )}
     </div>
