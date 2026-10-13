@@ -2,7 +2,6 @@ import { useState } from "react"
 import { Link } from "react-router-dom"
 import {
   Eye,
-  QrCode,
   ExternalLink,
   Heart,
   Bookmark,
@@ -10,6 +9,7 @@ import {
   ChevronUp,
   ChevronDown,
   Lock,
+  Share2,
 } from "lucide-react"
 import { getCategory } from "@/config/categories"
 import { AppThumbnail } from "@/components/app/AppThumbnail"
@@ -17,10 +17,11 @@ import { ShareDialog } from "@/components/app/ShareDialog"
 import { cardSummary, displayTitle, type App } from "@/lib/apps"
 import { cn } from "@/lib/utils"
 import { avatarTone, AVATAR_PHOTO } from "@/lib/avatarTone"
+import { relativeTime } from "@/lib/time"
 
-/** 썸네일 위 글자 버튼(바로가기·공유) — 흰 바탕 알약, 호버 시 초록. */
-const overlayPillClass =
-  "inline-flex h-7 items-center gap-1 rounded-full border border-border bg-background px-2.5 text-xs font-semibold text-foreground shadow-md transition-colors hover:border-primary hover:bg-primary hover:text-primary-foreground"
+/** 아래줄 아이콘 버튼(바로가기·공유). */
+const iconButtonClass =
+  "flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-primary"
 
 /** 운영진 순서 조정 컨트롤(있으면 카드에 ▲▼ 노출). */
 export type CardMove = {
@@ -37,11 +38,13 @@ export type CardBookmark = {
 }
 
 /**
- * 앱 목록 카드 — 썸네일 / 제목 / 카테고리 태그 / 좋아요·담기 수.
- * 썸네일 좌상단 = 대표 분류 뱃지(1개). 과목 페이지에서 보면(contextCategoryId) 그 과목이 이 자료의 분류에 있을 때 그 과목을 보여 준다(관련 교과로 들어온 자료). 하단 좌 = 작성자 사진·이름 / 우 = 조회·좋아요·댓글 수. move 가 주어지면(운영진) 우하단 순서 ▲▼. bookmark 가 주어지면 우상단 담기 토글.
- * 교사 전용 자료는 썸네일 좌상단에 "교사 전용" 칩, 볼 권한이 없으면(locked) 썸네일 잠금 + 담기·공유 숨김.
- * 썸네일 좌하단 = 바로가기(앱 새 탭) + 공유(QR·주소 복사 창). 우하단 = (운영진이면) 순서 ▲▼. 우상단 = 담기.
- * 카드 높이 통일: 제목·한줄 소개 각 2줄 고정 높이(태그 줄 없음).
+ * 앱 목록 카드. 썸네일은 가리지 않는다 — 위에 얹는 건 우상단 담기(bookmark) 하나와 잠금 표시뿐.
+ * 썸네일 아래 순서:
+ *  1) 뱃지 줄 — 대표 분류 1개(과목 페이지면 contextCategoryId 우선) · 교사 전용 칩 · (운영진) 순서 ▲▼
+ *  2) 제목(호버 시 초록 + 밑줄) 3) 한줄 소개 — 각 2줄 고정 높이(카드 높이 통일)
+ *  4) 작성자 사진·이름 / 올린 때(상대 시각)
+ *  5) 구분선 아래 조회·좋아요·댓글 수 / 바로가기(새 탭)·공유(QR·주소 복사 창)
+ * 볼 권한이 없으면(locked) 썸네일 잠금 + 담기·바로가기·공유 숨김.
  */
 export function AppCard({
   app,
@@ -88,66 +91,6 @@ export function AppCard({
             </div>
           )}
 
-          {/* 썸네일 좌상단 — 대표 분류 뱃지 + (교사 전용이면) 교사 전용 칩 */}
-          {(mainLabel || teachersOnly) && (
-            <div className="absolute left-2 top-2 flex max-w-[calc(100%-3rem)] items-center gap-1">
-              {mainLabel && (
-                <span className="truncate rounded-full bg-primary px-2.5 py-0.5 text-xs font-bold text-primary-foreground shadow-md ring-1 ring-background/70">
-                  {mainLabel}
-                </span>
-              )}
-              {teachersOnly && (
-                <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-background/90 px-2 py-0.5 text-xs font-medium text-foreground shadow-sm">
-                  <Lock className="size-3" aria-hidden />
-                  교사 전용
-                </span>
-              )}
-            </div>
-          )}
-
-          {/* 좌하단 — 바로가기(앱 새 탭) + 공유. 잠긴 자료는 숨김.
-              Link 내부라 기본동작을 막고, 바로가기는 window.open 으로 새 탭(iframe 금지 규칙). */}
-          {!app.locked && app.appUrl && (
-            <div className="absolute bottom-2 left-2 flex items-center gap-1">
-              <button
-                type="button"
-                title="앱 바로가기(새 탭)"
-                aria-label="바로가기"
-                onClick={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  window.open(app.appUrl, "_blank", "noopener")
-                }}
-                className={overlayPillClass}
-              >
-                <ExternalLink className="size-3.5" aria-hidden />
-                바로가기
-              </button>
-              <button
-                type="button"
-                title="공유(QR·주소 복사)"
-                aria-label="공유"
-                onClick={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  setShareOpen(true)
-                }}
-                className={overlayPillClass}
-              >
-                <QrCode className="size-3.5" aria-hidden />
-                공유
-              </button>
-            </div>
-          )}
-
-          {/* 우하단 — 운영진 순서 ▲▼. */}
-          {move && (
-            <div className="absolute bottom-2 right-2 flex items-center gap-1">
-              <MoveButton dir="up" disabled={!move.canUp} onClick={move.onUp} />
-              <MoveButton dir="down" disabled={!move.canDown} onClick={move.onDown} />
-            </div>
-          )}
-
           {/* 우상단 — 담기. 썸네일 위에서도 읽히도록 불투명 흰 바탕. */}
           {!app.locked && bookmark && (
             <div className="absolute right-2 top-2 flex items-center gap-1">
@@ -172,22 +115,48 @@ export function AppCard({
           )}
         </div>
 
-        <div className="flex flex-1 flex-col gap-2 px-4 pt-3.5 pb-3">
+        <div className="flex flex-1 flex-col gap-2 px-4 pt-3 pb-3">
+          {/* 뱃지 줄 — 대표 분류 · 교사 전용. 운영진이면 오른쪽에 순서 ▲▼. 높이 고정(카드 정렬). */}
+          <div className="flex h-6 items-center gap-1.5">
+            {mainLabel && (
+              <span className="truncate rounded-full bg-primary px-2.5 py-0.5 text-xs font-bold text-primary-foreground">
+                {mainLabel}
+              </span>
+            )}
+            {teachersOnly && (
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-foreground px-2.5 py-0.5 text-xs font-bold text-background">
+                <Lock className="size-3" aria-hidden />
+                교사 전용
+              </span>
+            )}
+            {move && (
+              <span className="ml-auto flex shrink-0 items-center gap-1">
+                <MoveButton dir="up" disabled={!move.canUp} onClick={move.onUp} />
+                <MoveButton dir="down" disabled={!move.canDown} onClick={move.onDown} />
+              </span>
+            )}
+          </div>
+
           {/* 카드 높이 통일 — 제목·한줄 소개 모두 항상 2줄 높이를 확보하고 넘치면 … */}
-          <h3 className="line-clamp-2 min-h-[2lh] text-base font-semibold leading-snug tracking-tight transition-colors group-hover:text-primary">
+          <h3 className="line-clamp-2 min-h-[2lh] text-lg font-bold leading-snug tracking-tight decoration-2 underline-offset-4 transition-colors group-hover:text-primary group-hover:underline">
             {displayTitle(app)}
           </h3>
           <p className="line-clamp-2 min-h-[2lh] text-sm leading-snug text-muted-foreground">
             {cardSummary(app)}
           </p>
 
-          {/* 하단 — 구분선 아래 좌: 작성자 / 우: 수치 */}
-          <div className="mt-auto flex items-center justify-between gap-3 border-t border-border pt-3 text-xs text-muted-foreground">
+          {/* 작성자 · 올린 때 */}
+          <div className="mt-auto flex items-center justify-between gap-3 pt-1 text-xs text-muted-foreground">
             <span className="flex min-w-0 items-center gap-1.5">
               <OwnerAvatar name={app.authorName} url={app.ownerAvatarUrl} />
               <span className="truncate">{app.authorName}</span>
             </span>
-            <span className="flex shrink-0 items-center gap-3">
+            <span className="shrink-0">{relativeTime(app.createdAt)}</span>
+          </div>
+
+          {/* 구분선 아래 — 좌: 조회·좋아요·댓글 / 우: 바로가기·공유(잠긴 자료는 숨김) */}
+          <div className="flex items-center justify-between gap-3 border-t border-border pt-2.5 text-xs text-muted-foreground">
+            <span className="flex items-center gap-3">
               <span className="inline-flex items-center gap-1" title="조회수">
                 <Eye className="size-3.5" aria-hidden />
                 {app.viewCount}
@@ -201,6 +170,37 @@ export function AppCard({
                 {app.commentCount}
               </span>
             </span>
+            {/* Link 내부라 기본동작을 막고, 바로가기는 window.open 으로 새 탭(iframe 금지 규칙). */}
+            {!app.locked && app.appUrl && (
+              <span className="flex shrink-0 items-center gap-0.5">
+                <button
+                  type="button"
+                  title="앱 바로가기(새 탭)"
+                  aria-label="바로가기"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    window.open(app.appUrl, "_blank", "noopener")
+                  }}
+                  className={iconButtonClass}
+                >
+                  <ExternalLink className="size-4" aria-hidden />
+                </button>
+                <button
+                  type="button"
+                  title="공유(QR·주소 복사)"
+                  aria-label="공유"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    setShareOpen(true)
+                  }}
+                  className={iconButtonClass}
+                >
+                  <Share2 className="size-4" aria-hidden />
+                </button>
+              </span>
+            )}
           </div>
         </div>
       </Link>
@@ -259,7 +259,7 @@ function MoveButton({
         e.stopPropagation()
         onClick()
       }}
-      className="rounded-md bg-background/90 p-1 text-muted-foreground shadow-sm hover:text-foreground disabled:opacity-30"
+      className="rounded-md border border-border p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-30"
     >
       <Icon className="size-4" aria-hidden />
     </button>

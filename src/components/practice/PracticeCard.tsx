@@ -4,6 +4,7 @@ import { getCategory } from "@/config/categories"
 import type { Practice } from "@/lib/practices"
 import { avatarTone, AVATAR_PHOTO } from "@/lib/avatarTone"
 import { cn } from "@/lib/utils"
+import { relativeTime } from "@/lib/time"
 
 /** 날짜 표시 "2026.09.28" */
 export function formatDate(iso: string): string {
@@ -55,7 +56,8 @@ export function OwnerAvatar({ name, url, size = "size-5" }: { name: string; url:
 
 /**
  * 수업실천사례 카드 — 앱 카드(AppCard)와 같은 틀.
- * 대표 사진 / 좌상단 대표 교과 뱃지(+교사 전용 칩) / 제목·요약 2줄 고정 / 하단 작성자·날짜 / 조회·첨부 수.
+ * 대표 사진(가리지 않음) / 뱃지 줄(대표 교과·교사 전용) / 제목(호버 시 밑줄)·요약 2줄 고정 /
+ * 작성자·올린 때 / 구분선 아래 조회·좋아요·댓글·첨부 수.
  * 볼 권한 없는 교사 전용 사례는 사진 위 잠금 표시.
  */
 export function PracticeCard({ practice }: { practice: Practice }) {
@@ -80,55 +82,55 @@ export function PracticeCard({ practice }: { practice: Practice }) {
             </span>
           </div>
         )}
-        {(label || teachersOnly) && (
-          <div className="absolute left-2 top-2 flex max-w-[calc(100%-1rem)] items-center gap-1">
-            {label && (
-              <span className="truncate rounded-full bg-primary px-2.5 py-0.5 text-xs font-bold text-primary-foreground shadow-md ring-1 ring-background/70">
-                {label}
-              </span>
-            )}
-            {teachersOnly && (
-              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-background/90 px-2 py-0.5 text-xs font-medium text-foreground shadow-sm">
-                <Lock className="size-3" aria-hidden />
-                교사 전용
-              </span>
-            )}
-          </div>
-        )}
       </div>
 
-      <div className="flex flex-1 flex-col gap-2 px-4 pt-3.5 pb-3">
-        <h3 className="line-clamp-2 min-h-[2lh] text-base font-semibold leading-snug tracking-tight transition-colors group-hover:text-primary">
+      <div className="flex flex-1 flex-col gap-2 px-4 pt-3 pb-3">
+        {/* 뱃지 줄 — 대표 교과 · 교사 전용. 높이 고정(카드 정렬). */}
+        <div className="flex h-6 items-center gap-1.5">
+          {label && (
+            <span className="truncate rounded-full bg-primary px-2.5 py-0.5 text-xs font-bold text-primary-foreground">
+              {label}
+            </span>
+          )}
+          {teachersOnly && (
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-foreground px-2.5 py-0.5 text-xs font-bold text-background">
+              <Lock className="size-3" aria-hidden />
+              교사 전용
+            </span>
+          )}
+        </div>
+        <h3 className="line-clamp-2 min-h-[2lh] text-lg font-bold leading-snug tracking-tight decoration-2 underline-offset-4 transition-colors group-hover:text-primary group-hover:underline">
           {practice.title}
         </h3>
         <p className="line-clamp-2 min-h-[2lh] text-sm leading-snug text-muted-foreground">
           {practice.summary}
         </p>
-        <div className="mt-auto flex items-center justify-between gap-3 border-t border-border pt-3 text-xs text-muted-foreground">
+        <div className="mt-auto flex items-center justify-between gap-3 pt-1 text-xs text-muted-foreground">
           <span className="flex min-w-0 items-center gap-1.5">
             <OwnerAvatar name={name} url={practice.ownerAvatarUrl} />
             <span className="truncate">{name}</span>
           </span>
-          <span className="flex shrink-0 items-center gap-3">
-            {practice.fileCount > 0 && (
-              <span className="inline-flex items-center gap-1" title="첨부파일">
-                <Paperclip className="size-3.5" aria-hidden />
-                {practice.fileCount}
-              </span>
-            )}
-            <span className="inline-flex items-center gap-1" title="조회수">
-              <Eye className="size-3.5" aria-hidden />
-              {practice.viewCount}
-            </span>
-            <span className="inline-flex items-center gap-1" title="좋아요">
-              <Heart className="size-3.5" aria-hidden />
-              {practice.likeCount}
-            </span>
-            <span className="inline-flex items-center gap-1" title="댓글">
-              <MessageCircle className="size-3.5" aria-hidden />
-              {practice.commentCount}
-            </span>
+          <span className="shrink-0">{relativeTime(practice.createdAt)}</span>
+        </div>
+        <div className="flex h-8 items-center gap-3 border-t border-border pt-2.5 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1" title="조회수">
+            <Eye className="size-3.5" aria-hidden />
+            {practice.viewCount}
           </span>
+          <span className="inline-flex items-center gap-1" title="좋아요">
+            <Heart className="size-3.5" aria-hidden />
+            {practice.likeCount}
+          </span>
+          <span className="inline-flex items-center gap-1" title="댓글">
+            <MessageCircle className="size-3.5" aria-hidden />
+            {practice.commentCount}
+          </span>
+          {practice.fileCount > 0 && (
+            <span className="inline-flex items-center gap-1" title="첨부파일">
+              <Paperclip className="size-3.5" aria-hidden />
+              {practice.fileCount}
+            </span>
+          )}
         </div>
       </div>
     </Link>
@@ -166,7 +168,7 @@ export function PracticeRow({ practice }: { practice: Practice }) {
             </span>
           )}
         </div>
-        <p className="mt-0.5 truncate font-medium group-hover:text-primary">{practice.title}</p>
+        <p className="mt-0.5 truncate font-medium decoration-2 underline-offset-4 group-hover:text-primary group-hover:underline">{practice.title}</p>
         <p className="truncate text-sm text-muted-foreground">{practice.summary}</p>
       </div>
       <div className="hidden shrink-0 flex-col items-end gap-1 text-xs text-muted-foreground sm:flex">

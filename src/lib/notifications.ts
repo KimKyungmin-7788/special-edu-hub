@@ -1,5 +1,7 @@
 import { supabase } from "@/lib/supabase"
 
+export { relativeTime } from "@/lib/time"
+
 /**
  * 개인 알림 데이터 접근 일원화 지점 (트랙 E). 스키마·트리거는 supabase/41_notifications.sql.
  *
@@ -181,16 +183,4 @@ export function notificationHref(n: Notification): string | null {
   if (n.appId) return `/app/${n.appId}`
   if (n.practiceId) return `/practices/${n.practiceId}`
   return null
-}
-
-/** 21시간 전 · 1일 전 · 26.09.30 */
-export function relativeTime(iso: string): string {
-  const diff = (Date.now() - new Date(iso).getTime()) / 1000
-  if (diff < 60) return "방금 전"
-  if (diff < 3600) return `${Math.floor(diff / 60)}분 전`
-  if (diff < 86400) return `${Math.floor(diff / 3600)}시간 전`
-  if (diff < 86400 * 7) return `${Math.floor(diff / 86400)}일 전`
-  const d = new Date(iso)
-  const p = (x: number) => String(x).padStart(2, "0")
-  return `${p(d.getFullYear() % 100)}.${p(d.getMonth() + 1)}.${p(d.getDate())}`
 }
