@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase"
 import { getMyBlocks } from "@/lib/blocks"
+import { getCurrentNicknames, mentionedIds, plainMentions } from "@/lib/mentions"
 
 /**
  * 댓글(comment) 데이터 접근 일원화 지점 (PRD 4단계, 묶음 C-1).
@@ -9,14 +10,20 @@ import { getMyBlocks } from "@/lib/blocks"
  *  - 조회: 공개읽기(미삭제). 작성자 닉네임·아바타를 함께 가져온다(ProfileTrigger 연결용).
  *  - 작성: author_id 는 RLS(with check)가 강제 → 클라가 보낸 값과 무관하게 위조 불가.
  *  - 삭제: delete_comment RPC(본인/운영진만, 소프트삭제). 직접 UPDATE/DELETE 는 막혀 있다.
- *  - 이번 범위는 평면 댓글(대댓글·수정 없음).
+ *  - 답글 = 1단계(최상위 댓글에만, 39_comment_replies.sql). 수정은 없음.
+ *  - 멘션 = 본문 안 토큰(lib/mentions). 표시 이름은 현재 닉네임으로 맞춘다.
  */
 
 /** 댓글 한 건(목록 표시용). 작성자 프로필을 함께 가져온다. */
 export type Comment = {
   id: string
   appId: string
+  /** 답글이면 최상위 댓글 id, 최상위 댓글이면 null. */
+  parentId: string | null
+  /** 저장된 본문(멘션 토큰 포함). 표시는 parseMentions 로. */
   body: string
+  /** 본문에 멘션된 사용자의 현재 닉네임(id → 닉네임). 없으면 토큰 안 이름을 쓴다. */
+  mentionNames: Record<string, string>
   createdAt: string
   author: {
     id: string
@@ -28,6 +35,7 @@ export type Comment = {
 type CommentRow = {
   id: string
   app_id: string
+  parent_id: string | null
   body: string
   created_at: string
   author: {
@@ -38,14 +46,16 @@ type CommentRow = {
 }
 
 const SELECT_WITH_AUTHOR =
-  "id, app_id, body, created_at, " +
+  "id, app_id, parent_id, body, created_at, " +
   "author:profiles!comments_author_id_fkey(id, nickname, avatar_url)"
 
 function mapComment(row: CommentRow): Comment {
   return {
     id: row.id,
     appId: row.app_id,
+    parentId: row.parent_id,
     body: row.body,
+    mentionNames: {},
     createdAt: row.created_at,
     author: {
       id: row.author?.id ?? "",
@@ -90,24 +100,47 @@ export async function getComments(target: CommentTarget): Promise<Comment[]> {
     return []
   }
   const blockedIds = new Set(blocks.map((b) => b.id))
-  return (data as unknown as CommentRow[])
+  const list = (data as unknown as CommentRow[])
     .map(mapComment)
     .filter((c) => !blockedIds.has(c.author.id))
+
+  // 멘션 표시 이름을 현재 닉네임으로(닉네임을 바꿔도 반영되게)
+  const names = await getCurrentNicknames([...new Set(list.flatMap((c) => mentionedIds(c.body)))])
+  for (const c of list) {
+    for (const id of mentionedIds(c.body)) {
+      const n = names.get(id)
+      if (n) c.mentionNames[id] = n
+    }
+  }
+  return list
 }
 
-/** 댓글 작성. author_id 는 RLS 가 강제하므로 보내지 않는다(위조 불가). */
-export async function addComment(target: CommentTarget, body: string): Promise<void> {
+/**
+ * 댓글·답글 작성. author_id 는 RLS 가 강제한다(위조 불가).
+ * parentId 를 주면 답글 — 최상위·미삭제·같은 대상인지는 DB 정책이 검사한다.
+ * body 는 멘션 토큰이 들어간 저장 형식. 글자 수는 사람이 읽는 형태로 센다.
+ */
+export async function addComment(
+  target: CommentTarget,
+  body: string,
+  parentId: string | null = null,
+): Promise<void> {
   const uid = await currentUserId()
   if (!uid) throw new Error("로그인이 필요합니다.")
 
   const trimmed = body.trim()
   if (trimmed === "") throw new Error("댓글 내용을 입력하세요.")
-  if (trimmed.length > COMMENT_BODY_MAX)
+  if (plainMentions(trimmed).length > COMMENT_BODY_MAX)
     throw new Error(`댓글은 최대 ${COMMENT_BODY_MAX}자까지 가능합니다.`)
 
   const { error } = await supabase
     .from("comments")
-    .insert({ [targetColumn(target)]: target.id, author_id: uid, body: trimmed })
+    .insert({
+      [targetColumn(target)]: target.id,
+      author_id: uid,
+      body: trimmed,
+      parent_id: parentId,
+    })
   if (error) throw error
 }
 
