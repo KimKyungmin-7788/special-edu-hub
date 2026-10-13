@@ -47,6 +47,18 @@
   --color-cta-foreground: var(--cta-foreground);
   --color-annotate: var(--annotate);
   --color-annotate-foreground: var(--annotate-foreground);
+  --color-avatar-1: var(--avatar-1);
+  --color-avatar-1-foreground: var(--avatar-1-foreground);
+  --color-avatar-2: var(--avatar-2);
+  --color-avatar-2-foreground: var(--avatar-2-foreground);
+  --color-avatar-3: var(--avatar-3);
+  --color-avatar-3-foreground: var(--avatar-3-foreground);
+  --color-avatar-4: var(--avatar-4);
+  --color-avatar-4-foreground: var(--avatar-4-foreground);
+  --color-avatar-5: var(--avatar-5);
+  --color-avatar-5-foreground: var(--avatar-5-foreground);
+  --color-avatar-6: var(--avatar-6);
+  --color-avatar-6-foreground: var(--avatar-6-foreground);
 
   --color-hero: var(--hero);
   --color-hero-foreground: var(--hero-foreground);

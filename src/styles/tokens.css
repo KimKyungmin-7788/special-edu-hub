@@ -58,6 +58,21 @@
   --brand-muted-foreground: #24552d; /* muted 위 글씨(대비 7:1↑) */
   --brand-line: #c8dfb5;
 
+  /* 프로필 사진이 없을 때 첫 글자 동그라미 — 연한 바탕 + 짙은 글씨 6색(이름별로 하나). 글씨 대비 7:1↑
+     1 초록(브랜드) / 2 꿀빛 / 3 하늘 / 4 살구 / 5 라벤더 / 6 민트 */
+  --avatar-1: var(--brand-muted);
+  --avatar-1-foreground: var(--brand-muted-foreground);
+  --avatar-2: #fbefc6;
+  --avatar-2-foreground: #5c430a;
+  --avatar-3: #dcebf7;
+  --avatar-3-foreground: #1d4a68;
+  --avatar-4: #fbe3d6;
+  --avatar-4-foreground: #6f3417;
+  --avatar-5: #e9e4f6;
+  --avatar-5-foreground: #45366e;
+  --avatar-6: #d6efe8;
+  --avatar-6-foreground: #1a5446;
+
   /* 강조 버튼(CTA) — 꿀빛 노랑. 화면당 핵심 버튼 1곳에만 쓴다. */
   --cta: #fcd34d;
   --cta-foreground: #1b3d22; /* 대비 8.4:1 */

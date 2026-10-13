@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react"
 import { getMyBlocks, unblockUser, type BlockedUser } from "@/lib/blocks"
+import { avatarTone, AVATAR_PHOTO } from "@/lib/avatarTone"
+import { cn } from "@/lib/utils"
 
 /**
  * 차단 목록 관리 (묶음 R-1) — 마이페이지 쪽지함 탭 하단 섹션.
@@ -61,7 +63,12 @@ export function BlockList() {
                   key={b.id}
                   className="flex items-center gap-3 rounded-lg border border-border bg-card p-3"
                 >
-                  <span className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-surface text-sm font-medium text-muted-foreground">
+                  <span
+                    className={cn(
+                      "flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full border text-sm font-medium",
+                      b.avatarUrl ? AVATAR_PHOTO : avatarTone(name),
+                    )}
+                  >
                     {b.avatarUrl ? (
                       <img src={b.avatarUrl} alt="" className="size-full object-cover" />
                     ) : (

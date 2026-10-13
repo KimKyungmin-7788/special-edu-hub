@@ -16,6 +16,7 @@ import { AppThumbnail } from "@/components/app/AppThumbnail"
 import { ShareDialog } from "@/components/app/ShareDialog"
 import { cardSummary, displayTitle, type App } from "@/lib/apps"
 import { cn } from "@/lib/utils"
+import { avatarTone, AVATAR_PHOTO } from "@/lib/avatarTone"
 
 /** 썸네일 위 글자 버튼(바로가기·공유) — 흰 바탕 알약, 호버 시 초록. */
 const overlayPillClass =
@@ -217,7 +218,12 @@ export function AppCard({
 /** 작성자 원형 아바타 — 프로필 사진 있으면 사진, 없으면 이름 첫 글자. */
 function OwnerAvatar({ name, url }: { name: string; url: string | null }) {
   return (
-    <span className="flex size-5 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-surface text-[10px] font-medium text-muted-foreground">
+    <span
+      className={cn(
+        "flex size-5 shrink-0 items-center justify-center overflow-hidden rounded-full border text-[10px] font-medium",
+        url ? AVATAR_PHOTO : avatarTone(name),
+      )}
+    >
       {url ? (
         <img
           src={url}

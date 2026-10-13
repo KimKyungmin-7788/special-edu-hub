@@ -7,6 +7,8 @@ import { useAuth } from "@/lib/auth"
 import { sendMessage, MESSAGE_MAX } from "@/lib/messages"
 import { getAppsByOwner, type App } from "@/lib/apps"
 import type { Profile } from "@/lib/profile"
+import { avatarTone, AVATAR_PHOTO } from "@/lib/avatarTone"
+import { cn } from "@/lib/utils"
 
 /**
  * 프로필 미리보기 내용 (2단계 묶음 C, E-3).
@@ -69,7 +71,12 @@ export function ProfilePreview({ profile, loading, titleId, onClose }: ProfilePr
     <div className="p-6">
       {/* 아바타 + 이름 + 교사인증 배지 */}
       <div className="flex items-center gap-4 pr-8">
-        <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-surface text-xl font-medium text-muted-foreground">
+        <div
+          className={cn(
+            "flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-full border text-xl font-medium",
+            profile.avatarUrl ? AVATAR_PHOTO : avatarTone(name),
+          )}
+        >
           {profile.avatarUrl ? (
             <img src={profile.avatarUrl} alt="" className="size-full object-cover" />
           ) : (

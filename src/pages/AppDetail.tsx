@@ -37,6 +37,8 @@ import {
   incrementView,
 } from "@/lib/engagement"
 import { usePageTitle } from "@/lib/usePageTitle"
+import { avatarTone, AVATAR_PHOTO } from "@/lib/avatarTone"
+import { cn } from "@/lib/utils"
 
 /**
  * 앱 상세 — 제목·개발자·소개 본문·조회수·"앱 열기"(새 탭)·댓글(CommentSection).
@@ -528,7 +530,12 @@ function AuthorAvatar({
 }) {
   const initial = (name || "?").charAt(0).toUpperCase()
   return (
-    <span className="flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-surface text-[10px] font-medium text-muted-foreground">
+    <span
+      className={cn(
+        "flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-full border text-[10px] font-medium",
+        avatarUrl ? AVATAR_PHOTO : avatarTone(name),
+      )}
+    >
       {avatarUrl ? (
         <img src={avatarUrl} alt="" className="size-full object-cover" />
       ) : (

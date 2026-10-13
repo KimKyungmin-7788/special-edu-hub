@@ -9,6 +9,7 @@ import { Nav } from "@/components/layout/Nav"
 import { WriteButton } from "@/components/app/WriteButton"
 import { useAuth } from "@/lib/auth"
 import { cn } from "@/lib/utils"
+import { avatarTone, AVATAR_PHOTO } from "@/lib/avatarTone"
 
 /**
  * 상단 고정 헤더.
@@ -236,7 +237,8 @@ function Avatar({
   return (
     <span
       className={cn(
-        "flex shrink-0 items-center justify-center overflow-hidden rounded-full border bg-surface text-xs font-semibold text-muted-foreground",
+        "flex shrink-0 items-center justify-center overflow-hidden rounded-full border text-xs font-semibold",
+        url ? AVATAR_PHOTO : avatarTone(name),
         className,
       )}
     >

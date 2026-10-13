@@ -14,6 +14,8 @@ import {
   type Comment,
   type CommentTarget,
 } from "@/lib/comments"
+import { avatarTone, AVATAR_PHOTO } from "@/lib/avatarTone"
+import { cn } from "@/lib/utils"
 
 /**
  * 앱·사례 상세 댓글 영역 (PRD 4단계 묶음 C-2, 트랙 E 답글·멘션).
@@ -152,9 +154,11 @@ export function CommentSection({ target }: { target: CommentTarget }) {
     return (
       <div className="flex gap-3">
         <span
-          className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-surface font-medium text-muted-foreground ${
-            small ? "size-7 text-xs" : "size-9 text-sm"
-          }`}
+          className={cn(
+            "flex shrink-0 items-center justify-center overflow-hidden rounded-full border font-medium",
+            small ? "size-7 text-xs" : "size-9 text-sm",
+            c.author.avatarUrl ? AVATAR_PHOTO : avatarTone(name),
+          )}
         >
           {c.author.avatarUrl ? (
             <img src={c.author.avatarUrl} alt="" className="size-full object-cover" />

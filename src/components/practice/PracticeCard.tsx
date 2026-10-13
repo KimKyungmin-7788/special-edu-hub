@@ -2,6 +2,8 @@ import { Link } from "react-router-dom"
 import { Eye, Heart, Lock, MessageCircle, Paperclip, NotebookPen } from "lucide-react"
 import { getCategory } from "@/config/categories"
 import type { Practice } from "@/lib/practices"
+import { avatarTone, AVATAR_PHOTO } from "@/lib/avatarTone"
+import { cn } from "@/lib/utils"
 
 /** 날짜 표시 "2026.09.28" */
 export function formatDate(iso: string): string {
@@ -37,7 +39,10 @@ export function PracticeCover({ practice }: { practice: Practice }) {
 export function OwnerAvatar({ name, url, size = "size-5" }: { name: string; url: string | null; size?: string }) {
   return (
     <span
-      className={`flex ${size} shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-surface text-[10px] font-medium text-muted-foreground`}
+      className={cn(
+        `flex ${size} shrink-0 items-center justify-center overflow-hidden rounded-full border text-[10px] font-medium`,
+        url ? AVATAR_PHOTO : avatarTone(name),
+      )}
     >
       {url ? (
         <img src={url} alt="" loading="lazy" className="size-full object-cover" />

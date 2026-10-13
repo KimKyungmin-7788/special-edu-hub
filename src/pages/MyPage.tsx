@@ -25,6 +25,8 @@ import { InfoHint } from "@/components/ui/InfoHint"
 import { MessageBox } from "@/components/messages/MessageBox"
 import { getUnreadCount } from "@/lib/messages"
 import { usePageTitle } from "@/lib/usePageTitle"
+import { avatarTone, AVATAR_PHOTO } from "@/lib/avatarTone"
+import { cn } from "@/lib/utils"
 
 /**
  * 마이페이지 (/mypage) — 2단계 묶음 B.
@@ -291,7 +293,12 @@ export function MyPage() {
         <form onSubmit={handleSubmit} className="mt-8 space-y-5">
           {/* 아바타 — 폼 저장과 별개로 즉시 업로드된다(B-3) */}
           <div className="flex items-center gap-4">
-            <div className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-surface text-xl font-medium text-muted-foreground">
+            <div
+              className={cn(
+                "flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-full border text-xl font-medium",
+                avatarUrl ? AVATAR_PHOTO : avatarTone(nickname || user.email),
+              )}
+            >
               {avatarUrl ? (
                 <img
                   src={avatarUrl}

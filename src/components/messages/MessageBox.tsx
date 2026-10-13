@@ -23,6 +23,8 @@ import { ReportDialog } from "@/components/report/ReportDialog"
 import { reportMessage } from "@/lib/reports"
 import { blockUser } from "@/lib/blocks"
 import { BlockList } from "@/components/profile/BlockList"
+import { avatarTone, AVATAR_PHOTO } from "@/lib/avatarTone"
+import { cn } from "@/lib/utils"
 
 /**
  * 쪽지함 (2단계 E-2 → 메신저식 개편) — 마이페이지 "쪽지함" 탭 본문.
@@ -122,7 +124,12 @@ export function MessageBox({ onUnreadChange }: MessageBoxProps) {
                   onClick={() => openThread(c.other)}
                   className="flex w-full items-center gap-3 rounded-lg border border-border bg-card p-3 text-left hover:bg-accent"
                 >
-                  <span className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-surface text-sm font-medium text-muted-foreground">
+                  <span
+                    className={cn(
+                      "flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full border text-sm font-medium",
+                      c.other.avatarUrl ? AVATAR_PHOTO : avatarTone(name),
+                    )}
+                  >
                     {c.other.avatarUrl ? (
                       <img
                         src={c.other.avatarUrl}

@@ -1,6 +1,8 @@
 import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent } from "react"
 import { COMMENT_BODY_MAX } from "@/lib/comments"
 import { encodeMentions, searchMentionUsers, type MentionUser } from "@/lib/mentions"
+import { avatarTone, AVATAR_PHOTO } from "@/lib/avatarTone"
+import { cn } from "@/lib/utils"
 
 /**
  * 댓글·답글 입력창 (트랙 E). 최상위 댓글과 답글이 같은 입력창을 쓴다.
@@ -186,7 +188,12 @@ export function CommentComposer({
                   i === activeIndex ? "bg-accent text-accent-foreground" : ""
                 }`}
               >
-                <span className="flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-surface text-xs text-muted-foreground">
+                <span
+                  className={cn(
+                    "flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-full border text-xs",
+                    u.avatarUrl ? AVATAR_PHOTO : avatarTone(u.nickname),
+                  )}
+                >
                   {u.avatarUrl ? (
                     <img src={u.avatarUrl} alt="" className="size-full object-cover" />
                   ) : (
