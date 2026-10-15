@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>키오스크 업체 확정기</title>
+<style>
+  :root {
+    --bg: #f6f7f8; --card: #ffffff; --line: #e3e6e9; --text: #1f2328; --muted: #6b7280;
+    --primary: #2f7d4f; --primary-soft: #e8f3ec; --cta: #f5c400; --cta-text: #1f2328;
+    --warn: #b45309; --radius: 12px; --font: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font); }
+  main { max-width: 860px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 24px; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 20px; font-size: 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; }
+  label { display: block; font-weight: 600; margin: 0 0 6px; }
+  select { width: 100%; font: inherit; font-size: 17px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--text); margin-bottom: 14px; }
+  .info { font-size: 14px; color: var(--muted); background: var(--bg); border-radius: 8px; padding: 10px 12px; margin: -6px 0 14px; display: none; }
+  button { width: 100%; font: inherit; font-size: 18px; font-weight: 700; padding: 14px; border: 0; border-radius: 8px; background: var(--cta); color: var(--cta-text); cursor: pointer; }
+  button:disabled { opacity: .5; cursor: default; }
+  .msg { margin-top: 12px; font-size: 15px; min-height: 1.4em; }
+  .msg.ok { color: var(--primary); font-weight: 600; }
+  .msg.err { color: var(--warn); }
+  h2 { font-size: 18px; margin: 0 0 12px; display: flex; justify-content: space-between; align-items: baseline; }
+  h2 small { font-size: 13px; color: var(--muted); font-weight: 400; }
+  .counts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-bottom: 14px; }
+  .count { border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+  .count b { display: block; font-size: 22px; color: var(--primary); }
+  .count span { font-size: 13px; color: var(--muted); }
+  .wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { color: var(--muted); font-weight: 600; }
+  td.place { font-weight: 700; color: var(--primary); }
+  td.none { color: var(--muted); }
+  tr.done { background: var(--primary-soft); }
+</style>
+</head>
+<body>
+<main>
+  <h1>키오스크 업체 확정기</h1>
+  <p class="sub">본인 이름과 실습장소를 고른 뒤 [확정]을 눌러 주세요. 다시 확정하면 바뀝니다.</p>
+
+  <section class="card">
+    <label for="teacher">교사 이름</label>
+    <select id="teacher"><option value="">— 선택하세요 —</option></select>
+    <div class="info" id="info"></div>
+    <label for="place">실습장소</label>
+    <select id="place"><option value="">— 선택하세요 —</option></select>
+    <button id="save" disabled>확정</button>
+    <div class="msg" id="msg"></div>
+  </section>
+
+  <section class="card">
+    <h2>전체 취합 결과 <small id="stamp"></small></h2>
+    <div class="counts" id="counts"></div>
+    <div class="wrap">
+      <table>
+        <thead><tr><th>#</th><th>교사</th><th>학급</th><th>학생</th><th>운영 날짜·시간</th><th>확정 장소</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+<script>
+  const SB_URL = "https://inqknxmsctuxwxmjfqft.supabase.co";
+  const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlucWtueG1zY3R1eHd4bWpmcWZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyNTY4MzYsImV4cCI6MjA5NzgzMjgzNn0.w_Psar42cQzGkrZQhsPvLx2pqRt9yKN98saey7cuXFo";
+  const PLACES = ["농협하나로-메가커피", "방통대앞-메가커피", "33떡볶이", "맥도날드"];
+  const T = [
+    ["박아남","고1-1",7,"10.15.목.6-7교시"],["백범준","초3-1",5,"10.16.금.2교시"],
+    ["박정아","전공과2-1",3,"10.20.화.2-3교시"],["오지선","전공과2-2",3,"10.20.화.2-3교시"],
+    ["조윤희","전공과1-2",3,"10.21.수.1교시"],["김숙","중3-1",5,"10.21.수.4교시"],
+    ["전세나","초2-1",6,"10.22.목.1-2교시"],["박경혜","전공과2-2",3,"10.22.목.5교시"],
+    ["석미현","중2-2",5,"10.22.목.6-7교시"],["김정은","초4-2",5,"10.23.금.1-2교시"],
+    ["김금래","초4-1",5,"10.23.금.5교시"],["김용식","전공과2-1",3,"10.26.월.4-5교시"],
+    ["이다솜","고3-2",6,"10.27.화.1교시"],["원소형","중3-2",6,"10.27.화.2교시"],
+    ["이영주","초6-1",3,"10.27.화.3-4교시"],["안현희","초5-1",5,"10.28.수.1-2교시"],
+    ["김영채","전공과1-1",4,"10.28.수.6교시"],["김현숙","초1-1",5,"10.29.목.1-2교시"],
+    ["천명원","고1-3",5,"10.29.목.2-3교시"],["이지혜","고3-1",7,"10.30.금.3교시"],
+  ];
+  const H = { apikey: SB_KEY, Authorization: "Bearer " + SB_KEY };
+  const $ = (id) => document.getElementById(id);
+  let picks = {};
+
+  T.forEach(([n]) => $("teacher").add(new Option(n, n)));
+  PLACES.forEach((p) => $("place").add(new Option(p, p)));
+
+  function sync() {
+    const t = $("teacher").value, row = T.find((r) => r[0] === t);
+    $("info").style.display = row ? "block" : "none";
+    if (row) $("info").textContent = `${row[1]} · 학생 ${row[2]}명 · ${row[3]}` + (picks[t] ? ` · 현재 확정: ${picks[t]}` : "");
+    if (row && picks[t] && !$("place").dataset.touched) $("place").value = picks[t];
+    $("save").disabled = !(t && $("place").value);
+  }
+  $("teacher").onchange = () => { delete $("place").dataset.touched; $("place").value = ""; $("msg").textContent = ""; sync(); };
+  $("place").onchange = () => { $("place").dataset.touched = "1"; sync(); };
+
+  function render() {
+    $("counts").innerHTML = PLACES.map((p) =>
+      `<div class="count"><b>${Object.values(picks).filter((v) => v === p).length}</b><span>${p}</span></div>`).join("")
+      + `<div class="count"><b>${T.length - Object.keys(picks).length}</b><span>미정</span></div>`;
+    $("rows").innerHTML = T.map(([n, c, s, d], i) => {
+      const p = picks[n];
+      return `<tr class="${p ? "done" : ""}"><td>${i + 1}</td><td>${n}</td><td>${c}</td><td>${s}</td><td>${d}</td>`
+        + (p ? `<td class="place">${p}</td>` : `<td class="none">미정</td>`) + `</tr>`;
+    }).join("");
+    $("stamp").textContent = `확정 ${Object.keys(picks).length}/${T.length} · ${new Date().toLocaleTimeString("ko-KR")} 기준`;
+  }
+
+  async function load() {
+    try {
+      const r = await fetch(`${SB_URL}/rest/v1/kiosk_picks?select=teacher,place`, { headers: H });
+      if (!r.ok) throw new Error(r.status);
+      picks = Object.fromEntries((await r.json()).map((x) => [x.teacher, x.place]));
+      render(); sync();
+    } catch (e) { $("stamp").textContent = "불러오기 실패 — 새로고침해 주세요"; }
+  }
+
+  $("save").onclick = async () => {
+    const teacher = $("teacher").value, place = $("place").value;
+    if (!teacher || !place) return;
+    $("save").disabled = true; $("msg").className = "msg"; $("msg").textContent = "저장 중…";
+    try {
+      const r = await fetch(`${SB_URL}/rest/v1/kiosk_picks?on_conflict=teacher`, {
+        method: "POST",
+        headers: { ...H, "Content-Type": "application/json", Prefer: "resolution=merge-duplicates,return=minimal" },
+        body: JSON.stringify({ teacher, place, updated_at: new Date().toISOString() }),
+      });
+      if (!r.ok) throw new Error(r.status);
+      $("msg").className = "msg ok"; $("msg").textContent = `${teacher} 선생님 → ${place} 확정되었습니다.`;
+      await load();
+    } catch (e) {
+      $("msg").className = "msg err"; $("msg").textContent = "저장에 실패했습니다. 잠시 후 다시 눌러 주세요.";
+    }
+    sync();
+  };
+
+  render(); load(); setInterval(load, 15000);
+</script>
+</body>
+</html>
