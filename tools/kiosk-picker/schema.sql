@@ -1,4 +1,4 @@
--- 42. 키오스크 업체 확정기 (단독 도구 tools/kiosk-picker 전용)
+-- 키오스크 업체 확정기 (tools/kiosk-picker) 전용 — Supabase 프로젝트: kyungmin-main-seoul
 -- 교사 1명당 1행. 다시 확정하면 덮어쓴다. 로그인 없이 anon 으로 읽기·확정.
 -- 재실행해도 안전(idempotent).
 

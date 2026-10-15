@@ -59,27 +59,27 @@
     <div class="counts" id="counts"></div>
     <div class="wrap">
       <table>
-        <thead><tr><th>#</th><th>교사</th><th>학급</th><th>학생</th><th>운영 날짜·시간</th><th>확정 장소</th></tr></thead>
+        <thead><tr><th>#</th><th>교사</th><th>학급</th><th>학생</th><th>운영 날짜·시간</th><th>기존 신청</th><th>확정 장소</th></tr></thead>
         <tbody id="rows"></tbody>
       </table>
     </div>
   </section>
 </main>
 <script>
-  const SB_URL = "https://inqknxmsctuxwxmjfqft.supabase.co";
-  const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlucWtueG1zY3R1eHd4bWpmcWZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyNTY4MzYsImV4cCI6MjA5NzgzMjgzNn0.w_Psar42cQzGkrZQhsPvLx2pqRt9yKN98saey7cuXFo";
+  const SB_URL = "https://pbpkoumwdjjciayxpbti.supabase.co";
+  const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBicGtvdW13ZGpqY2lheXhwYnRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwMTgxMDIsImV4cCI6MjEwNTU5NDEwMn0.oBjWb09dZf14pEtVk2zCCIqhKfUJU9fV3hBjWKO6z0A";
   const PLACES = ["농협하나로-메가커피", "방통대앞-메가커피", "33떡볶이", "맥도날드"];
   const T = [
-    ["박아남","고1-1",7,"10.15.목.6-7교시"],["백범준","초3-1",5,"10.16.금.2교시"],
-    ["박정아","전공과2-1",3,"10.20.화.2-3교시"],["오지선","전공과2-2",3,"10.20.화.2-3교시"],
-    ["조윤희","전공과1-2",3,"10.21.수.1교시"],["김숙","중3-1",5,"10.21.수.4교시"],
-    ["전세나","초2-1",6,"10.22.목.1-2교시"],["박경혜","전공과2-2",3,"10.22.목.5교시"],
-    ["석미현","중2-2",5,"10.22.목.6-7교시"],["김정은","초4-2",5,"10.23.금.1-2교시"],
-    ["김금래","초4-1",5,"10.23.금.5교시"],["김용식","전공과2-1",3,"10.26.월.4-5교시"],
-    ["이다솜","고3-2",6,"10.27.화.1교시"],["원소형","중3-2",6,"10.27.화.2교시"],
-    ["이영주","초6-1",3,"10.27.화.3-4교시"],["안현희","초5-1",5,"10.28.수.1-2교시"],
-    ["김영채","전공과1-1",4,"10.28.수.6교시"],["김현숙","초1-1",5,"10.29.목.1-2교시"],
-    ["천명원","고1-3",5,"10.29.목.2-3교시"],["이지혜","고3-1",7,"10.30.금.3교시"],
+    ["박아남","고1-1",7,"10.15.목.6-7교시","메가커피"],["백범준","초3-1",5,"10.16.금.2교시","메가커피"],
+    ["박정아","전공과2-1",3,"10.20.화.2-3교시","33떡볶이"],["오지선","전공과2-2",3,"10.20.화.2-3교시","33떡볶이"],
+    ["조윤희","전공과1-2",3,"10.21.수.1교시","메가커피"],["김숙","중3-1",5,"10.21.수.4교시","메가커피"],
+    ["전세나","초2-1",6,"10.22.목.1-2교시","메가커피"],["박경혜","전공과2-2",3,"10.22.목.5교시","메가커피"],
+    ["석미현","중2-2",5,"10.22.목.6-7교시","메가커피"],["김정은","초4-2",5,"10.23.금.1-2교시","메가커피"],
+    ["김금래","초4-1",5,"10.23.금.5교시","메가커피"],["김용식","전공과2-1",3,"10.26.월.4-5교시","맥도날드"],
+    ["이다솜","고3-2",6,"10.27.화.1교시","메가커피"],["원소형","중3-2",6,"10.27.화.2교시","메가커피"],
+    ["이영주","초6-1",3,"10.27.화.3-4교시","메가커피"],["안현희","초5-1",5,"10.28.수.1-2교시","맥도날드"],
+    ["김영채","전공과1-1",4,"10.28.수.6교시","메가커피"],["김현숙","초1-1",5,"10.29.목.1-2교시","메가커피"],
+    ["천명원","고1-3",5,"10.29.목.2-3교시","메가커피"],["이지혜","고3-1",7,"10.30.금.3교시","메가커피"],
   ];
   const H = { apikey: SB_KEY, Authorization: "Bearer " + SB_KEY };
   const $ = (id) => document.getElementById(id);
@@ -91,7 +91,7 @@
   function sync() {
     const t = $("teacher").value, row = T.find((r) => r[0] === t);
     $("info").style.display = row ? "block" : "none";
-    if (row) $("info").textContent = `${row[1]} · 학생 ${row[2]}명 · ${row[3]}` + (picks[t] ? ` · 현재 확정: ${picks[t]}` : "");
+    if (row) $("info").textContent = `${row[1]} · 학생 ${row[2]}명 · ${row[3]} · 기존 신청 장소: ${row[4]}` + (picks[t] ? ` · 현재 확정: ${picks[t]}` : "");
     if (row && picks[t] && !$("place").dataset.touched) $("place").value = picks[t];
     $("save").disabled = !(t && $("place").value);
   }
@@ -102,9 +102,9 @@
     $("counts").innerHTML = PLACES.map((p) =>
       `<div class="count"><b>${Object.values(picks).filter((v) => v === p).length}</b><span>${p}</span></div>`).join("")
       + `<div class="count"><b>${T.length - Object.keys(picks).length}</b><span>미정</span></div>`;
-    $("rows").innerHTML = T.map(([n, c, s, d], i) => {
+    $("rows").innerHTML = T.map(([n, c, s, d, o], i) => {
       const p = picks[n];
-      return `<tr class="${p ? "done" : ""}"><td>${i + 1}</td><td>${n}</td><td>${c}</td><td>${s}</td><td>${d}</td>`
+      return `<tr class="${p ? "done" : ""}"><td>${i + 1}</td><td>${n}</td><td>${c}</td><td>${s}</td><td>${d}</td><td>${o}</td>`
         + (p ? `<td class="place">${p}</td>` : `<td class="none">미정</td>`) + `</tr>`;
     }).join("");
     $("stamp").textContent = `확정 ${Object.keys(picks).length}/${T.length} · ${new Date().toLocaleTimeString("ko-KR")} 기준`;
