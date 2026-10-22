@@ -37,7 +37,7 @@ export const site = {
    */
   headerBrand: {
     eyebrow: "강릉오성학교",
-    title: "AI하이터치 수업 연구회 자료집",
+    title: "",
   },
 
   /**
