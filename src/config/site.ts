@@ -49,8 +49,8 @@ export const site = {
     {
       type: "text",
       keyword: "기록",
-      title: "강릉오성학교 학교안 연구회 플랫폼",
-      subtitle: "연구회 선생님들이 수업을 두고 나눈 고민과 노력을 한곳에 모았습니다.",
+      title: "특수교사가 함께 만드는 수업 나눔 플랫폼",
+      subtitle: "특수교사들이 수업을 두고 나눈 고민과 노력을 한곳에 모았습니다.",
       ctaLabel: "자료 둘러보기",
       ctaHref: "/apps/subject",
       image: { src: "/hero/research-together.webp", position: "right 38%" },
