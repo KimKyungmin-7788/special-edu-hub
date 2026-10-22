@@ -25,7 +25,7 @@ export type HeroSlide =
     }
   | { type: "banner"; imageUrl: string; alt?: string }
 
-/** 누리집 이름 — 푸터·탭 제목·법적 페이지·인증 메일이 모두 이 값을 따른다. */
+/** 누리집 정식 명칭 — 푸터·탭 제목·법적 페이지·인증 메일이 모두 이 값을 따른다. */
 const SITE_NAME = "특수교육 디지털 학습자료 누리집"
 
 export const site = {
