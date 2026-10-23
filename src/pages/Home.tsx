@@ -5,7 +5,7 @@ import { AppCardList } from "@/components/home/AppCardList"
 import { PopularRankList } from "@/components/home/PopularRankList"
 import { RegisterCtaCard } from "@/components/app/RegisterCtaCard"
 import { registerCta } from "@/config/registerCta"
-import { getApps, popularityScore, type App } from "@/lib/apps"
+import { getApps, comparePopularApps, type App } from "@/lib/apps"
 import { CONTAINER } from "@/config/layout"
 import { usePageTitle } from "@/lib/usePageTitle"
 
@@ -32,15 +32,11 @@ export function Home() {
 
   // 최신 = getApps 기본 정렬(created_at desc).
   const latest = apps.slice(0, LATEST_SLOTS - (registerCta.showCardTile ? 1 : 0))
-  // 인기 = 담기·좋아요 가중합(인기 점수) 내림차순, 동점은 최신순.
+  // 인기 = 고정 자료 우선, 나머지는 인기 점수 내림차순·동점은 최신순.
   const popular = useMemo(
     () =>
       [...apps]
-        .sort(
-          (a, b) =>
-            popularityScore(b) - popularityScore(a) ||
-            (a.createdAt < b.createdAt ? 1 : -1),
-        )
+        .sort(comparePopularApps)
         .slice(0, POPULAR_LIMIT),
     [apps],
   )
