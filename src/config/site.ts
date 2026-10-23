@@ -42,10 +42,18 @@ export const site = {
 
   /**
    * 히어로 캐러셀: 문구 슬라이드 + 배너 이미지 슬라이드를 배열로(순서대로 넘김).
-   * 1장이면 넘김 표시 없이 고정. 지금은 연구회 아카이브 + 바이브코딩 준비 2장.
-   * 3장 캐러셀로 되돌릴 때: heroSlides 를 heroSlidesThree 로 바꾼다.
+   * 1장이면 넘김 표시 없이 고정. 참여 안내 + 수업 나눔 + 바이브코딩 준비.
    */
   heroSlides: [
+    {
+      type: "text",
+      keyword: "나눔",
+      title: "특수교사 누구나, 수업자료를 쓰고 나눠요",
+      subtitle: "직접 만든 자료와 수업 사례를 함께 나눠보세요.",
+      ctaLabel: "내 자료 나누기",
+      ctaAction: "write",
+      image: { src: "/hero/research-together.webp", position: "right 38%" },
+    },
     {
       type: "text",
       keyword: "기록",
@@ -53,7 +61,7 @@ export const site = {
       subtitle: "특수교사들이 수업을 두고 나눈 고민과 노력을 한곳에 모았습니다.",
       ctaLabel: "자료 둘러보기",
       ctaHref: "/apps/subject",
-      image: { src: "/hero/research-together.webp", position: "right 38%" },
+      image: { src: "/hero/classroom-record.png", position: "right 15%" },
     },
     {
       type: "text",
@@ -62,6 +70,7 @@ export const site = {
       subtitle: "Windows에서 Claude Code·Codex 설치부터 첫 앱 공개까지, 한 화면씩 따라 해요.",
       ctaLabel: "시작하기",
       ctaHref: "/vibecoding/setup",
+      image: { src: "/hero/first-app-start.png", position: "right center" },
     },
   ] satisfies HeroSlide[],
 
