@@ -14,7 +14,7 @@ import { usePageTitle } from "@/lib/usePageTitle"
  * 두 섹션을 생김새부터 다르게 해 구분되게 한다.
  */
 const LATEST_SLOTS = 6 // 카드 3열 × 2줄. 글쓰기 타일이 켜져 있으면 한 칸을 차지한다.
-const POPULAR_LIMIT = 8 // 왼쪽 카드 2줄과 높이를 맞추는 개수
+const POPULAR_LIMIT = 10 // 인기자료 1~10위
 
 export function Home() {
   usePageTitle()
