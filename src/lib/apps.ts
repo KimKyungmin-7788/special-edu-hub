@@ -1,6 +1,5 @@
 import { supabase } from "@/lib/supabase"
 import { getCategory, type CategoryType } from "@/config/categories"
-import { pinnedPopularAppId } from "@/config/popularity"
 
 /**
  * 데이터 접근 일원화 지점.
@@ -187,10 +186,9 @@ export function popularityScore(a: App): number {
   return a.bookmarkCount * 2 + a.likeCount
 }
 
-/** 인기 목록 공통 정렬: 고정 자료 → 인기 점수 → 최신순. */
+/** 인기 목록 공통 정렬: 인기 점수 내림차순, 동점은 최신순. */
 export function comparePopularApps(a: App, b: App): number {
-  const pinnedOrder = Number(b.id === pinnedPopularAppId) - Number(a.id === pinnedPopularAppId)
-  return pinnedOrder || popularityScore(b) - popularityScore(a) || b.createdAt.localeCompare(a.createdAt)
+  return popularityScore(b) - popularityScore(a) || b.createdAt.localeCompare(a.createdAt)
 }
 
 /** 특정 카테고리(과목·업무 id)에 속한 앱만 (수동 순서 → 최신순). */

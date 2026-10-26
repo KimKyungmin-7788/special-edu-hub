@@ -161,6 +161,27 @@
     border-radius: var(--radius);
     margin: 0.5em 0;
   }
+  .richtext [data-resize-container] {
+    max-width: 100%;
+    margin: 0.5em 0;
+  }
+  .richtext [data-resize-wrapper] {
+    max-width: 100%;
+  }
+  .richtext [data-resize-wrapper] img {
+    margin: 0;
+    height: auto !important;
+  }
+  .richtext [data-resize-handle] {
+    width: calc(var(--spacing) * 3);
+    height: calc(var(--spacing) * 3);
+    border: 1px solid var(--background);
+    border-radius: var(--radius);
+    background: var(--primary);
+    touch-action: none;
+  }
+  .richtext [data-resize-handle="bottom-left"] { cursor: nesw-resize; }
+  .richtext [data-resize-handle="bottom-right"] { cursor: nwse-resize; }
   .richtext :where(strong) {
     font-weight: 600;
   }
