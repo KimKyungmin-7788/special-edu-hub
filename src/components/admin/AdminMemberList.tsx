@@ -55,6 +55,7 @@ export function AdminMemberList() {
   }
 
   const verified = members.filter((m) => m.isTeacherVerified).length
+  const researchMembers = members.filter((m) => m.isResearchMember).length
   const staff = members.filter(
     (m) => m.role === "manager" || m.role === "admin",
   ).length
@@ -70,7 +71,7 @@ export function AdminMemberList() {
   return (
     <>
       <p className="mb-2 text-sm text-muted-foreground">
-        전체 {members.length}명 · 인증교사 {verified}명 · 운영진 {staff}명
+        전체 {members.length}명 · 인증교사 {verified}명 · 운영진 {staff}명 · 연구회회원 {researchMembers}명
       </p>
       <input
         type="search"
