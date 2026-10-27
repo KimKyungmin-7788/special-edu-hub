@@ -104,8 +104,9 @@ function CommentBody({ comment, onEdit }: { comment: Comment; onEdit?: () => voi
 /** 답글 입력창을 어디에, 무엇을 채워 열지. */
 type ReplyDraft = { threadId: string; mentionUser: MentionUser | null }
 
-export function CommentSection({ target }: { target: CommentTarget }) {
-  const { user, isStaff } = useAuth()
+export function CommentSection({ target, boardCanWrite }: { target: CommentTarget; boardCanWrite?: boolean }) {
+  const { user, profile, isStaff } = useAuth()
+  const canWrite = !!user && (target.kind !== "post" || (boardCanWrite ?? !!profile?.isTeacherVerified))
   const [comments, setComments] = useState<Comment[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -119,10 +120,17 @@ export function CommentSection({ target }: { target: CommentTarget }) {
   useEffect(() => {
     let active = true
     setLoading(true)
+    setError(null)
+    setComments([])
     setVisible(PAGE_SIZE)
-    getComments(target).then((list) => {
+    getComments({ kind: target.kind, id: target.id }).then((list) => {
       if (active) {
         setComments(list)
+        setLoading(false)
+      }
+    }).catch((err) => {
+      if (active) {
+        setError(err instanceof Error ? err.message : "댓글을 불러오지 못했습니다.")
         setLoading(false)
       }
     })
@@ -207,7 +215,7 @@ export function CommentSection({ target }: { target: CommentTarget }) {
     const canDelete = isMine || (!!user && isStaff)
     const canReport = !!user && !isMine
     // 원댓글이 지워진 묶음에는 더 달 수 없다(DB 도 막음)
-    const canReply = !!user && thread.root !== null
+    const canReply = canWrite && thread.root !== null
     const editing = editingId === c.id
     const editable = editing ? toEditable(c) : null
 
@@ -269,7 +277,7 @@ export function CommentSection({ target }: { target: CommentTarget }) {
             <CommentBody
               comment={c}
               onEdit={
-                isMine
+                isMine && canWrite
                   ? () => {
                       setReply(null)
                       setEditingId(c.id)
@@ -350,10 +358,12 @@ export function CommentSection({ target }: { target: CommentTarget }) {
       </h2>
 
       {/* 작성 폼: 로그인 사용자만 */}
-      {user ? (
+      {canWrite ? (
         <div className="mt-4">
           <CommentComposer onSubmit={(body) => submit(body, null)} />
         </div>
+      ) : user && target.kind === "post" ? (
+        <p className="mt-4 text-sm text-muted-foreground">댓글은 인증 교사만 작성할 수 있어요. <Link to="/verify" className="font-medium text-primary underline">교사인증하기</Link></p>
       ) : (
         <p className="mt-4 text-sm text-muted-foreground">
           댓글을 남기려면{" "}

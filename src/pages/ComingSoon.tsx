@@ -2,7 +2,7 @@ import { CONTAINER } from "@/config/layout"
 import { usePageTitle } from "@/lib/usePageTitle"
 
 /**
- * "준비 중" 공용 페이지 — 자유게시판 / 소개.
+ * "준비 중" 공용 페이지 — 소개.
  * 자리만 존재하고 기능은 후속 단계(CLAUDE.md 규칙 4).
  */
 export function ComingSoon({ title }: { title: string }) {

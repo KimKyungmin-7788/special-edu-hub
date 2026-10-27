@@ -180,6 +180,7 @@ export function notificationHref(n: Notification): string | null {
   if (n.type === "notice") return n.link
   if (n.type === "message") return "/mypage?tab=messages"
   if (n.type === "verify_approved" || n.type === "verify_rejected") return "/verify"
+  if (n.commentId && n.link?.startsWith("/board/")) return n.link
   if (n.appId) return `/app/${n.appId}`
   if (n.practiceId) return `/practices/${n.practiceId}`
   return null

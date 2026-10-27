@@ -30,6 +30,11 @@ const VibeSetup = lazy(() => import("@/components/vibecoding/setup/VibeSetup").t
 const VibeWhy = lazy(() => import("@/components/vibecoding/why/VibeWhy").then((m) => ({ default: m.VibeWhy })))
 const VibeSurvey = lazy(() => import("@/components/vibecoding/survey/VibeSurvey").then((m) => ({ default: m.VibeSurvey })))
 
+const BoardLayout = lazy(() => import("@/pages/BoardLayout").then((m) => ({ default: m.BoardLayout })))
+const BoardList = lazy(() => import("@/pages/BoardList").then((m) => ({ default: m.BoardList })))
+const BoardDetail = lazy(() => import("@/pages/BoardDetail").then((m) => ({ default: m.BoardDetail })))
+const BoardWritePage = lazy(() => import("@/pages/BoardWritePage").then((m) => ({ default: m.BoardWritePage })))
+
 function App() {
   return (
     <AuthProvider>
@@ -72,7 +77,16 @@ function App() {
             <Route path="vibe-setup/*" element={<Navigate to={vibecodingPath("setup")} replace />} />
 
             {/* 자리만 / 준비 중 */}
-            <Route path="board" element={<ComingSoon title="자유게시판" />} />
+            <Route path="board" element={<BoardLayout />}>
+              <Route index element={<Navigate to="free" replace />} />
+              <Route path="free" element={<BoardList slug="free" />} />
+              <Route path="research" element={<BoardList slug="research" />} />
+              <Route path="free/write" element={<BoardWritePage slug="free" />} />
+              <Route path="research/write" element={<BoardWritePage slug="research" />} />
+              <Route path="write" element={<Navigate to="/board/free/write" replace />} />
+              <Route path=":id" element={<BoardDetail />} />
+              <Route path=":id/edit" element={<BoardWritePage />} />
+            </Route>
             <Route path="verify" element={<VerifyPage />} />
 
             {/* 정적·법적 페이지 (트랙 A) — 소개는 준비 중 */}

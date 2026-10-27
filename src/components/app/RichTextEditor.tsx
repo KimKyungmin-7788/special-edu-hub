@@ -75,11 +75,17 @@ export function RichTextEditor({
   value = "",
   onChange,
   placeholder,
+  disabled = false,
+  allowImages = true,
+  onBusyChange,
 }: {
   value?: string
   onChange: (html: string) => void
   /** 비어 있을 때 회색 안내 글(입력하면 사라짐). 줄바꿈(\n) 가능 */
   placeholder?: string
+  allowImages?: boolean
+  disabled?: boolean
+  onBusyChange?: (busy: boolean) => void
 }) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [imgBusy, setImgBusy] = useState(false)
@@ -88,6 +94,7 @@ export function RichTextEditor({
   const [cropSrc, setCropSrc] = useState<string | null>(null)
   const cropTarget = useRef<ReturnType<typeof trackPosition> | null>(null)
   useEffect(() => () => cropTarget.current?.stop(), [])
+  useEffect(() => { onBusyChange?.(imgBusy || cropSrc !== null) }, [imgBusy, cropSrc, onBusyChange])
 
   const editor = useEditor({
     extensions: [
@@ -96,10 +103,10 @@ export function RichTextEditor({
         link: { openOnClick: false },
       }),
       // 본문 이미지는 화면 폭에 맞춰 표시(.richtext img max-width). 지연 로딩.
-      BodyImage.configure({
+      ...(allowImages ? [BodyImage.configure({
         HTMLAttributes: { loading: "lazy" },
         resize: { enabled: true, directions: ["bottom-left", "bottom-right"], minWidth: 40, minHeight: 40, alwaysPreserveAspectRatio: true },
-      }),
+      })] : []),
     ],
     content: value,
     onUpdate: ({ editor }) => onChange(editor.getHTML()),
@@ -108,6 +115,7 @@ export function RichTextEditor({
       handlePaste: (_view, event) => {
         const files = Array.from(event.clipboardData?.files ?? []).filter((file) => file.type.startsWith("image/"))
         if (!files.length) return false
+        if (!allowImages) { event.preventDefault(); return true }
         event.preventDefault()
         void insertImages(files)
         return true
@@ -116,6 +124,7 @@ export function RichTextEditor({
         if (moved) return false // 본문에 이미 있는 사진 이동은 편집기 기본 동작 유지.
         const files = Array.from(event.dataTransfer?.files ?? []).filter((file) => file.type.startsWith("image/"))
         if (!files.length) return false
+        if (!allowImages) { event.preventDefault(); return true }
         event.preventDefault()
         const position = view.posAtCoords({ left: event.clientX, top: event.clientY })?.pos
         void insertImages(files, position)
@@ -124,8 +133,10 @@ export function RichTextEditor({
     },
   })
 
+  useEffect(() => { editor?.setEditable(!disabled) }, [editor, disabled])
+
   async function insertImages(files: File[], at?: number) {
-    if (!files.length || !editor) return
+    if (!allowImages || !files.length || !editor) return
     if (uploading.current) {
       setImgError("이미지를 올리고 있어요. 완료된 뒤 다시 넣어 주세요.")
       return
@@ -199,8 +210,10 @@ export function RichTextEditor({
         onLink={setLink}
         onImage={() => fileRef.current?.click()}
         onCrop={openCrop}
+        allowImages={allowImages}
       />
-      <p className="border-b border-border px-3 py-2 text-xs text-muted-foreground">사진을 끌어놓거나 붙여넣을 수 있어요. 사진 모서리를 끌면 비율을 유지하며 크기가 바뀌고, 사진을 선택한 뒤 자르기도 할 수 있어요.</p>
+      {allowImages && <p className="border-b border-border px-3 py-2 text-xs text-muted-foreground">사진을 끌어놓거나 붙여넣을 수 있어요. 사진 모서리를 끌면 비율을 유지하며 크기가 바뀌고, 사진을 선택한 뒤 자르기도 할 수 있어요.</p>}
+      {!allowImages && <p className="border-b border-border px-3 py-2 text-xs text-muted-foreground">연구회게시판은 글과 링크로 이야기를 나눠 주세요. 사진 첨부는 지원하지 않습니다.</p>}
       <div className="relative">
         <EditorContent editor={editor} />
         {placeholder && editor.isEmpty && (
@@ -241,11 +254,13 @@ function Toolbar({
   onLink,
   onImage,
   onCrop,
+  allowImages,
 }: {
   editor: Editor
   onLink: () => void
   onImage: () => void
   onCrop: () => void
+  allowImages: boolean
 }) {
   // 선택 변화에 따라 활성 상태를 구독(툴바 하이라이트 갱신).
   const s = useEditorState({
@@ -283,7 +298,7 @@ function Toolbar({
       <Btn icon={ListOrdered} title="번호 목록" active={s.ordered} onClick={() => chain().toggleOrderedList().run()} />
       <Sep />
       <Btn icon={Link2} title="링크" active={s.link} onClick={onLink} />
-      <Btn icon={ImagePlus} title="이미지" onClick={onImage} />
+      {allowImages && <Btn icon={ImagePlus} title="이미지" onClick={onImage} />}
       {s.image && <>
         <Sep />
         {[50, 75, 100].map((percent) => (

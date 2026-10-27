@@ -19,6 +19,7 @@ export type Profile = {
   instagramUrl: string | null
   youtubeUrl: string | null
   websiteUrl: string | null
+  isResearchMember: boolean
   isTeacherVerified: boolean
   /** 사용자가 닉네임을 직접 확정했는지. false 면 첫 로그인 온보딩으로 묻는다. */
   nicknameSet: boolean
@@ -38,6 +39,7 @@ type ProfileRow = {
   instagram_url: string | null
   youtube_url: string | null
   website_url: string | null
+  is_research_member?: boolean
   is_teacher_verified: boolean
   nickname_set: boolean
   verified_celebrated?: boolean
@@ -56,6 +58,7 @@ function mapRow(row: ProfileRow): Profile {
     instagramUrl: row.instagram_url,
     youtubeUrl: row.youtube_url,
     websiteUrl: row.website_url,
+    isResearchMember: row.is_research_member ?? false,
     isTeacherVerified: row.is_teacher_verified,
     nicknameSet: row.nickname_set,
     // 컬럼이 아직 없으면(마이그레이션 전) true 로 취급해 팝업을 띄우지 않는다(안전).
@@ -99,6 +102,7 @@ export type Member = {
   nickname: string | null
   email: string | null
   role: Role
+  isResearchMember: boolean
   isTeacherVerified: boolean
   createdAt: string
 }
@@ -111,7 +115,7 @@ export type Member = {
 export async function listMembers(): Promise<Member[]> {
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, nickname, email, role, is_teacher_verified, created_at")
+    .select("id, nickname, email, role, is_teacher_verified, is_research_member, created_at")
     .order("created_at", { ascending: false })
 
   if (error) {
@@ -123,6 +127,7 @@ export async function listMembers(): Promise<Member[]> {
     nickname: row.nickname,
     email: row.email,
     role: row.role,
+    isResearchMember: row.is_research_member ?? false,
     isTeacherVerified: row.is_teacher_verified,
     createdAt: row.created_at,
   }))
@@ -276,4 +281,9 @@ export async function uploadAvatar(
   }
 
   return publicUrl
+}
+
+export async function setResearchMember(targetId: string, enabled: boolean): Promise<void> {
+  const { error } = await supabase.rpc("set_research_member", { p_user: targetId, p_enabled: enabled })
+  if (error) throw error
 }
