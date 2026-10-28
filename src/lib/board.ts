@@ -1,6 +1,7 @@
 import DOMPurify from "dompurify"
 import { supabase } from "@/lib/supabase"
 import { getMyBlocks } from "@/lib/blocks"
+import { stripResearchImageSrc } from "@/lib/researchImages"
 
 export type BoardSlug = "free" | "research"
 export const boardName = (slug: BoardSlug) => slug === "research" ? "연구회게시판" : "자유게시판"
@@ -55,7 +56,9 @@ export async function getBoardPost(id: string): Promise<BoardPost | null> {
 }
 
 export async function saveBoardPost(title: string, body: string, id?: string, slug: BoardSlug = "free"): Promise<string> {
-  const clean = DOMPurify.sanitize(body)
+  const sanitized = DOMPurify.sanitize(body)
+  // 연구회 사진은 임시 주소를 지우고 위치만 저장한다(44 저장 규칙).
+  const clean = slug === "research" ? stripResearchImageSrc(sanitized) : sanitized
   const text = new DOMParser().parseFromString(clean, "text/html").body.textContent?.trim()
   if (!title.trim() || [...title.trim()].length > POST_TITLE_MAX) throw new Error("제목은 1~100자로 입력하세요.")
   if (!text) throw new Error("본문 내용을 입력하세요.")

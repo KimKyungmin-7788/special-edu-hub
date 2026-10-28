@@ -161,6 +161,14 @@
     border-radius: var(--radius);
     margin: 0.5em 0;
   }
+  /* 연구회 비공개 사진: 임시 주소를 받기 전(또는 권한이 없을 때) 빈 자리로 보인다. */
+  .richtext :where(img[data-research-path]:not([src])) {
+    display: block;
+    width: 100%;
+    max-width: 24rem;
+    aspect-ratio: 4 / 3;
+    background: var(--muted);
+  }
   .richtext [data-resize-container] {
     max-width: 100%;
     margin: 0.5em 0;

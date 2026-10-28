@@ -28,6 +28,7 @@ import { cn } from "@/lib/utils"
 import { uploadThumbnail, THUMBNAIL_MIME, THUMBNAIL_MAX_BYTES } from "@/lib/apps"
 import { downscaleImage } from "@/lib/image"
 import { BodyImageCropper } from "@/components/app/BodyImageCropper"
+import { uploadResearchImage, RESEARCH_PATH_ATTR } from "@/lib/researchImages"
 
 const BodyImage = Image.extend({
   addAttributes() {
@@ -43,6 +44,12 @@ const BodyImage = Image.extend({
         renderHTML: ({ width }) => Number.isFinite(width) && width > 0
           ? { width, style: `width: ${width}px; height: auto;` }
           : {},
+      },
+      // 연구회 비공개 사진의 위치(lib/researchImages). src 는 잠깐 쓰는 서명 주소라 저장할 때 지운다.
+      researchPath: {
+        default: null,
+        parseHTML: (element) => element.getAttribute(RESEARCH_PATH_ATTR),
+        renderHTML: ({ researchPath }) => researchPath ? { [RESEARCH_PATH_ATTR]: researchPath } : {},
       },
     }
   },
@@ -80,13 +87,16 @@ function dataUrlToFile(src: string): File | null {
 }
 
 // 한글·워드 등에서 복사하면 사진이 내 컴퓨터 경로(file:///)로 와서 깨진다 — 붙이기 전에 빼고 개수를 센다.
-function stripUnreachableImages(html: string) {
+// 연구회(비공개)는 외부 주소 사진도 뺀다. 공개 쪽은 연구회 사진을 뺀다(임시 주소라 곧 깨지고, 공개되면 안 된다).
+function stripUnreachableImages(html: string, privateStore: boolean) {
   if (!/<img[\s>]/i.test(html)) return { html, dropped: 0 }
   const doc = new DOMParser().parseFromString(html, "text/html")
   let dropped = 0
   for (const img of Array.from(doc.images)) {
     const src = img.getAttribute("src") ?? ""
-    if (/^https:\/\//i.test(src) || /^data:image\//i.test(src)) continue
+    const research = img.hasAttribute(RESEARCH_PATH_ATTR)
+    if (/^data:image\//i.test(src) && !research) continue
+    if (privateStore ? research : /^https:\/\//i.test(src) && !research) continue
     img.remove()
     dropped++
   }
@@ -101,6 +111,7 @@ const IMAGE_LIMIT_MESSAGE = "사진 한 장은 2MB 이하로 넣어 주세요. �
  * 서식은 구조+강조만. 저장 형식은 HTML(onChange). 표시는 RichTextViewer(정화).
  * 콘텐츠 스타일은 .richtext (index.css) — 전부 중립 토큰.
  * 본문 이미지는 app-thumbnails 공개 버킷 업로드(uploadThumbnail 재사용).
+ * imageStore="research" 면 연구회 비공개 버킷(lib/researchImages) — 본문에는 위치만 남긴다.
  */
 export function RichTextEditor({
   value = "",
@@ -108,6 +119,7 @@ export function RichTextEditor({
   placeholder,
   disabled = false,
   allowImages = true,
+  imageStore = "public",
   onBusyChange,
 }: {
   value?: string
@@ -115,6 +127,8 @@ export function RichTextEditor({
   /** 비어 있을 때 회색 안내 글(입력하면 사라짐). 줄바꿈(\n) 가능 */
   placeholder?: string
   allowImages?: boolean
+  /** research = 연구회 비공개 버킷(연구회원만 열람). 기본은 공개 버킷. */
+  imageStore?: "public" | "research"
   disabled?: boolean
   onBusyChange?: (busy: boolean) => void
 }) {
@@ -134,7 +148,12 @@ export function RichTextEditor({
   function reportDropped(viaFiles: boolean) {
     const dropped = droppedOnPaste.current
     droppedOnPaste.current = 0
-    if (dropped && !viaFiles) setImgError(`복사한 내용 속 사진 ${dropped}장은 내 컴퓨터에 있는 파일이라 붙일 수 없었어요. 사진만 따로 복사해 붙이거나 이미지 버튼으로 올려 주세요.`)
+    if (dropped && !viaFiles) setImgError(`복사한 내용 속 사진 ${dropped}장은 붙일 수 없었어요(내 컴퓨터 파일이거나 다른 곳 주소의 사진). 사진만 따로 복사해 붙이거나 이미지 버튼으로 올려 주세요.`)
+  }
+
+  async function upload(file: File): Promise<{ src: string; researchPath: string | null }> {
+    if (imageStore === "research") return uploadResearchImage(file)
+    return { src: await uploadThumbnail(file), researchPath: null }
   }
 
   const editor = useEditor({
@@ -160,7 +179,7 @@ export function RichTextEditor({
       attributes: { class: "richtext min-h-60 px-3 py-2.5 outline-none" },
       transformPastedHTML: (html) => {
         if (!allowImages) return html
-        const result = stripUnreachableImages(html)
+        const result = stripUnreachableImages(html, imageStore === "research")
         droppedOnPaste.current = result.dropped
         return result.html
       },
@@ -205,10 +224,10 @@ export function RichTextEditor({
         if (file.size > 20 * 1024 * 1024) throw new Error("사진 한 장은 20MB 이하로 넣어 주세요.")
         const resized = await downscaleImage(file)
         if (resized.size > THUMBNAIL_MAX_BYTES) throw new Error(IMAGE_LIMIT_MESSAGE)
-        const url = await uploadThumbnail(resized)
+        const uploaded = await upload(resized)
         const position = target.get()
         if (position === null) break
-        editor.commands.insertContentAt(position, { type: "image", attrs: { src: url, alt: file.name } }, { updateSelection: false })
+        editor.commands.insertContentAt(position, { type: "image", attrs: { ...uploaded, alt: file.name } }, { updateSelection: false })
       }
     } catch (e) {
       setImgError(e instanceof Error ? e.message : "이미지를 넣지 못했습니다.")
@@ -232,13 +251,13 @@ export function RichTextEditor({
   async function uploadInlineImage(editor: Editor, src: string) {
     inlineUploads.current.add(src)
     setInlineBusy((n) => n + 1)
-    let url: string | null = null
+    let uploaded: Awaited<ReturnType<typeof upload>> | null = null
     try {
       const file = dataUrlToFile(src)
       if (!file || !THUMBNAIL_MIME.includes(file.type)) throw new Error("PNG·JPG·WebP·GIF 사진만 넣을 수 있습니다.")
       const resized = await downscaleImage(file)
       if (resized.size > THUMBNAIL_MAX_BYTES) throw new Error(IMAGE_LIMIT_MESSAGE)
-      url = await uploadThumbnail(resized)
+      uploaded = await upload(resized)
     } catch (e) {
       setImgError(e instanceof Error ? e.message : "이미지를 넣지 못했습니다.")
     } finally {
@@ -246,7 +265,7 @@ export function RichTextEditor({
         const tr = editor.state.tr
         editor.state.doc.descendants((node, pos) => {
           if (node.type.name !== "image" || node.attrs.src !== src) return
-          if (url) tr.setNodeMarkup(tr.mapping.map(pos), undefined, { ...node.attrs, src: url })
+          if (uploaded) tr.setNodeMarkup(tr.mapping.map(pos), undefined, { ...node.attrs, ...uploaded })
           else tr.delete(tr.mapping.map(pos), tr.mapping.map(pos + node.nodeSize))
         })
         if (tr.docChanged) editor.view.dispatch(tr)
@@ -271,13 +290,13 @@ export function RichTextEditor({
 
   async function applyCrop(file: File) {
     if (!editor || !cropSrc) return
-    const url = await uploadThumbnail(file)
+    const uploaded = await upload(file)
     const position = cropTarget.current?.get()
     if (position == null) throw new Error("원래 사진이 삭제되었습니다. 자르기를 취소해 주세요.")
     const node = editor.state.doc.nodeAt(position)
     if (node?.type.name !== "image" || node.attrs.src !== cropSrc) throw new Error("사진이 변경되었습니다. 다시 선택해 주세요.")
     // 새 비율에 맞춰 높이를 자동 계산하고, 기존 표시 너비는 유지한다.
-    editor.view.dispatch(editor.state.tr.setNodeMarkup(position, undefined, { ...node.attrs, src: url, height: null }))
+    editor.view.dispatch(editor.state.tr.setNodeMarkup(position, undefined, { ...node.attrs, ...uploaded, height: null }))
     closeCrop()
   }
 
@@ -304,7 +323,7 @@ export function RichTextEditor({
         onCrop={openCrop}
         allowImages={allowImages}
       />
-      {allowImages && <p className="border-b border-border px-3 py-2 text-xs text-muted-foreground">사진을 끌어놓거나 붙여넣을 수 있어요. 사진 모서리를 끌면 비율을 유지하며 크기가 바뀌고, 사진을 선택한 뒤 자르기도 할 수 있어요.</p>}
+      {allowImages && <p className="border-b border-border px-3 py-2 text-xs text-muted-foreground">사진을 끌어놓거나 붙여넣을 수 있어요. 사진 모서리를 끌면 비율을 유지하며 크기가 바뀌고, 사진을 선택한 뒤 자르기도 할 수 있어요.{imageStore === "research" && " 이 게시판의 사진은 연구회원만 볼 수 있게 따로 보관돼요."}</p>}
       {!allowImages && <p className="border-b border-border px-3 py-2 text-xs text-muted-foreground">연구회게시판은 글과 링크로 이야기를 나눠 주세요. 사진 첨부는 지원하지 않습니다.</p>}
       <div className="relative">
         <EditorContent editor={editor} />
