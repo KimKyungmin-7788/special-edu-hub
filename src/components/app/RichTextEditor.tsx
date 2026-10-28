@@ -22,6 +22,11 @@ import {
   Link2,
   ImagePlus,
   Crop,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  IndentIncrease,
+  IndentDecrease,
   type LucideIcon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -29,6 +34,7 @@ import { uploadThumbnail, THUMBNAIL_MIME, THUMBNAIL_MAX_BYTES } from "@/lib/apps
 import { downscaleImage } from "@/lib/image"
 import { BodyImageCropper } from "@/components/app/BodyImageCropper"
 import { uploadResearchImage, RESEARCH_PATH_ATTR } from "@/lib/researchImages"
+import { Indent, canIndent, changeIndent } from "@/components/app/editorIndent"
 
 const BodyImage = Image.extend({
   addAttributes() {
@@ -44,6 +50,15 @@ const BodyImage = Image.extend({
         renderHTML: ({ width }) => Number.isFinite(width) && width > 0
           ? { width, style: `width: ${width}px; height: auto;` }
           : {},
+      },
+      // 사진 정렬(왼쪽은 기본값이라 저장하지 않는다). 표시는 .richtext [data-align] (index.css).
+      align: {
+        default: null,
+        parseHTML: (element) => {
+          const align = element.getAttribute("data-align")
+          return align === "center" || align === "right" ? align : null
+        },
+        renderHTML: ({ align }) => align === "center" || align === "right" ? { "data-align": align } : {},
       },
       // 연구회 비공개 사진의 위치(lib/researchImages). src 는 잠깐 쓰는 서명 주소라 저장할 때 지운다.
       researchPath: {
@@ -162,6 +177,7 @@ export function RichTextEditor({
         heading: { levels: [2, 3] },
         link: { openOnClick: false },
       }),
+      Indent,
       // 본문 이미지는 화면 폭에 맞춰 표시(.richtext img max-width). 지연 로딩.
       // allowBase64: 붙여넣은 data: 사진을 일단 받아 두고 곧바로 버킷 주소로 바꾼다(uploadInlineImages).
       ...(allowImages ? [BodyImage.configure({
@@ -388,6 +404,9 @@ function Toolbar({
       ordered: editor.isActive("orderedList"),
       link: editor.isActive("link"),
       image: editor.isActive("image"),
+      align: (editor.getAttributes("image").align as string | null) ?? "left",
+      canIndent: canIndent(editor, 1),
+      canOutdent: canIndent(editor, -1),
     }),
   })
 
@@ -408,6 +427,8 @@ function Toolbar({
       <Btn icon={Minus} title="구분선" onClick={() => chain().setHorizontalRule().run()} />
       <Btn icon={List} title="목록" active={s.bullet} onClick={() => chain().toggleBulletList().run()} />
       <Btn icon={ListOrdered} title="번호 목록" active={s.ordered} onClick={() => chain().toggleOrderedList().run()} />
+      <Btn icon={IndentDecrease} title="내어쓰기" disabled={!s.canOutdent} onClick={() => changeIndent(editor, -1)} />
+      <Btn icon={IndentIncrease} title="들여쓰기" disabled={!s.canIndent} onClick={() => changeIndent(editor, 1)} />
       <Sep />
       <Btn icon={Link2} title="링크" active={s.link} onClick={onLink} />
       {allowImages && <Btn icon={ImagePlus} title="이미지" onClick={onImage} />}
@@ -420,6 +441,10 @@ function Toolbar({
             className="rounded px-2 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground">{percent}%</button>
         ))}
         <Btn icon={Crop} title="선택한 사진 자르기" onClick={onCrop} />
+        <Sep />
+        <Btn icon={AlignLeft} title="사진 왼쪽 정렬" active={s.align === "left"} onClick={() => chain().updateAttributes("image", { align: null }).run()} />
+        <Btn icon={AlignCenter} title="사진 가운데 정렬" active={s.align === "center"} onClick={() => chain().updateAttributes("image", { align: "center" }).run()} />
+        <Btn icon={AlignRight} title="사진 오른쪽 정렬" active={s.align === "right"} onClick={() => chain().updateAttributes("image", { align: "right" }).run()} />
       </>}
     </div>
   )
@@ -429,11 +454,13 @@ function Btn({
   icon: Icon,
   title,
   active,
+  disabled,
   onClick,
 }: {
   icon: LucideIcon
   title: string
   active?: boolean
+  disabled?: boolean
   onClick: () => void
 }) {
   return (
@@ -442,11 +469,12 @@ function Btn({
       title={title}
       aria-label={title}
       aria-pressed={active}
+      disabled={disabled}
       // 클릭 시 에디터 선택이 풀리지 않도록 mousedown 기본동작 차단.
       onMouseDown={(e) => e.preventDefault()}
       onClick={onClick}
       className={cn(
-        "inline-flex size-8 items-center justify-center rounded transition-colors",
+        "inline-flex size-8 items-center justify-center rounded transition-colors disabled:pointer-events-none disabled:opacity-35",
         active
           ? "bg-accent text-accent-foreground"
           : "text-muted-foreground hover:bg-accent hover:text-foreground",
