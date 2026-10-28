@@ -34,10 +34,9 @@ export function BoardAccessNotice({ research }: { research: boolean }) {
   return <div role="alert" className="rounded-lg border bg-card p-6">
     <h2 className="font-semibold">{title}</h2>
     <p className="mt-2 text-sm text-muted-foreground">{body}</p>
-    <div className="mt-4 flex flex-wrap items-center gap-3">
+    {(!user || !member) && <div className="mt-4 flex flex-wrap items-center gap-3">
       {!user && <Link to="/login" state={{ from: here }} className={primary}>로그인하기</Link>}
       {user && !member && <Link to={RESEARCH_REQUEST_PATH} className={primary}>권한 요청하기</Link>}
-      <Link to="/board/free" className="text-sm font-medium text-primary underline underline-offset-4">자유게시판으로</Link>
-    </div>
+    </div>}
   </div>
 }
