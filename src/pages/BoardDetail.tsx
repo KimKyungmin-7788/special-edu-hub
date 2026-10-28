@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react"
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
-import { ArrowLeft, List, Pin, Share2 } from "lucide-react"
+import { ArrowLeft, Eye, Heart, List, Pin, Share2 } from "lucide-react"
 import { useAuth } from "@/lib/auth"
 import { usePageTitle } from "@/lib/usePageTitle"
-import { boardError, deleteBoardPost, getBoardPost, pinBoardPost, reportBoardPost, type BoardPost, boardName } from "@/lib/board"
+import { boardError, deleteBoardPost, getBoardPost, incrementPostView, isPostLiked, setPostLike, pinBoardPost, reportBoardPost, type BoardPost, boardName } from "@/lib/board"
 import { BoardNotice } from "@/components/board/BoardNotice"
 import { BoardAccessNotice } from "@/components/board/BoardAccessNotice"
 import { BoardShareDialog } from "@/components/board/BoardShareDialog"
@@ -29,6 +29,8 @@ function BoardDetailContent({ id }: { id: string }) {
   const [report, setReport] = useState(false)
   const [retry, setRetry] = useState(0)
   const [sharing, setSharing] = useState(false)
+  const [liked, setLiked] = useState(false)
+  const [likeBusy, setLikeBusy] = useState(false)
   const slug = post?.boards.slug ?? "free"
   const canWrite = slug === "research" ? !!profile?.isResearchMember : !!profile?.isTeacherVerified
   const canRead = slug !== "research" || !!profile?.isResearchMember
@@ -42,6 +44,25 @@ function BoardDetailContent({ id }: { id: string }) {
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
   }, [id, user?.id, profile?.isResearchMember, retry])
+  // 읽을 수 있는 글을 열면 조회수 +1(같은 글은 하루 1회), 내 좋아요 여부를 불러온다.
+  const readable = !!post && canRead
+  useEffect(() => {
+    if (!readable) return
+    let active = true
+    void incrementPostView(id)
+    isPostLiked(id).then((v) => { if (active) setLiked(v) })
+    return () => { active = false }
+  }, [readable, id, user?.id])
+  async function toggleLike() {
+    if (!post || likeBusy) return
+    if (!user) { navigate("/login", { state: { from: `/board/${id}` } }); return }
+    const on = !liked
+    setLikeBusy(true); setError("")
+    setLiked(on); setPost({ ...post, like_count: Math.max(0, post.like_count + (on ? 1 : -1)) })
+    try { await setPostLike(id, on) }
+    catch (e) { setLiked(!on); setPost(post); setError(boardError(e)) }
+    finally { setLikeBusy(false) }
+  }
   async function remove() {
     if (busy || !window.confirm("이 게시글을 삭제할까요? 삭제한 글은 목록에서 사라집니다.")) return
     setBusy(true); setError("")
@@ -65,8 +86,14 @@ function BoardDetailContent({ id }: { id: string }) {
         <article>
           {post.pinned && <span className="mb-3 inline-flex items-center gap-1 rounded bg-brand-muted px-2 py-1 text-xs text-brand-muted-foreground"><Pin className="size-3" aria-hidden />상단 고정</span>}
           <h1 className="break-words text-2xl font-bold">{post.title}</h1>
-          <div className="mt-4 flex flex-wrap items-center gap-3 border-b pb-6 text-sm text-muted-foreground"><ProfileTrigger userId={post.author_id} className="font-medium text-foreground">{post.author?.nickname || "사용자"}</ProfileTrigger><time dateTime={post.created_at}>{new Date(post.created_at).toLocaleString("ko-KR")}</time>{post.updated_at !== post.created_at && <span>(수정됨)</span>}</div>
+          <div className="mt-4 flex flex-wrap items-center gap-3 border-b pb-6 text-sm text-muted-foreground"><ProfileTrigger userId={post.author_id} className="font-medium text-foreground">{post.author?.nickname || "사용자"}</ProfileTrigger><time dateTime={post.created_at}>{new Date(post.created_at).toLocaleString("ko-KR")}</time>{post.updated_at !== post.created_at && <span>(수정됨)</span>}<span className="inline-flex items-center gap-1"><Eye className="size-4" aria-hidden />조회 {post.view_count.toLocaleString()}</span></div>
           <div className="py-8"><RichTextViewer html={post.body} /></div>
+          <div className="flex justify-center pb-8">
+            <button type="button" onClick={() => void toggleLike()} disabled={likeBusy} aria-pressed={liked} title={user ? undefined : "로그인하면 좋아요를 누를 수 있어요"}
+              className={"inline-flex items-center gap-2 rounded-full border px-5 py-2.5 text-sm font-medium transition-colors disabled:opacity-60 " + (liked ? "border-primary bg-primary text-primary-foreground" : "hover:bg-accent")}>
+              <Heart className={"size-4" + (liked ? " fill-current" : "")} aria-hidden />좋아요 {post.like_count.toLocaleString()}
+            </button>
+          </div>
           <div className="flex flex-wrap justify-end gap-2 border-t pt-4 text-sm">
             <div className="mr-auto flex gap-2">
               <Link to={`/board/${slug}`} className="inline-flex items-center gap-1.5 rounded-md border px-3 py-2 hover:bg-accent"><List className="size-4" aria-hidden />목록</Link>

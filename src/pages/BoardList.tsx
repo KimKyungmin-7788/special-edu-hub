@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { Link, useSearchParams } from "react-router-dom"
-import { MessageSquare, PenLine, Pin, Search, Share2 } from "lucide-react"
+import { Eye, Heart, MessageSquare, PenLine, Pin, Search, Share2 } from "lucide-react"
 import { useAuth } from "@/lib/auth"
 import { usePageTitle } from "@/lib/usePageTitle"
 import { BOARD_PAGE_SIZE, boardError, getBoardPosts, type BoardPost, type BoardSlug, boardName } from "@/lib/board"
@@ -60,7 +60,7 @@ function BoardListContent({ slug }: { slug: BoardSlug }) {
           : <ul className="divide-y rounded-lg border bg-card">{result.posts.map((post) => <li key={post.id} className="px-4 py-5 sm:px-6">
             <div className="flex items-start gap-2">{post.pinned && <span className="inline-flex shrink-0 items-center gap-1 rounded bg-brand-muted px-2 py-1 text-xs font-medium text-brand-muted-foreground"><Pin className="size-3" aria-hidden />고정</span>}<Link to={`/board/${post.id}`} className="min-w-0 flex-1 break-words font-semibold hover:text-primary">{post.title}</Link>
               <button type="button" onClick={() => setSharing(post)} aria-label={`‘${post.title}’ 공유`} title="공유" className="-my-1.5 -mr-2 inline-flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"><Share2 className="size-4" aria-hidden /></button></div>
-            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground"><ProfileTrigger userId={post.author_id}>{post.author?.nickname || "사용자"}</ProfileTrigger><time dateTime={post.created_at}>{relativeTime(post.created_at)}</time><span className="inline-flex items-center gap-1"><MessageSquare className="size-3.5" aria-hidden />댓글 {post.comments[0]?.count ?? 0}</span></div>
+            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground"><ProfileTrigger userId={post.author_id}>{post.author?.nickname || "사용자"}</ProfileTrigger><time dateTime={post.created_at}>{relativeTime(post.created_at)}</time><span className="inline-flex items-center gap-1"><Eye className="size-3.5" aria-hidden />조회 {post.view_count.toLocaleString()}</span><span className="inline-flex items-center gap-1"><Heart className="size-3.5" aria-hidden />좋아요 {post.like_count.toLocaleString()}</span><span className="inline-flex items-center gap-1"><MessageSquare className="size-3.5" aria-hidden />댓글 {post.comments[0]?.count ?? 0}</span></div>
           </li>)}</ul>}
         {sharing && <BoardShareDialog open onClose={() => setSharing(null)} id={sharing.id} title={sharing.title} slug={slug} />}
         {(pages > 1 || page > 1) && <nav aria-label="게시판 페이지" className="mt-6 flex items-center justify-center gap-4"><button disabled={page <= 1} onClick={() => move(page - 1)} className="rounded-md border px-4 py-2 text-sm disabled:opacity-40">이전</button><span className="text-sm">{page} / {pages}</span><button disabled={page >= pages} onClick={() => move(page + 1)} className="rounded-md border px-4 py-2 text-sm disabled:opacity-40">다음</button></nav>}

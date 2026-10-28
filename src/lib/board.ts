@@ -18,10 +18,12 @@ export type BoardPost = {
   pinned: boolean
   created_at: string
   updated_at: string
+  view_count: number
+  like_count: number
   author: { nickname: string | null; avatar_url: string | null } | null
   comments: { count: number }[]
 }
-const POST_SELECT = "id, author_id, title, pinned, created_at, updated_at, author:profiles!posts_author_id_fkey(nickname, avatar_url), comments(count), boards!inner(slug)"
+const POST_SELECT = "id, author_id, title, pinned, created_at, updated_at, view_count, like_count, author:profiles!posts_author_id_fkey(nickname, avatar_url), comments(count), boards!inner(slug)"
 
 export function boardError(error: unknown): string {
   const code = error && typeof error === "object" && "code" in error ? String(error.code) : ""
@@ -78,4 +80,41 @@ export async function pinBoardPost(id: string, pinned: boolean) {
 export async function reportBoardPost(id: string, reason: string, detail: string) {
   const { error } = await supabase.rpc("report_board_post", { p_id: id, p_reason: reason, p_detail: detail.trim() || null })
   if (error) throw error
+}
+
+// ── 조회수·좋아요 (45_post_engagement.sql) ──────────────────
+
+const VIEW_THROTTLE_MS = 24 * 60 * 60 * 1000 // 같은 글은 이 브라우저에서 하루 1회
+
+/** 조회수 +1 (읽을 수 없는 글은 DB가 무시). 오류는 화면에 영향 없게 삼킨다. */
+export async function incrementPostView(id: string): Promise<void> {
+  try {
+    const key = `viewed_post_${id}`
+    if (Date.now() - Number(localStorage.getItem(key) || 0) < VIEW_THROTTLE_MS) return
+    localStorage.setItem(key, String(Date.now()))
+  } catch {
+    // 저장 불가 환경이면 제한 없이 진행
+  }
+  const { error } = await supabase.rpc("increment_post_view", { p_post_id: id })
+  if (error) console.error("[board] 조회수 실패:", error.message)
+}
+
+export async function isPostLiked(id: string): Promise<boolean> {
+  const { data } = await supabase.auth.getSession()
+  const uid = data.session?.user.id
+  if (!uid) return false
+  const { count, error } = await supabase.from("post_likes").select("post_id", { count: "exact", head: true }).eq("user_id", uid).eq("post_id", id)
+  if (error) return false
+  return (count ?? 0) > 0
+}
+
+/** 좋아요 켜기/끄기. 개수는 DB 트리거가 posts.like_count 에 반영. */
+export async function setPostLike(id: string, on: boolean): Promise<void> {
+  const { data } = await supabase.auth.getSession()
+  const uid = data.session?.user.id
+  if (!uid) throw new Error("로그인이 필요합니다.")
+  const { error } = on
+    ? await supabase.from("post_likes").insert({ user_id: uid, post_id: id })
+    : await supabase.from("post_likes").delete().eq("user_id", uid).eq("post_id", id)
+  if (error && error.code !== "23505") throw error // 이미 눌러 둔 경우(중복)는 성공으로 본다
 }
