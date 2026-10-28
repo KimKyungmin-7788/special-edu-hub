@@ -8,6 +8,7 @@ import { BoardNotice } from "@/components/board/BoardNotice"
 import { BoardAccessNotice } from "@/components/board/BoardAccessNotice"
 import { BoardShareDialog } from "@/components/board/BoardShareDialog"
 import { RichTextViewer } from "@/components/app/RichTextViewer"
+import { resolveResearchImages } from "@/lib/researchImages"
 import { ProfileTrigger } from "@/components/profile/ProfileTrigger"
 import { CommentSection } from "@/components/comment/CommentSection"
 import { ReportDialog } from "@/components/report/ReportDialog"
@@ -39,7 +40,9 @@ function BoardDetailContent({ id }: { id: string }) {
     let active = true
     setLoading(true)
     setLoadError("")
-    getBoardPost(id).then((p) => { if (active) setPost(p) })
+    // 연구회 사진은 글을 그리기 전에 임시 주소를 채운다(그린 뒤에 채우면 화면이 사진을 놓칠 수 있다).
+    getBoardPost(id).then(async (p) => p?.boards.slug === "research" ? { ...p, body: await resolveResearchImages(p.body) } : p)
+      .then((p) => { if (active) setPost(p) })
       .catch((e) => { if (active) setLoadError(boardError(e)) })
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
