@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react"
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
-import { ArrowLeft, Check, Pin, Share2 } from "lucide-react"
+import { ArrowLeft, List, Pin, Share2 } from "lucide-react"
 import { useAuth } from "@/lib/auth"
 import { usePageTitle } from "@/lib/usePageTitle"
 import { boardError, deleteBoardPost, getBoardPost, pinBoardPost, reportBoardPost, type BoardPost, boardName } from "@/lib/board"
 import { BoardNotice } from "@/components/board/BoardNotice"
 import { BoardAccessNotice } from "@/components/board/BoardAccessNotice"
+import { BoardShareDialog } from "@/components/board/BoardShareDialog"
 import { RichTextViewer } from "@/components/app/RichTextViewer"
 import { ProfileTrigger } from "@/components/profile/ProfileTrigger"
 import { CommentSection } from "@/components/comment/CommentSection"
@@ -27,7 +28,7 @@ function BoardDetailContent({ id }: { id: string }) {
   const [busy, setBusy] = useState(false)
   const [report, setReport] = useState(false)
   const [retry, setRetry] = useState(0)
-  const [copied, setCopied] = useState(false)
+  const [sharing, setSharing] = useState(false)
   const slug = post?.boards.slug ?? "free"
   const canWrite = slug === "research" ? !!profile?.isResearchMember : !!profile?.isTeacherVerified
   const canRead = slug !== "research" || !!profile?.isResearchMember
@@ -48,22 +49,6 @@ function BoardDetailContent({ id }: { id: string }) {
     catch (e) { setError(boardError(e)) }
     finally { setBusy(false) }
   }
-  // 수업실천사례와 같은 방식: 휴대폰은 공유 시트, 그 밖에는 주소 복사.
-  // 연구회 글은 제목도 비공개라 공유 시트(다른 앱으로 제목 전달) 없이 주소만 복사한다.
-  async function share() {
-    // 연구회 글 링크에는 게시판 표시를 붙인다 — 권한 없는 사람이 열면 '연구회원 전용'으로 안내하기 위해.
-    const url = `${window.location.origin}/board/${id}${slug === "research" ? "?board=research" : ""}`
-    setError("")
-    if (slug !== "research" && navigator.share) {
-      try { await navigator.share({ title: post?.title, url }) } catch { /* 취소 등 — 무시 */ }
-      return
-    }
-    try {
-      await navigator.clipboard.writeText(url)
-      setCopied(true)
-      window.setTimeout(() => setCopied(false), 2500)
-    } catch { setError("주소를 복사하지 못했습니다. 주소창의 주소를 직접 복사해 주세요.") }
-  }
   async function togglePin() {
     if (!post || busy) return
     setBusy(true); setError("")
@@ -83,10 +68,10 @@ function BoardDetailContent({ id }: { id: string }) {
           <div className="mt-4 flex flex-wrap items-center gap-3 border-b pb-6 text-sm text-muted-foreground"><ProfileTrigger userId={post.author_id} className="font-medium text-foreground">{post.author?.nickname || "사용자"}</ProfileTrigger><time dateTime={post.created_at}>{new Date(post.created_at).toLocaleString("ko-KR")}</time>{post.updated_at !== post.created_at && <span>(수정됨)</span>}</div>
           <div className="py-8"><RichTextViewer html={post.body} /></div>
           <div className="flex flex-wrap justify-end gap-2 border-t pt-4 text-sm">
-            <button type="button" onClick={() => void share()} className="mr-auto inline-flex items-center gap-1.5 rounded-md border px-3 py-2 text-muted-foreground hover:bg-accent hover:text-foreground">
-              {copied ? <Check className="size-4" aria-hidden /> : <Share2 className="size-4" aria-hidden />}
-              {copied ? (slug === "research" ? "링크 복사됨 · 연구회원만 열 수 있어요" : "링크 복사됨") : "공유"}
-            </button>
+            <div className="mr-auto flex gap-2">
+              <Link to={`/board/${slug}`} className="inline-flex items-center gap-1.5 rounded-md border px-3 py-2 hover:bg-accent"><List className="size-4" aria-hidden />목록</Link>
+              <button type="button" onClick={() => setSharing(true)} className="inline-flex items-center gap-1.5 rounded-md border px-3 py-2 hover:bg-accent"><Share2 className="size-4" aria-hidden />공유</button>
+            </div>
             {isStaff && <button disabled={busy} onClick={togglePin} className="rounded-md border px-3 py-2 hover:bg-accent disabled:opacity-50">{post.pinned ? "고정 해제" : "상단 고정"}</button>}
             {user?.id === post.author_id && canWrite && <Link to={`/board/${id}/edit`} className="rounded-md border px-3 py-2 hover:bg-accent">수정</Link>}
             {(user?.id === post.author_id || isStaff) && <button disabled={busy} onClick={remove} className="rounded-md border px-3 py-2 text-destructive hover:bg-accent disabled:opacity-50">{busy ? "처리 중…" : "삭제"}</button>}
@@ -95,6 +80,7 @@ function BoardDetailContent({ id }: { id: string }) {
           {error && <p role="alert" className="mt-3 text-sm text-destructive">{error}</p>}
         </article>
         <CommentSection target={{ kind: "post", id }} boardCanWrite={canWrite} />
+        <BoardShareDialog open={sharing} onClose={() => setSharing(false)} id={id} title={post.title} slug={slug} />
         <ReportDialog open={report} onClose={() => setReport(false)} targetLabel="게시글" onSubmit={(reason, detail) => reportBoardPost(id, reason, detail)} />
       </>}
   </div>

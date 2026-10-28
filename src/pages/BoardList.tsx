@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react"
 import { Link, useSearchParams } from "react-router-dom"
-import { MessageSquare, PenLine, Pin, Search } from "lucide-react"
+import { MessageSquare, PenLine, Pin, Search, Share2 } from "lucide-react"
 import { useAuth } from "@/lib/auth"
 import { usePageTitle } from "@/lib/usePageTitle"
 import { BOARD_PAGE_SIZE, boardError, getBoardPosts, type BoardPost, type BoardSlug, boardName } from "@/lib/board"
 import { ProfileTrigger } from "@/components/profile/ProfileTrigger"
 import { BoardAccessNotice } from "@/components/board/BoardAccessNotice"
+import { BoardShareDialog } from "@/components/board/BoardShareDialog"
 import { relativeTime } from "@/lib/time"
 
 export function BoardList({ slug = "free" }: { slug?: BoardSlug }) {
@@ -24,6 +25,7 @@ function BoardListContent({ slug }: { slug: BoardSlug }) {
   const [result, setResult] = useState<{ posts: BoardPost[]; count: number } | null>(null)
   const [error, setError] = useState("")
   const [retry, setRetry] = useState(0)
+  const [sharing, setSharing] = useState<BoardPost | null>(null)
   useEffect(() => { setDraft(search) }, [search])
   useEffect(() => {
     let active = true
@@ -56,9 +58,11 @@ function BoardListContent({ slug }: { slug: BoardSlug }) {
         <p className="mb-3 mt-6 text-sm text-muted-foreground">{search ? `‘${search}’ 검색 결과` : "전체 글"} {result.count.toLocaleString()}개</p>
         {result.posts.length === 0 ? <div className="rounded-lg border bg-card px-4 py-16 text-center"><MessageSquare className="mx-auto size-8 text-muted-foreground" aria-hidden /><p className="mt-4 font-medium">{search ? "검색 결과가 없습니다" : page > 1 ? "이 페이지에 게시글이 없습니다" : "첫 이야기를 기다리고 있어요"}</p><p className="mt-2 text-sm text-muted-foreground">{search ? "다른 검색어로 찾아보세요." : page > 1 ? "이전 페이지로 이동해 주세요." : "함께 나누고 싶은 질문이나 일상을 남겨 주세요."}</p></div>
           : <ul className="divide-y rounded-lg border bg-card">{result.posts.map((post) => <li key={post.id} className="px-4 py-5 sm:px-6">
-            <div className="flex items-start gap-2">{post.pinned && <span className="inline-flex shrink-0 items-center gap-1 rounded bg-brand-muted px-2 py-1 text-xs font-medium text-brand-muted-foreground"><Pin className="size-3" aria-hidden />고정</span>}<Link to={`/board/${post.id}`} className="min-w-0 break-words font-semibold hover:text-primary">{post.title}</Link></div>
+            <div className="flex items-start gap-2">{post.pinned && <span className="inline-flex shrink-0 items-center gap-1 rounded bg-brand-muted px-2 py-1 text-xs font-medium text-brand-muted-foreground"><Pin className="size-3" aria-hidden />고정</span>}<Link to={`/board/${post.id}`} className="min-w-0 flex-1 break-words font-semibold hover:text-primary">{post.title}</Link>
+              <button type="button" onClick={() => setSharing(post)} aria-label={`‘${post.title}’ 공유`} title="공유" className="-my-1.5 -mr-2 inline-flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"><Share2 className="size-4" aria-hidden /></button></div>
             <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground"><ProfileTrigger userId={post.author_id}>{post.author?.nickname || "사용자"}</ProfileTrigger><time dateTime={post.created_at}>{relativeTime(post.created_at)}</time><span className="inline-flex items-center gap-1"><MessageSquare className="size-3.5" aria-hidden />댓글 {post.comments[0]?.count ?? 0}</span></div>
           </li>)}</ul>}
+        {sharing && <BoardShareDialog open onClose={() => setSharing(null)} id={sharing.id} title={sharing.title} slug={slug} />}
         {(pages > 1 || page > 1) && <nav aria-label="게시판 페이지" className="mt-6 flex items-center justify-center gap-4"><button disabled={page <= 1} onClick={() => move(page - 1)} className="rounded-md border px-4 py-2 text-sm disabled:opacity-40">이전</button><span className="text-sm">{page} / {pages}</span><button disabled={page >= pages} onClick={() => move(page + 1)} className="rounded-md border px-4 py-2 text-sm disabled:opacity-40">다음</button></nav>}
       </>}
   </div>
