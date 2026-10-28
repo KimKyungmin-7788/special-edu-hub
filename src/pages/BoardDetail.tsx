@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react"
-import { Link, useNavigate, useParams } from "react-router-dom"
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { ArrowLeft, Check, Pin, Share2 } from "lucide-react"
 import { useAuth } from "@/lib/auth"
 import { usePageTitle } from "@/lib/usePageTitle"
 import { boardError, deleteBoardPost, getBoardPost, pinBoardPost, reportBoardPost, type BoardPost, boardName } from "@/lib/board"
 import { BoardNotice } from "@/components/board/BoardNotice"
+import { BoardAccessNotice } from "@/components/board/BoardAccessNotice"
 import { RichTextViewer } from "@/components/app/RichTextViewer"
 import { ProfileTrigger } from "@/components/profile/ProfileTrigger"
 import { CommentSection } from "@/components/comment/CommentSection"
@@ -16,7 +17,8 @@ export function BoardDetail() {
   return <BoardDetailContent key={id} id={id} />
 }
 function BoardDetailContent({ id }: { id: string }) {
-  const { user, profile, isStaff } = useAuth()
+  const { user, profile, isStaff, loading: authLoading } = useAuth()
+  const [params] = useSearchParams()
   const navigate = useNavigate()
   const [post, setPost] = useState<BoardPost | null>(null)
   const [loading, setLoading] = useState(true)
@@ -49,7 +51,8 @@ function BoardDetailContent({ id }: { id: string }) {
   // 수업실천사례와 같은 방식: 휴대폰은 공유 시트, 그 밖에는 주소 복사.
   // 연구회 글은 제목도 비공개라 공유 시트(다른 앱으로 제목 전달) 없이 주소만 복사한다.
   async function share() {
-    const url = `${window.location.origin}/board/${id}`
+    // 연구회 글 링크에는 게시판 표시를 붙인다 — 권한 없는 사람이 열면 '연구회원 전용'으로 안내하기 위해.
+    const url = `${window.location.origin}/board/${id}${slug === "research" ? "?board=research" : ""}`
     setError("")
     if (slug !== "research" && navigator.share) {
       try { await navigator.share({ title: post?.title, url }) } catch { /* 취소 등 — 무시 */ }
@@ -70,9 +73,9 @@ function BoardDetailContent({ id }: { id: string }) {
   }
   return <div className="mx-auto max-w-3xl px-4 py-10">
     <Link to={`/board/${slug}`} className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary"><ArrowLeft className="size-4" aria-hidden />{boardName(slug)}</Link>
-    {loading ? <p role="status" className="py-16 text-center text-sm text-muted-foreground">게시글을 불러오는 중…</p>
+    {loading || authLoading ? <p role="status" className="py-16 text-center text-sm text-muted-foreground">게시글을 불러오는 중…</p>
       : loadError ? <div role="alert"><BoardNotice title={loadError} /><button onClick={() => setRetry((n) => n + 1)} className="mt-3 text-sm text-primary underline">다시 시도</button></div>
-      : !post || !canRead ? <BoardNotice title="게시글을 찾을 수 없습니다" body="삭제되었거나 표시할 수 없는 글입니다." />
+      : !post || !canRead ? <BoardAccessNotice research={post?.boards.slug === "research" || params.get("board") === "research"} />
       : <>
         <article>
           {post.pinned && <span className="mb-3 inline-flex items-center gap-1 rounded bg-brand-muted px-2 py-1 text-xs text-brand-muted-foreground"><Pin className="size-3" aria-hidden />상단 고정</span>}

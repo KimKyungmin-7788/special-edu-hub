@@ -5,11 +5,12 @@ import { useAuth } from "@/lib/auth"
 import { usePageTitle } from "@/lib/usePageTitle"
 import { BOARD_PAGE_SIZE, boardError, getBoardPosts, type BoardPost, type BoardSlug, boardName } from "@/lib/board"
 import { ProfileTrigger } from "@/components/profile/ProfileTrigger"
+import { BoardAccessNotice } from "@/components/board/BoardAccessNotice"
 import { relativeTime } from "@/lib/time"
 
 export function BoardList({ slug = "free" }: { slug?: BoardSlug }) {
   const { profile, loading } = useAuth()
-  if (slug === "research" && !profile?.isResearchMember) return <div className="mx-auto max-w-5xl px-4 py-10"><p>{loading ? "확인 중…" : "접근 권한이 없습니다."}</p></div>
+  if (slug === "research" && !profile?.isResearchMember) return <div className="mx-auto max-w-5xl px-4 py-10">{loading ? <p role="status">확인 중…</p> : <BoardAccessNotice research />}</div>
   return <BoardListContent key={slug} slug={slug} />
 }
 function BoardListContent({ slug }: { slug: BoardSlug }) {
