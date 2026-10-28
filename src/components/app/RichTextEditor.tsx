@@ -25,7 +25,7 @@ import {
   type LucideIcon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { uploadThumbnail, THUMBNAIL_MIME } from "@/lib/apps"
+import { uploadThumbnail, THUMBNAIL_MIME, THUMBNAIL_MAX_BYTES } from "@/lib/apps"
 import { downscaleImage } from "@/lib/image"
 import { BodyImageCropper } from "@/components/app/BodyImageCropper"
 
@@ -64,6 +64,37 @@ function trackPosition(editor: Editor, initial: number) {
   }
 }
 
+// 웹·문서에서 글과 함께 복사한 사진이 data: 주소로 들어오면 파일로 바꿔 버킷에 올린다.
+function dataUrlToFile(src: string): File | null {
+  const match = /^data:(image\/[\w.+-]+);base64,(.+)$/i.exec(src)
+  if (!match) return null
+  try {
+    const binary = atob(match[2])
+    const bytes = new Uint8Array(binary.length)
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+    const type = match[1].toLowerCase()
+    return new File([bytes], `pasted.${type.split("/")[1].replace("jpeg", "jpg")}`, { type })
+  } catch {
+    return null
+  }
+}
+
+// 한글·워드 등에서 복사하면 사진이 내 컴퓨터 경로(file:///)로 와서 깨진다 — 붙이기 전에 빼고 개수를 센다.
+function stripUnreachableImages(html: string) {
+  if (!/<img[\s>]/i.test(html)) return { html, dropped: 0 }
+  const doc = new DOMParser().parseFromString(html, "text/html")
+  let dropped = 0
+  for (const img of Array.from(doc.images)) {
+    const src = img.getAttribute("src") ?? ""
+    if (/^https:\/\//i.test(src) || /^data:image\//i.test(src)) continue
+    img.remove()
+    dropped++
+  }
+  return { html: dropped ? doc.body.innerHTML : html, dropped }
+}
+
+const IMAGE_LIMIT_MESSAGE = "사진 한 장은 2MB 이하로 넣어 주세요. 움직이는 GIF는 줄이지 않고 그대로 올라가요."
+
 /**
  * 블로그형 본문 에디터 (묶음 G-2b) — TipTap 미니멀 커스텀.
  * StarterKit(굵게·기울임·취소선·밑줄·제목·목록·인용·구분선·링크) + Image.
@@ -93,8 +124,18 @@ export function RichTextEditor({
   const uploading = useRef(false)
   const [cropSrc, setCropSrc] = useState<string | null>(null)
   const cropTarget = useRef<ReturnType<typeof trackPosition> | null>(null)
+  const inlineUploads = useRef(new Set<string>())
+  const [inlineBusy, setInlineBusy] = useState(0)
+  const droppedOnPaste = useRef(0)
   useEffect(() => () => cropTarget.current?.stop(), [])
-  useEffect(() => { onBusyChange?.(imgBusy || cropSrc !== null) }, [imgBusy, cropSrc, onBusyChange])
+  useEffect(() => { onBusyChange?.(imgBusy || inlineBusy > 0 || cropSrc !== null) }, [imgBusy, inlineBusy, cropSrc, onBusyChange])
+
+  // 붙여넣기·끌어놓기 뒤에 남은 사진 경고를 띄운다(사진 파일로 들어온 경우는 경고 없음).
+  function reportDropped(viaFiles: boolean) {
+    const dropped = droppedOnPaste.current
+    droppedOnPaste.current = 0
+    if (dropped && !viaFiles) setImgError(`복사한 내용 속 사진 ${dropped}장은 내 컴퓨터에 있는 파일이라 붙일 수 없었어요. 사진만 따로 복사해 붙이거나 이미지 버튼으로 올려 주세요.`)
+  }
 
   const editor = useEditor({
     extensions: [
@@ -103,17 +144,29 @@ export function RichTextEditor({
         link: { openOnClick: false },
       }),
       // 본문 이미지는 화면 폭에 맞춰 표시(.richtext img max-width). 지연 로딩.
+      // allowBase64: 붙여넣은 data: 사진을 일단 받아 두고 곧바로 버킷 주소로 바꾼다(uploadInlineImages).
       ...(allowImages ? [BodyImage.configure({
+        allowBase64: true,
         HTMLAttributes: { loading: "lazy" },
         resize: { enabled: true, directions: ["bottom-left", "bottom-right"], minWidth: 40, minHeight: 40, alwaysPreserveAspectRatio: true },
       })] : []),
     ],
     content: value,
-    onUpdate: ({ editor }) => onChange(editor.getHTML()),
+    onUpdate: ({ editor }) => {
+      onChange(editor.getHTML())
+      if (allowImages) uploadInlineImages(editor)
+    },
     editorProps: {
       attributes: { class: "richtext min-h-60 px-3 py-2.5 outline-none" },
+      transformPastedHTML: (html) => {
+        if (!allowImages) return html
+        const result = stripUnreachableImages(html)
+        droppedOnPaste.current = result.dropped
+        return result.html
+      },
       handlePaste: (_view, event) => {
         const files = Array.from(event.clipboardData?.files ?? []).filter((file) => file.type.startsWith("image/"))
+        reportDropped(files.length > 0)
         if (!files.length) return false
         if (!allowImages) { event.preventDefault(); return true }
         event.preventDefault()
@@ -123,6 +176,7 @@ export function RichTextEditor({
       handleDrop: (view, event, _slice, moved) => {
         if (moved) return false // 본문에 이미 있는 사진 이동은 편집기 기본 동작 유지.
         const files = Array.from(event.dataTransfer?.files ?? []).filter((file) => file.type.startsWith("image/"))
+        reportDropped(files.length > 0)
         if (!files.length) return false
         if (!allowImages) { event.preventDefault(); return true }
         event.preventDefault()
@@ -150,6 +204,7 @@ export function RichTextEditor({
         if (!THUMBNAIL_MIME.includes(file.type)) throw new Error("PNG·JPG·WebP·GIF 사진만 넣을 수 있습니다.")
         if (file.size > 20 * 1024 * 1024) throw new Error("사진 한 장은 20MB 이하로 넣어 주세요.")
         const resized = await downscaleImage(file)
+        if (resized.size > THUMBNAIL_MAX_BYTES) throw new Error(IMAGE_LIMIT_MESSAGE)
         const url = await uploadThumbnail(resized)
         const position = target.get()
         if (position === null) break
@@ -161,6 +216,43 @@ export function RichTextEditor({
       target.stop()
       uploading.current = false
       setImgBusy(false)
+    }
+  }
+
+  // 본문에 data: 사진이 생기면 하나씩 올려 주소를 바꾼다. 실패한 사진은 본문에서 뺀다(긴 data: 주소가 저장되지 않게).
+  function uploadInlineImages(editor: Editor) {
+    const pending: string[] = []
+    editor.state.doc.descendants((node) => {
+      const src = node.type.name === "image" ? node.attrs.src : null
+      if (typeof src === "string" && src.startsWith("data:") && !inlineUploads.current.has(src) && !pending.includes(src)) pending.push(src)
+    })
+    for (const src of pending) void uploadInlineImage(editor, src)
+  }
+
+  async function uploadInlineImage(editor: Editor, src: string) {
+    inlineUploads.current.add(src)
+    setInlineBusy((n) => n + 1)
+    let url: string | null = null
+    try {
+      const file = dataUrlToFile(src)
+      if (!file || !THUMBNAIL_MIME.includes(file.type)) throw new Error("PNG·JPG·WebP·GIF 사진만 넣을 수 있습니다.")
+      const resized = await downscaleImage(file)
+      if (resized.size > THUMBNAIL_MAX_BYTES) throw new Error(IMAGE_LIMIT_MESSAGE)
+      url = await uploadThumbnail(resized)
+    } catch (e) {
+      setImgError(e instanceof Error ? e.message : "이미지를 넣지 못했습니다.")
+    } finally {
+      if (!editor.isDestroyed) {
+        const tr = editor.state.tr
+        editor.state.doc.descendants((node, pos) => {
+          if (node.type.name !== "image" || node.attrs.src !== src) return
+          if (url) tr.setNodeMarkup(tr.mapping.map(pos), undefined, { ...node.attrs, src: url })
+          else tr.delete(tr.mapping.map(pos), tr.mapping.map(pos + node.nodeSize))
+        })
+        if (tr.docChanged) editor.view.dispatch(tr)
+      }
+      inlineUploads.current.delete(src)
+      setInlineBusy((n) => n - 1)
     }
   }
 
@@ -225,9 +317,9 @@ export function RichTextEditor({
           </p>
         )}
       </div>
-      {(imgBusy || imgError) && (
+      {(imgBusy || inlineBusy > 0 || imgError) && (
         <div className="border-t border-border px-3 py-1.5 text-xs">
-          {imgBusy && (
+          {(imgBusy || inlineBusy > 0) && (
             <span className="text-muted-foreground">이미지 올리는 중…</span>
           )}
           {imgError && <span role="alert" className="text-destructive">{imgError}</span>}
@@ -283,7 +375,8 @@ function Toolbar({
   const chain = () => editor.chain().focus()
 
   return (
-    <div className="flex flex-wrap items-center gap-0.5 border-b border-border p-1">
+    // 긴 글을 쓰며 내려가도 도구가 헤더(h-16) 바로 아래에 붙어 따라온다.
+    <div className="sticky top-16 z-10 flex flex-wrap items-center gap-0.5 rounded-t-md border-b border-border bg-background p-1">
       <Btn icon={Heading2} title="제목" active={s.h2} onClick={() => chain().toggleHeading({ level: 2 }).run()} />
       <Btn icon={Heading3} title="소제목" active={s.h3} onClick={() => chain().toggleHeading({ level: 3 }).run()} />
       <Sep />

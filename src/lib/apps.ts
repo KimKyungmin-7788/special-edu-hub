@@ -237,7 +237,7 @@ export async function reorderApps(orderedApps: App[]): Promise<void> {
 // 인증교사만 등록 가능(RLS 가 최종 강제). 삭제는 없고 status='hidden' 으로 숨김.
 
 const THUMBNAIL_BUCKET = "app-thumbnails"
-const THUMBNAIL_MAX_BYTES = 2 * 1024 * 1024 // 2MB (버킷 정책과 동일)
+export const THUMBNAIL_MAX_BYTES = 2 * 1024 * 1024 // 2MB (버킷 정책과 동일)
 export const THUMBNAIL_MIME = ["image/png", "image/jpeg", "image/webp", "image/gif"]
 
 async function currentUserId(): Promise<string | null> {
