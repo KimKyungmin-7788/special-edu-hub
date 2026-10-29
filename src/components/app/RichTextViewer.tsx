@@ -11,7 +11,7 @@ import { RESEARCH_PATH_ATTR, signResearchImages } from "@/lib/researchImages"
  */
 export function RichTextViewer({ html }: { html: string }) {
   const looksHtml = /<[a-z][\s\S]*>/i.test(html)
-  const clean = looksHtml ? DOMPurify.sanitize(html) : ""
+  const clean = looksHtml ? openLinksInNewTab(DOMPurify.sanitize(html)) : ""
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -40,4 +40,15 @@ export function RichTextViewer({ html }: { html: string }) {
   return (
     <div ref={ref} className="richtext" dangerouslySetInnerHTML={{ __html: clean }} />
   )
+}
+
+// 본문 속 링크는 새 탭으로 연다(보던 글이 바뀌지 않게). 정화(DOMPurify)가 target 을 지우므로 표시할 때 다시 붙인다.
+function openLinksInNewTab(html: string): string {
+  if (!/<a\s/i.test(html)) return html
+  const doc = new DOMParser().parseFromString(html, "text/html")
+  for (const a of Array.from(doc.querySelectorAll("a[href]"))) {
+    a.setAttribute("target", "_blank")
+    a.setAttribute("rel", "noopener noreferrer")
+  }
+  return doc.body.innerHTML
 }
