@@ -11,11 +11,18 @@ import { relativeTime } from "@/lib/time"
 
 export function BoardList({ slug = "free" }: { slug?: BoardSlug }) {
   const { profile, loading } = useAuth()
-  if (slug === "research" && !profile?.isResearchMember) return <div className="mx-auto max-w-5xl px-4 py-10">{loading ? <p role="status">확인 중…</p> : <BoardAccessNotice research />}</div>
+  usePageTitle(boardName(slug))
+  // 연구회게시판: 권한이 없어도 게시판 이름·소개는 보이고, 글 목록 자리에 안내만 보인다.
+  if (slug === "research" && !profile?.isResearchMember) return <div className="mx-auto max-w-5xl px-4 py-10">
+    <BoardHeading slug={slug} />
+    <div className="mt-6">{loading ? <p role="status" className="text-sm text-muted-foreground">확인 중…</p> : <BoardAccessNotice research />}</div>
+  </div>
   return <BoardListContent key={slug} slug={slug} />
 }
+function BoardHeading({ slug }: { slug: BoardSlug }) {
+  return <div><h1 className="text-2xl font-bold">{boardName(slug)}</h1><p className="mt-2 text-sm text-muted-foreground">{slug === "research" ? "연구회 활동과 자료, 함께 논의할 이야기를 나눕니다." : "수업 이야기부터 작은 질문까지, 선생님들의 생각을 나누는 공간입니다."}</p></div>
+}
 function BoardListContent({ slug }: { slug: BoardSlug }) {
-  usePageTitle(boardName(slug))
   const { user, profile } = useAuth()
   const [params, setParams] = useSearchParams()
   const search = params.get("q") ?? ""
@@ -39,7 +46,7 @@ function BoardListContent({ slug }: { slug: BoardSlug }) {
   function move(next: number, q = search) { setParams({ ...(q ? { q } : {}), ...(next > 1 ? { page: String(next) } : {}) }) }
   return <div className="mx-auto max-w-5xl px-4 py-10">
     <div className="flex flex-wrap items-start justify-between gap-4">
-      <div><h1 className="text-2xl font-bold">{boardName(slug)}</h1><p className="mt-2 text-sm text-muted-foreground">{slug === "research" ? "연구회 활동과 자료, 함께 논의할 이야기를 나눕니다." : "수업 이야기부터 작은 질문까지, 선생님들의 생각을 나누는 공간입니다."}</p></div>
+      <BoardHeading slug={slug} />
       <Link to={`/board/${slug}/write`} className="inline-flex items-center gap-2 rounded-md bg-cta px-4 py-2.5 text-sm font-semibold text-cta-foreground"><PenLine className="size-4" aria-hidden />글쓰기</Link>
     </div>
     <div className="mt-6 rounded-lg border border-brand-line bg-brand-soft px-4 py-3 text-sm text-brand-muted-foreground">
