@@ -1,39 +1,39 @@
-import { lazy } from "react"
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import { AuthProvider } from "@/lib/auth"
 import { Layout } from "@/components/layout/Layout"
 import { vibecoding, vibecodingPath } from "@/config/vibecoding"
 import { Home } from "@/pages/Home"
+import { lazyPage } from "@/lib/lazyPage"
 
 // 홈 말고는 그 페이지에 들어갈 때 내려받는다(첫 화면을 가볍게). 받는 동안·실패 시 화면은 Layout 이 맡는다.
-const SubjectApps = lazy(() => import("@/pages/SubjectApps").then((m) => ({ default: m.SubjectApps })))
-const WorkApps = lazy(() => import("@/pages/WorkApps").then((m) => ({ default: m.WorkApps })))
-const LatestApps = lazy(() => import("@/pages/LatestApps").then((m) => ({ default: m.LatestApps })))
-const AppDetail = lazy(() => import("@/pages/AppDetail").then((m) => ({ default: m.AppDetail })))
-const WritePage = lazy(() => import("@/pages/WritePage").then((m) => ({ default: m.WritePage })))
-const EditPage = lazy(() => import("@/pages/EditPage").then((m) => ({ default: m.EditPage })))
-const Privacy = lazy(() => import("@/pages/Privacy").then((m) => ({ default: m.Privacy })))
-const Terms = lazy(() => import("@/pages/Terms").then((m) => ({ default: m.Terms })))
-const Contact = lazy(() => import("@/pages/Contact").then((m) => ({ default: m.Contact })))
-const ComingSoon = lazy(() => import("@/pages/ComingSoon").then((m) => ({ default: m.ComingSoon })))
-const Login = lazy(() => import("@/pages/Login").then((m) => ({ default: m.Login })))
-const Signup = lazy(() => import("@/pages/Signup").then((m) => ({ default: m.Signup })))
-const MyPage = lazy(() => import("@/pages/MyPage").then((m) => ({ default: m.MyPage })))
-const VerifyPage = lazy(() => import("@/pages/VerifyPage").then((m) => ({ default: m.VerifyPage })))
-const AdminPage = lazy(() => import("@/pages/AdminPage").then((m) => ({ default: m.AdminPage })))
-const NotFound = lazy(() => import("@/pages/NotFound").then((m) => ({ default: m.NotFound })))
-const PracticeList = lazy(() => import("@/pages/PracticeList").then((m) => ({ default: m.PracticeList })))
-const PracticeDetail = lazy(() => import("@/pages/PracticeDetail").then((m) => ({ default: m.PracticeDetail })))
-const PracticeWritePage = lazy(() => import("@/pages/PracticeWritePage").then((m) => ({ default: m.PracticeWritePage })))
-const VibecodingPage = lazy(() => import("@/pages/VibecodingPage").then((m) => ({ default: m.VibecodingPage })))
-const VibeSetup = lazy(() => import("@/components/vibecoding/setup/VibeSetup").then((m) => ({ default: m.VibeSetup })))
-const VibeWhy = lazy(() => import("@/components/vibecoding/why/VibeWhy").then((m) => ({ default: m.VibeWhy })))
-const VibeSurvey = lazy(() => import("@/components/vibecoding/survey/VibeSurvey").then((m) => ({ default: m.VibeSurvey })))
+const SubjectApps = lazyPage(() => import("@/pages/SubjectApps").then((m) => ({ default: m.SubjectApps })))
+const WorkApps = lazyPage(() => import("@/pages/WorkApps").then((m) => ({ default: m.WorkApps })))
+const LatestApps = lazyPage(() => import("@/pages/LatestApps").then((m) => ({ default: m.LatestApps })))
+const AppDetail = lazyPage(() => import("@/pages/AppDetail").then((m) => ({ default: m.AppDetail })))
+const WritePage = lazyPage(() => import("@/pages/WritePage").then((m) => ({ default: m.WritePage })))
+const EditPage = lazyPage(() => import("@/pages/EditPage").then((m) => ({ default: m.EditPage })))
+const Privacy = lazyPage(() => import("@/pages/Privacy").then((m) => ({ default: m.Privacy })))
+const Terms = lazyPage(() => import("@/pages/Terms").then((m) => ({ default: m.Terms })))
+const Contact = lazyPage(() => import("@/pages/Contact").then((m) => ({ default: m.Contact })))
+const ComingSoon = lazyPage(() => import("@/pages/ComingSoon").then((m) => ({ default: m.ComingSoon })))
+const Login = lazyPage(() => import("@/pages/Login").then((m) => ({ default: m.Login })))
+const Signup = lazyPage(() => import("@/pages/Signup").then((m) => ({ default: m.Signup })))
+const MyPage = lazyPage(() => import("@/pages/MyPage").then((m) => ({ default: m.MyPage })))
+const VerifyPage = lazyPage(() => import("@/pages/VerifyPage").then((m) => ({ default: m.VerifyPage })))
+const AdminPage = lazyPage(() => import("@/pages/AdminPage").then((m) => ({ default: m.AdminPage })))
+const NotFound = lazyPage(() => import("@/pages/NotFound").then((m) => ({ default: m.NotFound })))
+const PracticeList = lazyPage(() => import("@/pages/PracticeList").then((m) => ({ default: m.PracticeList })))
+const PracticeDetail = lazyPage(() => import("@/pages/PracticeDetail").then((m) => ({ default: m.PracticeDetail })))
+const PracticeWritePage = lazyPage(() => import("@/pages/PracticeWritePage").then((m) => ({ default: m.PracticeWritePage })))
+const VibecodingPage = lazyPage(() => import("@/pages/VibecodingPage").then((m) => ({ default: m.VibecodingPage })))
+const VibeSetup = lazyPage(() => import("@/components/vibecoding/setup/VibeSetup").then((m) => ({ default: m.VibeSetup })))
+const VibeWhy = lazyPage(() => import("@/components/vibecoding/why/VibeWhy").then((m) => ({ default: m.VibeWhy })))
+const VibeSurvey = lazyPage(() => import("@/components/vibecoding/survey/VibeSurvey").then((m) => ({ default: m.VibeSurvey })))
 
-const BoardLayout = lazy(() => import("@/pages/BoardLayout").then((m) => ({ default: m.BoardLayout })))
-const BoardList = lazy(() => import("@/pages/BoardList").then((m) => ({ default: m.BoardList })))
-const BoardDetail = lazy(() => import("@/pages/BoardDetail").then((m) => ({ default: m.BoardDetail })))
-const BoardWritePage = lazy(() => import("@/pages/BoardWritePage").then((m) => ({ default: m.BoardWritePage })))
+const BoardLayout = lazyPage(() => import("@/pages/BoardLayout").then((m) => ({ default: m.BoardLayout })))
+const BoardList = lazyPage(() => import("@/pages/BoardList").then((m) => ({ default: m.BoardList })))
+const BoardDetail = lazyPage(() => import("@/pages/BoardDetail").then((m) => ({ default: m.BoardDetail })))
+const BoardWritePage = lazyPage(() => import("@/pages/BoardWritePage").then((m) => ({ default: m.BoardWritePage })))
 
 function App() {
   return (
