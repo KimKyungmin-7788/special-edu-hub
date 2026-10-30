@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase"
 import { site } from "@/config/site"
+import { downscaleImage } from "@/lib/image"
 
 /**
  * 교사인증 신청 데이터 접근 일원화 지점 (2단계 묶음 D-1).
@@ -11,6 +12,8 @@ import { site } from "@/config/site"
  *  - 인증 여부(is_teacher_verified)는 profiles 에 있고 lib/profile.getProfile 로 읽는다.
  *  - 페이지 상태(미신청/심사중/반려)는 getMyLatestRequest 의 결과로 판별한다.
  */
+
+const VERIFICATION_BUCKET = "verification-docs"
 
 export type VerificationStatus = "pending" | "approved" | "rejected"
 
@@ -88,17 +91,63 @@ export async function getMyLatestRequest(): Promise<VerificationRequest | null> 
 export type VerificationInput = {
   school: string
   name: string
+  /** 인증 서류(재직증명서·나이스 캡처). 없으면 이메일로 따로 보내는 방식. */
+  file?: File | null
+}
+
+/** 인증 서류로 받는 형식·크기(09 의 verification-docs 버킷과 같게). */
+export const VERIFICATION_DOC_MIME = ["image/png", "image/jpeg", "image/webp", "application/pdf"]
+export const VERIFICATION_DOC_MAX_BYTES = 5 * 1024 * 1024
+const DOC_EXT: Record<string, string> = {
+  "image/png": "png",
+  "image/jpeg": "jpg",
+  "image/webp": "webp",
+  "application/pdf": "pdf",
+}
+
+/** 고른 파일이 받을 수 있는 것인지. 문제가 있으면 안내 문구, 괜찮으면 null. */
+export function checkVerificationDoc(file: File): string | null {
+  if (!VERIFICATION_DOC_MIME.includes(file.type))
+    return "PDF 또는 이미지(PNG·JPG·WebP) 파일만 올릴 수 있습니다."
+  // 큰 사진은 올릴 때 줄이므로 PDF 만 크기를 미리 막는다.
+  if (file.type === "application/pdf" && file.size > VERIFICATION_DOC_MAX_BYTES)
+    return "PDF 는 5MB 이하만 올릴 수 있습니다."
+  return null
 }
 
 /**
- * 교사인증 신청 기록(25_verify_by_email.sql).
- * 서류는 사이트에 올리지 않고 신청자가 운영자에게 이메일로 보낸다 — 여기선
- * 학교·성함만 status=pending 으로 남겨 /admin 대기목록에 뜨게 한다.
- * 동시 pending 은 unique 인덱스가 막는다(중복 신청 시 에러).
+ * 서류를 비공개 버킷 verification-docs/<uid>/<uuid>.<ext> 에 올리고 경로를 돌려준다.
+ * 본인 폴더에만 올릴 수 있고, 열람은 본인·운영진의 서명 URL 로만 된다(09·15).
+ * 5MB 가 넘는 사진은 글자가 읽히도록 긴 변 2400px 로 줄인다.
+ */
+async function uploadVerificationDoc(uid: string, file: File): Promise<string> {
+  const problem = checkVerificationDoc(file)
+  if (problem) throw new Error(problem)
+  const doc =
+    file.type.startsWith("image/") && file.size > VERIFICATION_DOC_MAX_BYTES
+      ? await downscaleImage(file, 2400, 0.9)
+      : file
+  if (doc.size > VERIFICATION_DOC_MAX_BYTES)
+    throw new Error("파일이 너무 큽니다. 5MB 이하로 줄여서 올려 주세요.")
+
+  const path = `${uid}/${crypto.randomUUID()}.${DOC_EXT[doc.type] ?? "bin"}`
+  const { error } = await supabase.storage
+    .from(VERIFICATION_BUCKET)
+    .upload(path, doc, { upsert: false, contentType: doc.type })
+  if (error) throw error
+  return path
+}
+
+/**
+ * 교사인증 신청(25_verify_by_email.sql, 48_verification_upload.sql).
+ * 서류 파일이 있으면 먼저 비공개 버킷에 올리고 document_path 로 남긴다.
+ * 없으면 학교·성함만 남기고 서류는 이메일로 받는다(예전 방식, 대체 경로).
+ * 동시 pending 은 unique 인덱스가 막는다(중복 신청 시 에러). 실패하면 올린 파일을 지운다.
  */
 export async function submitVerification({
   school,
   name,
+  file,
 }: VerificationInput): Promise<VerificationRequest> {
   const uid = await currentUserId()
   if (!uid) throw new Error("로그인이 필요합니다.")
@@ -108,12 +157,17 @@ export async function submitVerification({
   if (s === "") throw new Error("소속 학교를 입력하세요.")
   if (n === "") throw new Error("성함을 입력하세요.")
 
+  const documentPath = file ? await uploadVerificationDoc(uid, file) : null
+
   const { data, error } = await supabase
     .from("verification_requests")
-    .insert({ user_id: uid, school: s, applicant_name: n })
+    .insert({ user_id: uid, school: s, applicant_name: n, document_path: documentPath })
     .select()
     .single()
-  if (error) throw error
+  if (error) {
+    if (documentPath) await supabase.storage.from(VERIFICATION_BUCKET).remove([documentPath])
+    throw error
+  }
   return mapRow(data as VerificationRow)
 }
 
@@ -219,8 +273,6 @@ export async function listReviewedRequests(): Promise<AdminVerificationRequest[]
   }))
 }
 
-const VERIFICATION_BUCKET = "verification-docs"
-
 /** 서류 열람용 서명 URL(기본 5분). 관리자만 발급됨(RLS). 새 탭으로 연다. */
 export async function createDocSignedUrl(
   documentPath: string,
@@ -231,6 +283,15 @@ export async function createDocSignedUrl(
     .createSignedUrl(documentPath, expiresInSec)
   if (error) throw error
   return data.signedUrl
+}
+
+/**
+ * 심사가 끝난 서류 파일 삭제(개인정보처리방침: 인증 확인 후 지체 없이 삭제).
+ * 운영진 삭제 정책(48)이 있어야 지워진다. 실패해도 심사 결과는 그대로 둔다.
+ */
+export async function removeVerificationDoc(documentPath: string): Promise<void> {
+  const { error } = await supabase.storage.from(VERIFICATION_BUCKET).remove([documentPath])
+  if (error) console.error("[verification] 서류 삭제 실패:", error.message)
 }
 
 /** 현재 로그인 관리자 id. 심사자(reviewed_by) 기록용. */

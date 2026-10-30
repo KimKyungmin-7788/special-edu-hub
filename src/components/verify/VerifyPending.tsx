@@ -5,6 +5,7 @@ import { VerifyMailActions } from "./VerifyMailActions"
 /**
  * 심사중(pending) 상태.
  * 메일 창을 닫았거나 아직 못 보낸 경우를 위해 같은 내용으로 다시 보낼 수 있게 한다.
+ * 서류를 인증센터에서 올렸으면(documentPath) 메일 안내는 숨긴다.
  * (예전 업로드 방식 신청은 성함이 없어 재발송 영역을 숨긴다.)
  */
 export function VerifyPending({
@@ -19,7 +20,8 @@ export function VerifyPending({
     month: "long",
     day: "numeric",
   })
-  const mail = request.applicantName
+  const uploaded = !!request.documentPath
+  const mail = !uploaded && request.applicantName
     ? buildVerificationMail({ school: request.school, name: request.applicantName, email })
     : null
 
@@ -32,7 +34,9 @@ export function VerifyPending({
         </span>
         <p className="mt-4 text-lg font-semibold">인증 신청이 접수되었습니다</p>
         <p className="mt-1 text-sm text-muted-foreground">
-          메일과 첨부 서류를 확인한 뒤 승인해 드립니다.
+          {uploaded
+            ? "올려 주신 서류를 확인한 뒤 결과를 메일로 알려 드립니다."
+            : "메일과 첨부 서류를 확인한 뒤 승인해 드립니다."}
         </p>
         <p className="mt-3 text-xs text-muted-foreground">신청일: {date}</p>
       </div>
