@@ -32,7 +32,12 @@ const mission = [
 ]
 
 const link = (path: string) => `${site.url}${path}`
-const hello = (nickname: string) => `안녕하세요, ${nickname.trim() || "회원"} 님.`
+/**
+ * 인사말 — 닉네임이 있으면 "OO 선생님", 없으면 "선생님".
+ * 이메일 가입은 확인 링크를 누를 때 아직 닉네임이 없다(첫 로그인 때 정함, 13_nickname_onboarding).
+ */
+const hello = (nickname: string) =>
+  `안녕하세요, ${nickname.trim() ? `${nickname.trim()} 선생님` : "선생님"}.`
 
 /** 모든 회원 메일 끝에 붙는 안내 — 개발 단계·개인 메일로 소통하는 이유. */
 function devNote(replyTo: string): string {
@@ -121,7 +126,7 @@ const templates: Record<EmailKind, (i: EmailInput) => EmailContent> = {
     text: [
       "새 교사인증 신청이 들어왔습니다.",
       "",
-      `닉네임: ${i.nickname}`,
+      `닉네임: ${i.nickname.trim() || "(아직 정하지 않음)"}`,
       `성함: ${i.data.applicantName ?? ""}`,
       `소속 학교: ${i.data.school ?? ""}`,
       `가입 이메일: ${i.data.email ?? ""}`,
