@@ -132,6 +132,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe()
   }, [runPostLogin])
 
+  useEffect(() => {
+    const refresh = () => { if (session?.user.id) void getProfile(session.user.id).then((p) => setProfile(p ?? null)) }
+    window.addEventListener("focus", refresh)
+    window.addEventListener("profile-permissions-changed", refresh)
+    return () => { window.removeEventListener("focus", refresh); window.removeEventListener("profile-permissions-changed", refresh) }
+  }, [session?.user.id])
+
   const signInWithPassword = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw error

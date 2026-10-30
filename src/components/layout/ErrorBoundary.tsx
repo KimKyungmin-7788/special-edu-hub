@@ -1,9 +1,11 @@
 import { Component, type ReactNode } from "react"
 import { CONTAINER } from "@/config/layout"
+import { isChunkLoadError, reloadForNewVersion } from "@/lib/lazyPage"
 
 /**
  * 페이지를 그리다 오류가 나면 흰 화면 대신 안내를 보여 준다(헤더·푸터는 그대로).
- * 새 버전이 배포된 뒤 예전 화면에서 페이지를 옮기면 조각 파일을 못 찾아 여기로 오는데, 새로고침하면 풀린다.
+ * 새 버전 배포 뒤 예전 조각 파일을 못 찾은 경우는 대부분 lazyPage 가 먼저 새로고침한다.
+ * 그래도 여기까지 오면 한 번 더 새로고침을 시도하고, 그래도 안 되면(진짜 오류) 안내를 보여 준다.
  * Layout 이 주소를 key 로 줘서, 다른 페이지로 옮기면 다시 정상 화면을 시도한다.
  */
 export class ErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
@@ -15,6 +17,7 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { failed: 
 
   componentDidCatch(error: unknown) {
     console.error(error)
+    if (isChunkLoadError(error)) reloadForNewVersion()
   }
 
   render() {

@@ -1,5 +1,5 @@
 -- ============================================================
--- 42_comment_images.sql — 댓글·답글 이미지 첨부 (트랙 E, 2026-10-16)
+-- 46_comment_images.sql — 댓글·답글 이미지 첨부 (트랙 E, 2026-10-16)
 --
 -- 설계 요약 (사용자 결정 2026-10-16)
 --  - 댓글·답글 하나에 이미지 최대 4장. 첨부는 "인증교사만"(글만 쓰는 건 지금처럼 로그인 전체).
@@ -12,9 +12,10 @@
 --  - 수정: edit_comment 에 p_images 를 더한다(null = 이미지 그대로). 새 이미지를 더할 때만
 --    인증교사 검사. 빼는 건 누구나(본인).
 --  - 댓글을 지워도(소프트삭제) 파일은 남긴다 — 신고 처리 때 운영진이 확인할 수 있게.
+--  - 게시판 글(post_id) 댓글에는 사진을 붙일 수 없다 — 연구회게시판은 비공개인데 이 버킷은 공개라서.
 --
 -- 적용: Supabase 대시보드 > SQL Editor 에 전체 붙여넣고 실행. 재실행 안전(idempotent).
--- 선행: 12(is_verified_teacher), 19·34·39(comments), 40(edit_comment).
+-- 선행: 12(is_verified_teacher), 19·34·39(comments), 40(edit_comment), 42(게시판 댓글 post_id).
 -- ============================================================
 
 -- ── 1. 칼럼 ──────────────────────────────────────────────
@@ -38,7 +39,7 @@ as $$
      );
 $$;
 
--- ── 3. 작성 정책 교체 (39 의 정책 + 이미지 조건) ─────────
+-- ── 3. 작성 정책 교체 (42_board 의 정책 + 이미지 조건) ───
 drop policy if exists "comments_insert_own" on public.comments;
 create policy "comments_insert_own"
   on public.comments
@@ -48,10 +49,11 @@ create policy "comments_insert_own"
     auth.uid() = author_id
     and (char_length(btrim(body)) > 0 or cardinality(images) > 0)
     and public.valid_comment_images(images, author_id)
-    and (cardinality(images) = 0 or public.is_verified_teacher())
+    and (cardinality(images) = 0 or (post_id is null and public.is_verified_teacher()))
     and (
       parent_id is null
-      or public.can_reply_to_comment(parent_id, app_id, practice_id)
+      or (post_id is not null and public.can_reply_to_board_comment(parent_id, post_id))
+      or (post_id is null and public.can_reply_to_comment(parent_id, app_id, practice_id))
     )
   );
 
@@ -73,7 +75,7 @@ declare
   v_body   text   := btrim(coalesce(p_body, ''));
   v_images text[];
 begin
-  select id, author_id, deleted_at, images into c
+  select id, author_id, deleted_at, images, post_id into c
     from public.comments
    where id = p_id;
   if not found or c.deleted_at is not null then
@@ -88,7 +90,7 @@ begin
     raise exception 'invalid images';
   end if;
   -- 새 이미지를 더할 때만 인증교사 검사(빼기만 하는 건 허용)
-  if not (v_images <@ c.images) and not public.is_verified_teacher() then
+  if not (v_images <@ c.images) and (c.post_id is not null or not public.is_verified_teacher()) then
     raise exception 'teacher only';
   end if;
 

@@ -78,7 +78,7 @@ export async function reportComment(
 /** 신고 한 건(운영진 큐 표시용). 신고자·피신고자 닉네임을 함께 가져온다. */
 export type Report = {
   id: string
-  targetType: "user" | "app" | "message"
+  targetType: "user" | "app" | "message" | "comment" | "post"
   targetId: string
   reason: string
   detail: string | null
@@ -95,7 +95,7 @@ type PartyRow = { id: string; nickname: string | null }
 
 type ReportRow = {
   id: string
-  target_type: "user" | "app" | "message"
+  target_type: "user" | "app" | "message" | "comment" | "post"
   target_id: string
   reason: string
   detail: string | null

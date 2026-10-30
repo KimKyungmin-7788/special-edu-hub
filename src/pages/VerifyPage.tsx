@@ -10,6 +10,7 @@ import { VerifyAlreadyCertified } from "@/components/verify/VerifyAlreadyCertifi
 import { VerifyPending } from "@/components/verify/VerifyPending"
 import { VerifyRejected } from "@/components/verify/VerifyRejected"
 import { VerifyForm } from "@/components/verify/VerifyForm"
+import { ResearchMemberRequest } from "@/components/verify/ResearchMemberRequest"
 import { usePageTitle } from "@/lib/usePageTitle"
 
 /**
@@ -99,6 +100,8 @@ export function VerifyPage() {
         onReapply={(req) => setPageState({ kind: "reapply", request: req })}
         email={user?.email ?? ""}
       />
+
+      {pageState.kind !== "loading" && <ResearchMemberRequest />}
     </div>
   )
 }

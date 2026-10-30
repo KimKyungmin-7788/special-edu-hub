@@ -1,6 +1,6 @@
 import { subjectCategories } from "@/config/categories"
 import { AppCardList } from "@/components/home/AppCardList"
-import { popularityScore, type App } from "@/lib/apps"
+import { comparePopularApps, type App } from "@/lib/apps"
 
 /**
  * 과목별 "인기" 대시보드 (묶음 I).
@@ -16,11 +16,7 @@ export function PopularDashboard({ apps }: { apps: App[] }) {
       {subjectCategories.map((cat) => {
         const items = apps
           .filter((a) => a.categoryIds.includes(cat.id))
-          .sort(
-            (a, b) =>
-              popularityScore(b) - popularityScore(a) ||
-              (a.createdAt < b.createdAt ? 1 : -1), // 동점은 최신순
-          )
+          .sort(comparePopularApps)
           .slice(0, MAX_PER_SECTION)
         return (
           <AppCardList

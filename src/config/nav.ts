@@ -19,7 +19,7 @@ export const navItems: NavItem[] = [
   { label: "업무혁신", to: "/apps/work", status: "active" },
   { label: "수업실천사례", to: "/practices", status: "active" },
   { label: "바이브코딩", to: "/vibecoding", status: "active" },
-  { label: "자유게시판", to: "/board", status: "soon" },
+  { label: "게시판", to: "/board", status: "active" },
   { label: "교사인증센터", to: "/verify", status: "active" },
   { label: "소개", to: "/about", status: "soon" },
 ]

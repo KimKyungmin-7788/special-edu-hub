@@ -14,7 +14,7 @@ import { downscaleImage } from "@/lib/image"
  *  - 답글 = 1단계(최상위 댓글에만, 39_comment_replies.sql).
  *  - 수정 = edit_comment RPC(본인만, '(수정됨)'). 좋아요 = comment_likes 토글(40_comment_likes_edit.sql).
  *  - 멘션 = 본문 안 토큰(lib/mentions). 표시 이름은 현재 닉네임으로 맞춘다.
- *  - 이미지 = 최대 4장, 인증교사만. 공개 버킷 comment-images(42_comment_images.sql).
+ *  - 이미지 = 최대 4장, 인증교사만. 공개 버킷 comment-images(46_comment_images.sql).
  *    DB 에는 경로만 두고 주소는 여기서 만든다. 본문 없이 사진만 있는 댓글도 된다.
  */
 
@@ -24,7 +24,7 @@ export type CommentImage = { path: string; url: string }
 /** 댓글 한 건(목록 표시용). 작성자 프로필을 함께 가져온다. */
 export type Comment = {
   id: string
-  appId: string
+  appId: string | null
   /** 답글이면 최상위 댓글 id, 최상위 댓글이면 null. */
   parentId: string | null
   /** 저장된 본문(멘션 토큰 포함). 표시는 parseMentions 로. */
@@ -48,7 +48,7 @@ export type Comment = {
 
 type CommentRow = {
   id: string
-  app_id: string
+  app_id: string | null
   parent_id: string | null
   body: string
   created_at: string
@@ -93,16 +93,16 @@ async function currentUserId(): Promise<string | null> {
 }
 
 /** 댓글이 달리는 대상 — 앱 자료 또는 수업실천사례(34_practice_engagement.sql). */
-export type CommentTarget = { kind: "app"; id: string } | { kind: "practice"; id: string }
+export type CommentTarget = { kind: "app"; id: string } | { kind: "practice"; id: string } | { kind: "post"; id: string }
 
 function targetColumn(t: CommentTarget) {
-  return t.kind === "app" ? "app_id" : "practice_id"
+  return t.kind === "app" ? "app_id" : t.kind === "practice" ? "practice_id" : "post_id"
 }
 
 /** 본문 길이 제한. */
 export const COMMENT_BODY_MAX = 1000
 
-/** 이미지 첨부 제한(42_comment_images.sql 과 같게). */
+/** 이미지 첨부 제한(46_comment_images.sql 과 같게). */
 export const COMMENT_IMAGE_MAX = 4
 const IMAGE_BUCKET = "comment-images"
 const IMAGE_MAX_BYTES = 5 * 1024 * 1024
@@ -179,7 +179,7 @@ export async function getComments(target: CommentTarget): Promise<Comment[]> {
 
   if (error) {
     console.error("[comments] getComments 실패:", error.message)
-    return []
+    throw new Error("댓글을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.")
   }
   const blockedIds = new Set(blocks.map((b) => b.id))
   const list = (data as unknown as CommentRow[])

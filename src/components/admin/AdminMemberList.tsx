@@ -4,6 +4,7 @@ import {
   listMembers,
   setTeacherVerified,
   setUserRole,
+  setResearchMember,
   type Member,
   type Role,
 } from "@/lib/profile"
@@ -54,6 +55,7 @@ export function AdminMemberList() {
   }
 
   const verified = members.filter((m) => m.isTeacherVerified).length
+  const researchMembers = members.filter((m) => m.isResearchMember).length
   const staff = members.filter(
     (m) => m.role === "manager" || m.role === "admin",
   ).length
@@ -69,7 +71,7 @@ export function AdminMemberList() {
   return (
     <>
       <p className="mb-2 text-sm text-muted-foreground">
-        전체 {members.length}명 · 인증교사 {verified}명 · 운영진 {staff}명
+        전체 {members.length}명 · 인증교사 {verified}명 · 운영진 {staff}명 · 연구회회원 {researchMembers}명
       </p>
       <input
         type="search"
@@ -87,6 +89,7 @@ export function AdminMemberList() {
               <th className="px-3 py-2 font-medium">이메일</th>
               <th className="px-3 py-2 font-medium">권한</th>
               <th className="px-3 py-2 font-medium">인증</th>
+              <th className="px-3 py-2 font-medium">연구회회원</th>
               <th className="px-3 py-2 font-medium">가입일</th>
             </tr>
           </thead>
@@ -127,6 +130,9 @@ export function AdminMemberList() {
                   ) : (
                     <span className="text-muted-foreground">—</span>
                   )}
+                </td>
+                <td className="px-3 py-2">
+                  <ResearchToggle member={m} editable={isAdmin} onChanged={(enabled) => setMembers((list) => list?.map((x) => x.id === m.id ? { ...x, isResearchMember: enabled } : x) ?? null)} onError={setError} />
                 </td>
                 <td className="px-3 py-2 text-muted-foreground">
                   {formatDate(m.createdAt)}
@@ -285,4 +291,17 @@ function formatDate(iso: string): string {
     month: "2-digit",
     day: "2-digit",
   })
+}
+
+function ResearchToggle({ member, editable, onChanged, onError }: { member: Member; editable: boolean; onChanged: (enabled: boolean) => void; onError: (message: string) => void }) {
+  const [busy, setBusy] = useState(false)
+  async function toggle() {
+    if (busy) return
+    if (!window.confirm(`${member.nickname || "이 회원"}의 연구회회원 등급을 ${member.isResearchMember ? "회수" : "부여"}할까요? 연구회게시판 접근 권한이 변경됩니다.`)) return
+    setBusy(true)
+    try { await setResearchMember(member.id, !member.isResearchMember); onChanged(!member.isResearchMember); window.dispatchEvent(new Event("profile-permissions-changed")) }
+    catch { onError("연구회회원 등급을 변경하지 못했습니다. SQL 적용 여부와 관리자 권한을 확인해 주세요.") }
+    finally { setBusy(false) }
+  }
+  return <div className="flex items-center gap-2 whitespace-nowrap"><span>{member.isResearchMember ? "연구회회원" : "—"}</span>{editable && <button type="button" disabled={busy} onClick={toggle} className="rounded-md border px-2 py-1 text-xs disabled:opacity-50">{busy ? "처리 중…" : member.isResearchMember ? "회수" : "부여"}</button>}</div>
 }

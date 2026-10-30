@@ -23,7 +23,7 @@ import {
  * 앱·사례 상세 댓글 영역 (PRD 4단계 묶음 C-2, 트랙 E 답글·멘션·좋아요·수정).
  * - 머리줄: 아바타 · @닉네임(프로필) · 쪽지 아이콘(프로필 창의 쪽지 보내기) · 시각 · (수정됨).
  * - 본문: 멘션은 프로필로 연결. 본인 글이면 끝에 '수정'. 첨부 사진은 본문 아래 썸네일(누르면 새 탭).
- * - 사진 첨부는 인증교사만(42_comment_images.sql).
+ * - 사진 첨부는 인증교사만(46_comment_images.sql).
  * - 아래줄: 좋아요(토글) · 답글 · [본인/운영진] 삭제 · [남의 글] 오른쪽 끝 신고 깃발.
  * - 답글: 1단계. 답글의 '답글' → 같은 묶음에 '@닉네임' 을 붙여 단다. 왼쪽 세로줄로 묶는다.
  * - 원댓글이 지워지고 답글만 남으면 그 자리에 '삭제된 댓글입니다'.
@@ -131,9 +131,11 @@ function CommentImages({ comment }: { comment: Comment }) {
 /** 답글 입력창을 어디에, 무엇을 채워 열지. */
 type ReplyDraft = { threadId: string; mentionUser: MentionUser | null }
 
-export function CommentSection({ target }: { target: CommentTarget }) {
+export function CommentSection({ target, boardCanWrite }: { target: CommentTarget; boardCanWrite?: boolean }) {
   const { user, profile, isStaff } = useAuth()
-  const canAttach = !!profile?.isTeacherVerified
+  const canWrite = !!user && (target.kind !== "post" || (boardCanWrite ?? !!profile?.isTeacherVerified))
+  // 게시판(비공개) 댓글에는 사진을 붙이지 않는다 — 사진 버킷이 공개라서(46)
+  const canAttach = target.kind !== "post" && !!profile?.isTeacherVerified
   const [comments, setComments] = useState<Comment[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -147,10 +149,17 @@ export function CommentSection({ target }: { target: CommentTarget }) {
   useEffect(() => {
     let active = true
     setLoading(true)
+    setError(null)
+    setComments([])
     setVisible(PAGE_SIZE)
-    getComments(target).then((list) => {
+    getComments({ kind: target.kind, id: target.id }).then((list) => {
       if (active) {
         setComments(list)
+        setLoading(false)
+      }
+    }).catch((err) => {
+      if (active) {
+        setError(err instanceof Error ? err.message : "댓글을 불러오지 못했습니다.")
         setLoading(false)
       }
     })
@@ -235,7 +244,7 @@ export function CommentSection({ target }: { target: CommentTarget }) {
     const canDelete = isMine || (!!user && isStaff)
     const canReport = !!user && !isMine
     // 원댓글이 지워진 묶음에는 더 달 수 없다(DB 도 막음)
-    const canReply = !!user && thread.root !== null
+    const canReply = canWrite && thread.root !== null
     const editing = editingId === c.id
     const editable = editing ? toEditable(c) : null
 
@@ -306,7 +315,7 @@ export function CommentSection({ target }: { target: CommentTarget }) {
               <CommentBody
                 comment={c}
                 onEdit={
-                  isMine
+                  isMine && canWrite
                     ? () => {
                         setReply(null)
                         setEditingId(c.id)
@@ -389,13 +398,15 @@ export function CommentSection({ target }: { target: CommentTarget }) {
       </h2>
 
       {/* 작성 폼: 로그인 사용자만 */}
-      {user ? (
+      {canWrite ? (
         <div className="mt-4">
           <CommentComposer
             allowImages={canAttach}
             onSubmit={(body, images) => submit(body, images, null)}
           />
         </div>
+      ) : user && target.kind === "post" ? (
+        <p className="mt-4 text-sm text-muted-foreground">댓글은 인증 교사만 작성할 수 있어요. <Link to="/verify" className="font-medium text-primary underline">교사인증하기</Link></p>
       ) : (
         <p className="mt-4 text-sm text-muted-foreground">
           댓글을 남기려면{" "}

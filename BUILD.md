@@ -70,7 +70,7 @@ Tailwind/shadcn을 쓰면 `tailwind.config`와 shadcn 테마 변수를 이 토�
 
 ```ts
 export const site = {
-  name: "강원 특수교육 디지털 학습자료 누리집", // 가칭, 추후 교체
+  name: "특수교육 디지털 학습자료 누리집", // 정식 명칭
   logoText: "(로고 미정)",                      // 이미지 로고 들어오면 교체
   hero: {
     title: "교과서만으로는 수업이 힘든\n특수교사가 직접 만든 디지털 교육자료",

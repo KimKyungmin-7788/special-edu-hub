@@ -139,12 +139,23 @@
   .richtext :where(li) {
     margin: 0.2em 0;
   }
+  /* 한 단계 아래 목록은 표시를 바꿔 단계가 보이게: ● → ○ → ■, 1. → a. → i. */
+  .richtext :where(ul ul) { list-style: circle; }
+  .richtext :where(ul ul ul) { list-style: square; }
+  .richtext :where(ol ol) { list-style: lower-alpha; }
+  .richtext :where(ol ol ol) { list-style: lower-roman; }
+  .richtext :where(ul, ol) :where(ul, ol) { margin: 0.2em 0; }
   .richtext :where(blockquote) {
     border-left: 3px solid var(--border);
     padding-left: 0.8em;
     margin: 0.6em 0;
     color: var(--muted-foreground);
   }
+  /* 들여쓰기(편집기 '들여쓰기' 버튼, 최대 4단계). 목록·인용 규칙보다 뒤에 둬야 margin 이 이긴다. */
+  .richtext :where([data-indent="1"]) { margin-left: 1.5em; }
+  .richtext :where([data-indent="2"]) { margin-left: 3em; }
+  .richtext :where([data-indent="3"]) { margin-left: 4.5em; }
+  .richtext :where([data-indent="4"]) { margin-left: 6em; }
   .richtext :where(hr) {
     border: 0;
     border-top: 1px solid var(--border);
@@ -161,6 +172,50 @@
     border-radius: var(--radius);
     margin: 0.5em 0;
   }
+  /* 연구회 비공개 사진: 임시 주소를 받기 전(또는 권한이 없을 때) 빈 자리로 보인다. */
+  .richtext :where(img[data-research-path]:not([src])) {
+    display: block;
+    width: 100%;
+    max-width: 24rem;
+    aspect-ratio: 4 / 3;
+    background: var(--muted);
+  }
+  .richtext [data-resize-container] {
+    max-width: 100%;
+    margin: 0.5em 0;
+  }
+  .richtext [data-resize-wrapper] {
+    max-width: 100%;
+  }
+  /* 사진 정렬: 본문 보기는 img 에, 편집기는 크기 조절 틀(flex)에 적용한다. */
+  .richtext :where(img[data-align="center"]) {
+    display: block;
+    margin-inline: auto;
+  }
+  .richtext :where(img[data-align="right"]) {
+    display: block;
+    margin-left: auto;
+  }
+  .richtext [data-resize-container]:has(img[data-align="center"]) {
+    justify-content: center;
+  }
+  .richtext [data-resize-container]:has(img[data-align="right"]) {
+    justify-content: flex-end;
+  }
+  .richtext [data-resize-wrapper] img {
+    margin: 0;
+    height: auto !important;
+  }
+  .richtext [data-resize-handle] {
+    width: calc(var(--spacing) * 3);
+    height: calc(var(--spacing) * 3);
+    border: 1px solid var(--background);
+    border-radius: var(--radius);
+    background: var(--primary);
+    touch-action: none;
+  }
+  .richtext [data-resize-handle="bottom-left"] { cursor: nesw-resize; }
+  .richtext [data-resize-handle="bottom-right"] { cursor: nwse-resize; }
   .richtext :where(strong) {
     font-weight: 600;
   }

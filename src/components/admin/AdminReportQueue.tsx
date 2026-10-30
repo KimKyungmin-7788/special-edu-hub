@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { Link } from "react-router-dom"
 import {
   listPendingReports,
   listHandledReports,
@@ -22,6 +23,8 @@ const TARGET_LABEL: Record<Report["targetType"], string> = {
   message: "쪽지",
   user: "사용자",
   app: "앱",
+  comment: "댓글",
+  post: "게시글",
 }
 
 export function AdminReportQueue() {
@@ -164,6 +167,7 @@ function ReportBody({ report }: { report: Report }) {
           {TARGET_LABEL[report.targetType]}
         </span>
         <span className="text-sm font-medium">{reasonLabel(report.reason)}</span>
+        {report.targetType === "post" && <Link to={`/board/${report.targetId}`} className="text-sm text-primary underline">게시글 확인·삭제</Link>}
       </div>
 
       <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">

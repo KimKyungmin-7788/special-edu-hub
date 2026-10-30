@@ -1,0 +1,73 @@
+-- 43 적용 후 실행. 회원 등급·게시글·댓글·알림·신고 모두 마지막에 ROLLBACK.
+begin;
+set local statement_timeout='30s';
+do $$
+declare a uuid; outsider uuid; staff uuid; bid uuid; pid uuid; cid uuid; notice_comment uuid; denied boolean;
+begin
+  select id into a from public.profiles where role='member' and not is_teacher_verified limit 1;
+  select id into outsider from public.profiles where role='member' and id<>a limit 1;
+  select id into staff from public.profiles where role='admin' limit 1;
+  if a is null or outsider is null or staff is null then raise exception '테스트에 미인증회원, 다른 회원, 관리자가 필요합니다.'; end if;
+  execute 'set local role authenticated';
+  perform set_config('request.jwt.claim.sub',staff::text,true);
+  perform public.set_research_member(staff,false);
+  perform public.set_research_member(outsider,false);
+  perform public.set_research_member(a,true);
+  perform set_config('request.jwt.claim.sub',a::text,true);
+  select id into bid from public.boards where slug='research';
+  if bid is null then raise exception 'FAIL member board read'; end if;
+  pid:=public.save_board_post_in_board('[검증] 비공개 연구회','<p>비공개 내용</p>',null,'research');
+  perform public.save_board_post_in_board('[검증] 수정','<p>수정 내용</p>',pid,'research');
+  insert into public.comments(post_id,author_id,body) values(pid,a,'연구회 댓글') returning id into cid;
+  perform public.edit_comment(cid,'수정 댓글');
+  perform public.report_board_post(pid,'other','권한 검증');
+  insert into public.comments(post_id,author_id,body) values(pid,a,'@[비회원]('||outsider::text||') 비공개 멘션 검사') returning id into notice_comment;
+  denied:=false;
+  begin update public.profiles set is_research_member=true where id=outsider; exception when insufficient_privilege then denied:=true; end;
+  if not denied then raise exception 'FAIL direct membership update'; end if;
+  denied:=false;
+  begin perform public.save_board_post_in_board('이미지','<p>본문</p><img src="https://example.org/a.png">',null,'research'); exception when raise_exception then denied:=true; end;
+  if not denied then raise exception 'FAIL public image allowed'; end if;
+  denied:=false;
+  begin perform public.set_research_member(outsider,true); exception when raise_exception then denied:=true; end;
+  if not denied then raise exception 'FAIL member grants membership'; end if;
+
+  perform set_config('request.jwt.claim.sub',outsider::text,true);
+  if exists(select 1 from public.boards where id=bid) or exists(select 1 from public.posts where id=pid) or exists(select 1 from public.comments where id=cid) then raise exception 'FAIL outsider reads'; end if;
+  if exists(select 1 from public.notifications where comment_id=notice_comment) then raise exception 'FAIL outsider mention notification'; end if;
+  denied:=false;
+  begin insert into public.comments(post_id,author_id,body) values(pid,outsider,'비회원 댓글'); exception when insufficient_privilege or raise_exception then denied:=true; end;
+  if not denied then raise exception 'FAIL outsider comment'; end if;
+  denied:=false;
+  begin perform public.save_board_post_in_board('외부인','<p>본문</p>',null,'research'); exception when raise_exception then denied:=true; end;
+  if not denied then raise exception 'FAIL outsider writes'; end if;
+  denied:=false;
+  begin perform public.report_comment(cid,'other','유출 검사'); exception when raise_exception then denied:=true; end;
+  if not denied then raise exception 'FAIL report snapshot leak'; end if;
+
+  perform set_config('request.jwt.claim.sub',staff::text,true);
+  if exists(select 1 from public.posts where id=pid) or exists(select 1 from public.reports where target_id=pid::text) then raise exception 'FAIL nonmember staff reads'; end if;
+  denied:=false;
+  begin perform public.delete_board_post(pid); exception when raise_exception then denied:=true; end;
+  if not denied then raise exception 'FAIL nonmember staff deletes'; end if;
+  perform public.set_research_member(outsider,true);
+  perform set_config('request.jwt.claim.sub',outsider::text,true);
+  insert into public.comments(post_id,author_id,body) values(pid,outsider,'회원 댓글 알림 검사') returning id into notice_comment;
+  perform set_config('request.jwt.claim.sub',a::text,true);
+  if not exists(select 1 from public.notifications where comment_id=notice_comment and board_id=bid and link='/board/'||pid::text) then raise exception 'FAIL member notification'; end if;
+  perform set_config('request.jwt.claim.sub',staff::text,true);
+  perform public.set_research_member(a,false);
+  perform set_config('request.jwt.claim.sub',a::text,true);
+  if exists(select 1 from public.posts where id=pid) or exists(select 1 from public.comments where id=cid) or exists(select 1 from public.reports where target_id=pid::text) then raise exception 'FAIL revoked author reads'; end if;
+  if exists(select 1 from public.notifications where comment_id=notice_comment) then raise exception 'FAIL revoked notification read'; end if;
+  denied:=false;
+  begin perform public.edit_comment(cid,'회수 후 수정'); exception when raise_exception then denied:=true; end;
+  if not denied then raise exception 'FAIL revoked author edits'; end if;
+
+  execute 'set local role anon';
+  perform set_config('request.jwt.claim.sub','',true);
+  if exists(select 1 from public.boards where id=bid) or exists(select 1 from public.posts where id=pid) or exists(select 1 from public.comments where id=cid) then raise exception 'FAIL anonymous reads'; end if;
+  if not exists(select 1 from public.boards where slug='free') then raise exception 'FAIL free board regression'; end if;
+end $$;
+select '연구회 권한 검사 통과 — 모든 변경 롤백' as result;
+rollback;

@@ -62,16 +62,14 @@ function Pager({ index, count, onGo }: PagerProps) {
 /**
  * 슬라이드 한 장.
  * 넓은 화면: [키워드 칸 | 구분선 | 2×2 격자]
- *   격자 1행 = 제목 · 버튼 / 2행 = 부제 · 넘김 표시(버튼 바로 아래, 부제와 같은 줄)
+ *   격자 1행 = 제목 · 버튼 / 2행 = 부제 · 공통 넘김 표시를 위한 여백
  *   키워드 칸은 카드 왼쪽 끝~구분선 사이 전체이고, 키워드는 그 칸의 정중앙.
  * 모바일: 키워드 칸 숨김 → 제목 위 작은 키워드, 제목 → 부제 → 버튼 → 넘김 순서로 쌓기.
  */
 function SlideContent({
   slide,
-  pager,
 }: {
   slide: HeroSlide
-  pager?: PagerProps
 }) {
   if (slide.type === "banner") {
     return (
@@ -99,7 +97,7 @@ function SlideContent({
       {slide.keyword && (
         <>
           <div className="relative hidden w-40 shrink-0 items-center justify-center sm:flex">
-            <span className="text-4xl font-semibold tracking-tight text-hero-accent">
+            <span className="text-5xl font-bold tracking-tight text-primary">
               {slide.keyword}
             </span>
           </div>
@@ -107,10 +105,10 @@ function SlideContent({
         </>
       )}
 
-      <div className="relative grid min-w-0 flex-1 content-center items-center gap-y-2 px-6 py-6 sm:grid-cols-[1fr_auto] sm:gap-x-8 sm:px-8">
+      <div className="relative grid min-w-0 flex-1 content-center items-center gap-y-2 px-6 pt-6 pb-16 sm:pb-6 sm:grid-cols-[1fr_11rem] sm:gap-x-8 sm:px-8">
         <div className="min-w-0 sm:col-start-1 sm:row-start-1">
           {slide.keyword && (
-            <p className="mb-1 text-sm font-semibold text-hero-accent sm:hidden">
+            <p className="mb-2 text-xl font-bold tracking-tight text-primary sm:hidden">
               {slide.keyword}
             </p>
           )}
@@ -144,11 +142,7 @@ function SlideContent({
           </div>
         )}
 
-        {pager && (
-          <div className="mt-2 sm:col-start-2 sm:row-start-2 sm:mt-0 sm:justify-self-center">
-            <Pager {...pager} />
-          </div>
-        )}
+        <div aria-hidden className="hidden h-6 sm:col-start-2 sm:row-start-2 sm:block" />
       </div>
     </div>
   )
@@ -290,7 +284,6 @@ export function Hero() {
         }}
       >
         {track.map((slide, i) => {
-          const own = i % count // 이 장의 번호(복제본은 1번)
           const current = i === pos
           return (
             <div
@@ -299,17 +292,16 @@ export function Hero() {
               inert={!current}
               className="w-full shrink-0"
             >
-              {/* 넘김 표시는 각 장에 자기 번호로 그려 장과 함께 밀려 간다 */}
-              <SlideContent
-                slide={slide}
-                pager={
-                  hasControls ? { index: own, count, onGo: go } : undefined
-                }
-              />
+              <SlideContent slide={slide} />
             </div>
           )
         })}
       </div>
+      {hasControls && (
+        <div className="absolute right-6 bottom-6 flex w-44 justify-center sm:right-8">
+          <Pager index={index} count={count} onGo={go} />
+        </div>
+      )}
       <span className="sr-only" aria-live="polite">
         {index + 1} / {count}
       </span>
