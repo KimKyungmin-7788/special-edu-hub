@@ -4,6 +4,7 @@ import {
   listReviewedRequests,
   approveRequest,
   rejectRequest,
+  removeVerificationDoc,
   createDocSignedUrl,
   type AdminVerificationRequest,
 } from "@/lib/verification"
@@ -241,6 +242,8 @@ function QueueCard({
     onError("")
     try {
       await approveRequest(req.id)
+      // 확인이 끝난 서류는 지운다(개인정보처리방침). 실패해도 승인은 그대로.
+      if (req.documentPath) await removeVerificationDoc(req.documentPath)
       onDone()
     } catch (err) {
       onError(err instanceof Error ? err.message : "승인에 실패했습니다.")
@@ -257,6 +260,7 @@ function QueueCard({
     onError("")
     try {
       await rejectRequest(req.id, reason)
+      if (req.documentPath) await removeVerificationDoc(req.documentPath)
       onDone()
     } catch (err) {
       onError(err instanceof Error ? err.message : "반려에 실패했습니다.")
@@ -298,7 +302,7 @@ function QueueCard({
         <dt className="text-muted-foreground">학교</dt>
         <dd>{req.school}</dd>
         <dt className="text-muted-foreground">서류</dt>
-        <dd>{req.documentPath ? "사이트 업로드(예전 방식)" : "이메일로 접수 — 메일함에서 확인"}</dd>
+        <dd>{req.documentPath ? "인증센터에서 올림 — '서류 보기'" : "이메일로 접수 — 메일함에서 확인"}</dd>
       </dl>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">

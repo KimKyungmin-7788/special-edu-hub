@@ -79,8 +79,12 @@ const templates: Record<EmailKind, (i: EmailInput) => EmailContent> = {
       "",
       "교사인증 신청이 잘 접수되었습니다.",
       "",
-      "아직 서류를 보내지 않으셨다면 이 메일에 답장으로 첨부해 주세요.",
-      "· 개인정보를 가린 재직증명서, 또는 본인 이름이 보이는 나이스 화면 캡처",
+      ...(i.data.hasDocument
+        ? ["올려 주신 서류는 운영진만 볼 수 있게 보관하며, 확인이 끝나면 지웁니다."]
+        : [
+            "아직 서류를 보내지 않으셨다면 이 메일에 답장으로 첨부해 주세요.",
+            "· 개인정보를 가린 재직증명서, 또는 본인 이름이 보이는 나이스 화면 캡처",
+          ]),
       "",
       "운영자가 확인한 뒤 결과를 메일과 누리집 알림으로 알려 드립니다.",
       `진행 상황 보기: ${link("/verify")}`,
@@ -130,6 +134,7 @@ const templates: Record<EmailKind, (i: EmailInput) => EmailContent> = {
       `성함: ${i.data.applicantName ?? ""}`,
       `소속 학교: ${i.data.school ?? ""}`,
       `가입 이메일: ${i.data.email ?? ""}`,
+      `서류: ${i.data.hasDocument ? "인증센터에 올림 — 운영진 페이지의 '서류 보기'" : "이메일로 받기 — 메일함 확인"}`,
       "",
       `심사하기: ${link("/admin")}`,
     ].join("\n"),
