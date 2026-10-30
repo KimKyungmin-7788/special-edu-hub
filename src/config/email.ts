@@ -22,6 +22,14 @@ export type EmailInput = {
 
 export type EmailContent = { subject: string; text: string }
 
+/** 누리집이 지향하는 것 — 환영 메일에 그대로 들어간다. */
+const mission = [
+  "이 누리집은 특수교육에서 AI를 어떻게 활용해야 할지 함께 고민하고,",
+  "그 고민을 실제 수업으로 실천하는 선생님들의 공간입니다.",
+  "선생님들이 만든 교육 웹앱과 수업 이야기를 나누며, 서로에게 자유롭게 배우고 함께 성장하기를 바랍니다.",
+  "앞으로 연수방도 열어 배운 것을 더 가까이에서 나누려고 합니다.",
+]
+
 const link = (path: string) => `${site.url}${path}`
 const hello = (nickname: string) => `안녕하세요, ${nickname.trim() || "회원"} 님.`
 
@@ -45,7 +53,11 @@ const templates: Record<EmailKind, (i: EmailInput) => EmailContent> = {
       hello(i.nickname),
       "",
       `${site.name}에 가입해 주셔서 고맙습니다.`,
-      "특수교사가 만든 교육 웹앱과 수업실천사례를 둘러보고, 좋아요·담기·댓글로 함께해 주세요.",
+      "",
+      ...mission,
+      "",
+      "먼저 교육 웹앱과 수업실천사례를 둘러보고, 좋아요·담기·댓글로 함께해 주세요.",
+      `자료 둘러보기: ${link("/apps/subject")}`,
       "",
       "선생님이시라면 교사인증을 받아 보세요. 인증을 받으면 직접 만든 자료를 등록하고 수업 사례를 쓸 수 있습니다.",
       `교사인증 하기: ${link("/verify")}`,
@@ -78,6 +90,8 @@ const templates: Record<EmailKind, (i: EmailInput) => EmailContent> = {
       "",
       "교사인증이 완료되었습니다. 함께해 주셔서 고맙습니다.",
       "이제 직접 만든 교육 웹앱을 등록하고, 수업실천사례를 쓸 수 있습니다.",
+      "AI를 수업에 들여온 선생님의 시도와 고민이 다른 선생님에게는 좋은 배움이 됩니다.",
+      "작은 경험이라도 편하게 나눠 주세요. 연수방이 열리면 누리집에서 먼저 알려 드리겠습니다.",
       "",
       `자료 둘러보기: ${link("/apps/subject")}`,
       `수업 사례 쓰기: ${link("/practices/write")}`,
