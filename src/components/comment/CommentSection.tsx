@@ -3,7 +3,7 @@ import { Link } from "react-router-dom"
 import { Flag, Send, ThumbsUp } from "lucide-react"
 import { ProfileTrigger } from "@/components/profile/ProfileTrigger"
 import { ReportDialog } from "@/components/report/ReportDialog"
-import { CommentComposer } from "@/components/comment/CommentComposer"
+import { CommentComposer, type ComposerImages } from "@/components/comment/CommentComposer"
 import { reportComment } from "@/lib/reports"
 import { useAuth } from "@/lib/auth"
 import { parseMentions, type MentionUser } from "@/lib/mentions"
@@ -22,7 +22,8 @@ import {
 /**
  * 앱·사례 상세 댓글 영역 (PRD 4단계 묶음 C-2, 트랙 E 답글·멘션·좋아요·수정).
  * - 머리줄: 아바타 · @닉네임(프로필) · 쪽지 아이콘(프로필 창의 쪽지 보내기) · 시각 · (수정됨).
- * - 본문: 멘션은 프로필로 연결. 본인 글이면 끝에 '수정'.
+ * - 본문: 멘션은 프로필로 연결. 본인 글이면 끝에 '수정'. 첨부 사진은 본문 아래 썸네일(누르면 새 탭).
+ * - 사진 첨부는 인증교사만(46_comment_images.sql).
  * - 아래줄: 좋아요(토글) · 답글 · [본인/운영진] 삭제 · [남의 글] 오른쪽 끝 신고 깃발.
  * - 답글: 1단계. 답글의 '답글' → 같은 묶음에 '@닉네임' 을 붙여 단다. 왼쪽 세로줄로 묶는다.
  * - 원댓글이 지워지고 답글만 남으면 그 자리에 '삭제된 댓글입니다'.
@@ -101,12 +102,40 @@ function CommentBody({ comment, onEdit }: { comment: Comment; onEdit?: () => voi
   )
 }
 
+/** 첨부 사진 썸네일. 누르면 원본을 새 탭으로 연다. */
+function CommentImages({ comment }: { comment: Comment }) {
+  if (comment.images.length === 0) return null
+  return (
+    <ul className="mt-2 flex flex-wrap gap-2">
+      {comment.images.map((img, i) => (
+        <li key={img.path}>
+          <a
+            href={img.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block overflow-hidden rounded-md border border-border hover:opacity-90"
+          >
+            <img
+              src={img.url}
+              alt={`첨부 사진 ${i + 1}`}
+              loading="lazy"
+              className="size-24 object-cover sm:size-28"
+            />
+          </a>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 /** 답글 입력창을 어디에, 무엇을 채워 열지. */
 type ReplyDraft = { threadId: string; mentionUser: MentionUser | null }
 
 export function CommentSection({ target, boardCanWrite }: { target: CommentTarget; boardCanWrite?: boolean }) {
   const { user, profile, isStaff } = useAuth()
   const canWrite = !!user && (target.kind !== "post" || (boardCanWrite ?? !!profile?.isTeacherVerified))
+  // 게시판(비공개) 댓글에는 사진을 붙이지 않는다 — 사진 버킷이 공개라서(46)
+  const canAttach = target.kind !== "post" && !!profile?.isTeacherVerified
   const [comments, setComments] = useState<Comment[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -144,8 +173,8 @@ export function CommentSection({ target, boardCanWrite }: { target: CommentTarge
     setComments(await getComments(target))
   }
 
-  async function submit(body: string, parentId: string | null) {
-    await addComment(target, body, parentId)
+  async function submit(body: string, images: ComposerImages, parentId: string | null) {
+    await addComment(target, body, parentId, images.files)
     await reload()
   }
 
@@ -262,29 +291,40 @@ export function CommentSection({ target, boardCanWrite }: { target: CommentTarge
               <CommentComposer
                 initialText={editable!.text}
                 initialPicked={editable!.picked}
+                initialImages={c.images}
+                allowImages={canAttach}
                 submitLabel="수정 완료"
                 rows={3}
                 autoFocus
                 onCancel={() => setEditingId(null)}
-                onSubmit={async (body) => {
-                  await editComment(c.id, body)
+                onSubmit={async (body, images) => {
+                  await editComment(
+                    c.id,
+                    body,
+                    c.images.map((img) => img.path),
+                    images.kept,
+                    images.files,
+                  )
                   setEditingId(null)
                   await reload()
                 }}
               />
             </div>
           ) : (
-            <CommentBody
-              comment={c}
-              onEdit={
-                isMine && canWrite
-                  ? () => {
-                      setReply(null)
-                      setEditingId(c.id)
-                    }
-                  : undefined
-              }
-            />
+            <>
+              <CommentBody
+                comment={c}
+                onEdit={
+                  isMine && canWrite
+                    ? () => {
+                        setReply(null)
+                        setEditingId(c.id)
+                      }
+                    : undefined
+                }
+              />
+              <CommentImages comment={c} />
+            </>
           )}
 
           {/* 아래줄: 좋아요 · 답글 · 삭제 | 신고 */}
@@ -360,7 +400,10 @@ export function CommentSection({ target, boardCanWrite }: { target: CommentTarge
       {/* 작성 폼: 로그인 사용자만 */}
       {canWrite ? (
         <div className="mt-4">
-          <CommentComposer onSubmit={(body) => submit(body, null)} />
+          <CommentComposer
+            allowImages={canAttach}
+            onSubmit={(body, images) => submit(body, images, null)}
+          />
         </div>
       ) : user && target.kind === "post" ? (
         <p className="mt-4 text-sm text-muted-foreground">댓글은 인증 교사만 작성할 수 있어요. <Link to="/verify" className="font-medium text-primary underline">교사인증하기</Link></p>
@@ -415,9 +458,10 @@ export function CommentSection({ target, boardCanWrite }: { target: CommentTarge
                             submitLabel="답글 등록"
                             rows={2}
                             autoFocus
+                            allowImages={canAttach}
                             onCancel={() => setReply(null)}
-                            onSubmit={async (body) => {
-                              await submit(body, t.id)
+                            onSubmit={async (body, images) => {
+                              await submit(body, images, t.id)
                               setReply(null)
                             }}
                           />

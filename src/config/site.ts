@@ -31,6 +31,8 @@ const SITE_NAME = "특수교육 디지털 학습자료 누리집"
 export const site = {
   /** 누리집 이름(index.html <title> 도 같은 값으로 맞춰 둔다 — 첫 로딩 순간 표시용). */
   name: SITE_NAME,
+  /** 누리집 주소(안내 메일 속 링크). 공식 도메인을 열면 여기와 index.html canonical 을 함께 바꾼다. */
+  url: "https://special-edu-hub.vercel.app",
   /**
    * 헤더 로고 옆 워드마크(2줄): eyebrow = 작은 윗줄, title = 굵은 아랫줄.
    * title 을 비워 두면 name 을 쓴다. 헤더에서만 쓰는 표기 — SITE_NAME 은 그대로.
@@ -113,7 +115,7 @@ export const site = {
       "특수교사 개발자들의 협력과 나눔을 위한 강릉오성학교 AI하이터치 수업 연구회의 프로젝트입니다.",
     privacyOfficer: { name: "김경민", email: "themaniwant19@gmail.com" },
     /** 법적 문서 시행일(개정 시 갱신). */
-    effectiveDate: "2026-10-28",
+    effectiveDate: "2026-10-30",
   },
 
   /**

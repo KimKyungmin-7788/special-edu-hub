@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase"
 import { getMyBlocks } from "@/lib/blocks"
 import { getCurrentNicknames, mentionedIds, plainMentions } from "@/lib/mentions"
+import { downscaleImage } from "@/lib/image"
 
 /**
  * 댓글(comment) 데이터 접근 일원화 지점 (PRD 4단계, 묶음 C-1).
@@ -13,7 +14,12 @@ import { getCurrentNicknames, mentionedIds, plainMentions } from "@/lib/mentions
  *  - 답글 = 1단계(최상위 댓글에만, 39_comment_replies.sql).
  *  - 수정 = edit_comment RPC(본인만, '(수정됨)'). 좋아요 = comment_likes 토글(40_comment_likes_edit.sql).
  *  - 멘션 = 본문 안 토큰(lib/mentions). 표시 이름은 현재 닉네임으로 맞춘다.
+ *  - 이미지 = 최대 4장, 인증교사만. 공개 버킷 comment-images(46_comment_images.sql).
+ *    DB 에는 경로만 두고 주소는 여기서 만든다. 본문 없이 사진만 있는 댓글도 된다.
  */
+
+/** 댓글에 붙은 이미지 한 장. path = Storage 경로, url = 공개 주소. */
+export type CommentImage = { path: string; url: string }
 
 /** 댓글 한 건(목록 표시용). 작성자 프로필을 함께 가져온다. */
 export type Comment = {
@@ -26,6 +32,8 @@ export type Comment = {
   createdAt: string
   /** 수정했으면 그 시각(화면에 '(수정됨)'). */
   editedAt: string | null
+  /** 첨부 이미지(최대 4장). */
+  images: CommentImage[]
   likeCount: number
   /** 내가 좋아요를 눌렀는지(비로그인이면 false). */
   likedByMe: boolean
@@ -45,6 +53,7 @@ type CommentRow = {
   body: string
   created_at: string
   edited_at: string | null
+  images: string[] | null
   like_count: number
   author: {
     id: string
@@ -54,7 +63,7 @@ type CommentRow = {
 }
 
 const SELECT_WITH_AUTHOR =
-  "id, app_id, parent_id, body, created_at, edited_at, like_count, " +
+  "id, app_id, parent_id, body, created_at, edited_at, images, like_count, " +
   "author:profiles!comments_author_id_fkey(id, nickname, avatar_url)"
 
 function mapComment(row: CommentRow): Comment {
@@ -66,6 +75,7 @@ function mapComment(row: CommentRow): Comment {
     mentionNames: {},
     createdAt: row.created_at,
     editedAt: row.edited_at,
+    images: (row.images ?? []).map(toCommentImage),
     likeCount: row.like_count ?? 0,
     likedByMe: false,
     author: {
@@ -91,6 +101,67 @@ function targetColumn(t: CommentTarget) {
 
 /** 본문 길이 제한. */
 export const COMMENT_BODY_MAX = 1000
+
+/** 이미지 첨부 제한(46_comment_images.sql 과 같게). */
+export const COMMENT_IMAGE_MAX = 4
+const IMAGE_BUCKET = "comment-images"
+const IMAGE_MAX_BYTES = 5 * 1024 * 1024
+export const COMMENT_IMAGE_MIME = ["image/png", "image/jpeg", "image/webp", "image/gif"]
+const IMAGE_EXT: Record<string, string> = {
+  "image/png": "png",
+  "image/jpeg": "jpg",
+  "image/webp": "webp",
+  "image/gif": "gif",
+}
+
+function toCommentImage(path: string): CommentImage {
+  return { path, url: supabase.storage.from(IMAGE_BUCKET).getPublicUrl(path).data.publicUrl }
+}
+
+/** 이미지 한 장을 줄여서 올리고 경로를 돌려준다. 경로 comment-images/<uid>/<uuid>.<ext>. */
+async function uploadCommentImage(uid: string, file: File): Promise<string> {
+  if (!COMMENT_IMAGE_MIME.includes(file.type))
+    throw new Error("이미지(PNG·JPG·WebP·GIF) 파일만 첨부할 수 있습니다.")
+  const small = await downscaleImage(file)
+  if (small.size > IMAGE_MAX_BYTES) throw new Error("이미지는 한 장에 5MB 이하만 첨부할 수 있습니다.")
+
+  const path = `${uid}/${crypto.randomUUID()}.${IMAGE_EXT[small.type] ?? "webp"}`
+  const { error } = await supabase.storage
+    .from(IMAGE_BUCKET)
+    .upload(path, small, { cacheControl: "3600", upsert: false, contentType: small.type })
+  if (error) throw error
+  return path
+}
+
+/** 올린 이미지를 지운다(실패해도 무시 — 등록 실패·수정 때 뺀 사진 정리용). */
+async function removeCommentImages(paths: string[]): Promise<void> {
+  if (paths.length === 0) return
+  const { error } = await supabase.storage.from(IMAGE_BUCKET).remove(paths)
+  if (error) console.error("[comments] 이미지 정리 실패:", error.message)
+}
+
+/** 새 파일들을 올린다. 하나라도 실패하면 이미 올린 것을 지우고 오류를 던진다. */
+async function uploadAll(uid: string, files: File[]): Promise<string[]> {
+  const done: string[] = []
+  try {
+    for (const f of files) done.push(await uploadCommentImage(uid, f))
+    return done
+  } catch (err) {
+    await removeCommentImages(done)
+    throw err
+  }
+}
+
+/** 본문 검사(사진이 있으면 본문은 비워도 된다). 다듬은 본문을 돌려준다. */
+function checkBody(body: string, imageCount: number): string {
+  const trimmed = body.trim()
+  if (trimmed === "" && imageCount === 0) throw new Error("댓글 내용을 입력하세요.")
+  if (plainMentions(trimmed).length > COMMENT_BODY_MAX)
+    throw new Error(`댓글은 최대 ${COMMENT_BODY_MAX}자까지 가능합니다.`)
+  if (imageCount > COMMENT_IMAGE_MAX)
+    throw new Error(`이미지는 최대 ${COMMENT_IMAGE_MAX}장까지 첨부할 수 있습니다.`)
+  return trimmed
+}
 
 /**
  * 한 대상(앱·사례)의 댓글 목록(오래된 순). 미삭제만(RLS).
@@ -134,19 +205,19 @@ export async function getComments(target: CommentTarget): Promise<Comment[]> {
  * 댓글·답글 작성. author_id 는 RLS 가 강제한다(위조 불가).
  * parentId 를 주면 답글 — 최상위·미삭제·같은 대상인지는 DB 정책이 검사한다.
  * body 는 멘션 토큰이 들어간 저장 형식. 글자 수는 사람이 읽는 형태로 센다.
+ * files 는 첨부 이미지(인증교사만 — 업로드·저장 모두 DB 가 검사). 등록에 실패하면 올린 파일을 지운다.
  */
 export async function addComment(
   target: CommentTarget,
   body: string,
   parentId: string | null = null,
+  files: File[] = [],
 ): Promise<void> {
   const uid = await currentUserId()
   if (!uid) throw new Error("로그인이 필요합니다.")
 
-  const trimmed = body.trim()
-  if (trimmed === "") throw new Error("댓글 내용을 입력하세요.")
-  if (plainMentions(trimmed).length > COMMENT_BODY_MAX)
-    throw new Error(`댓글은 최대 ${COMMENT_BODY_MAX}자까지 가능합니다.`)
+  const trimmed = checkBody(body, files.length)
+  const images = await uploadAll(uid, files)
 
   const { error } = await supabase
     .from("comments")
@@ -155,8 +226,12 @@ export async function addComment(
       author_id: uid,
       body: trimmed,
       parent_id: parentId,
+      images,
     })
-  if (error) throw error
+  if (error) {
+    await removeCommentImages(images)
+    throw error
+  }
 }
 
 /** 댓글 삭제(소프트). 본인/운영진만(RPC 가 권한 강제). */
@@ -165,14 +240,35 @@ export async function deleteComment(id: string): Promise<void> {
   if (error) throw error
 }
 
-/** 댓글 수정(본인만). body 는 멘션 토큰이 들어간 저장 형식. */
-export async function editComment(id: string, body: string): Promise<void> {
-  const trimmed = body.trim()
-  if (trimmed === "") throw new Error("댓글 내용을 입력하세요.")
-  if (plainMentions(trimmed).length > COMMENT_BODY_MAX)
-    throw new Error(`댓글은 최대 ${COMMENT_BODY_MAX}자까지 가능합니다.`)
-  const { error } = await supabase.rpc("edit_comment", { p_id: id, p_body: trimmed })
-  if (error) throw error
+/**
+ * 댓글 수정(본인만). body 는 멘션 토큰이 들어간 저장 형식.
+ * before = 수정 전 이미지 경로, kept = 그중 남길 것, files = 새로 더할 이미지.
+ * 저장에 성공하면 뺀 사진을 Storage 에서 지우고, 실패하면 새로 올린 것을 지운다.
+ */
+export async function editComment(
+  id: string,
+  body: string,
+  before: string[] = [],
+  kept: string[] = before,
+  files: File[] = [],
+): Promise<void> {
+  const uid = await currentUserId()
+  if (!uid) throw new Error("로그인이 필요합니다.")
+
+  const trimmed = checkBody(body, kept.length + files.length)
+  const added = await uploadAll(uid, files)
+  const images = [...kept, ...added]
+
+  const { error } = await supabase.rpc("edit_comment", {
+    p_id: id,
+    p_body: trimmed,
+    p_images: images,
+  })
+  if (error) {
+    await removeCommentImages(added)
+    throw error
+  }
+  await removeCommentImages(before.filter((p) => !kept.includes(p)))
 }
 
 /** 이 댓글들 가운데 내가 좋아요 한 것(비로그인이면 빈 집합). */
