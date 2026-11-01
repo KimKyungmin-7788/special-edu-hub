@@ -21,5 +21,5 @@ export const navItems: NavItem[] = [
   { label: "열린연수방", to: "/training", status: "active" },
   { label: "게시판", to: "/board", status: "active" },
   { label: "교사인증센터", to: "/verify", status: "active" },
-  { label: "소개", to: "/about", status: "soon" },
+  { label: "소개", to: "/about", status: "active" },
 ]

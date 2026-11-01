@@ -15,7 +15,7 @@ const EditPage = lazyPage(() => import("@/pages/EditPage").then((m) => ({ defaul
 const Privacy = lazyPage(() => import("@/pages/Privacy").then((m) => ({ default: m.Privacy })))
 const Terms = lazyPage(() => import("@/pages/Terms").then((m) => ({ default: m.Terms })))
 const Contact = lazyPage(() => import("@/pages/Contact").then((m) => ({ default: m.Contact })))
-const ComingSoon = lazyPage(() => import("@/pages/ComingSoon").then((m) => ({ default: m.ComingSoon })))
+const About = lazyPage(() => import("@/pages/About").then((m) => ({ default: m.About })))
 const Login = lazyPage(() => import("@/pages/Login").then((m) => ({ default: m.Login })))
 const Signup = lazyPage(() => import("@/pages/Signup").then((m) => ({ default: m.Signup })))
 const MyPage = lazyPage(() => import("@/pages/MyPage").then((m) => ({ default: m.MyPage })))
@@ -98,7 +98,7 @@ function App() {
             <Route path="verify" element={<VerifyPage />} />
 
             {/* 정적·법적 페이지 (트랙 A) — 소개는 준비 중 */}
-            <Route path="about" element={<ComingSoon title="소개" />} />
+            <Route path="about" element={<About />} />
             <Route path="privacy" element={<Privacy />} />
             <Route path="terms" element={<Terms />} />
             <Route path="contact" element={<Contact />} />

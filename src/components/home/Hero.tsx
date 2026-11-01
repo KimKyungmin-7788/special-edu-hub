@@ -112,7 +112,7 @@ function SlideContent({
               {slide.keyword}
             </p>
           )}
-          <h1 className="whitespace-pre-line text-xl font-bold leading-snug tracking-tight text-hero-foreground sm:text-2xl">
+          <h1 className="whitespace-pre-line break-keep text-xl font-bold leading-snug tracking-tight text-hero-foreground sm:text-2xl">
             {slide.title}
           </h1>
         </div>
