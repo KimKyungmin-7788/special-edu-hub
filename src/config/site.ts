@@ -71,7 +71,7 @@ export const site = {
       title: "처음 시작하는 선생님을 위한\n바이브코딩 준비",
       subtitle: "Windows에서 Claude Code·Codex 설치부터 첫 앱 공개까지, 한 화면씩 따라 해요.",
       ctaLabel: "시작하기",
-      ctaHref: "/vibecoding/setup",
+      ctaHref: "/training/agent/setup",
       image: { src: "/hero/first-app-start.png", position: "right center" },
     },
   ] satisfies HeroSlide[],

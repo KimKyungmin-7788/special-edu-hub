@@ -4,7 +4,7 @@ import { ExternalLink } from "lucide-react"
 const SURVEY_URL = "https://vibecoding-survey.vercel.app/"
 
 /**
- * 연수 돌아보기(/vibecoding/survey) — 바이브코딩 환경구축 연수가 끝난 뒤 쓰는 설문.
+ * 연수 돌아보기(/training/agent/survey, 열린연수방 연수 3) — 바이브코딩 환경구축 연수가 끝난 뒤 쓰는 설문.
  * 설문은 따로 배포된 앱이라 iframe으로 넣는다(응답은 그 앱의 Supabase에 저장).
  */
 export function VibeSurvey() {

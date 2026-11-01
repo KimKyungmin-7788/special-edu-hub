@@ -4,7 +4,7 @@ import { ChevronDown, LogOut, Menu, Settings, User, X } from "lucide-react"
 import { site } from "@/config/site"
 import { SiteLogo } from "@/config/logo"
 import { CONTAINER, WIDE_CONTAINER } from "@/config/layout"
-import { vibecoding } from "@/config/vibecoding"
+import { training } from "@/config/training"
 import { Nav } from "@/components/layout/Nav"
 import { WriteButton } from "@/components/app/WriteButton"
 import { useAuth } from "@/lib/auth"
@@ -25,8 +25,8 @@ import { NotificationBell } from "@/components/notification/NotificationBell"
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
   const { pathname } = useLocation()
-  // 넓은 작업 화면(바이브코딩)에서는 헤더도 본문 폭에 맞춘다
-  const container = pathname.startsWith(vibecoding.basePath)
+  // 넓은 작업 화면(열린연수방)에서는 헤더도 본문 폭에 맞춘다
+  const container = pathname.startsWith(training.basePath)
     ? WIDE_CONTAINER
     : CONTAINER
   const { navBoxRef, rightRef, density } = useHeaderDensity(container)

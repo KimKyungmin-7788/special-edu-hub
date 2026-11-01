@@ -1,16 +1,16 @@
 import { useEffect } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import { ArrowLeft, ArrowRight } from "lucide-react"
-import { vibecodingPath } from "@/config/vibecoding"
+import { vibecoding } from "@/config/vibecoding"
 import { WHY, WHY_TITLE } from "@/components/vibecoding/setup/steps"
 import { SlideFrame } from "@/components/vibecoding/setup/components/SlideFrame"
 import { WhyView } from "@/components/vibecoding/setup/components/WhyView"
 import { WhyCover } from "@/components/vibecoding/setup/components/WhyCover"
 
 /**
- * 왜 바이브코딩인가?(/vibecoding/why) — 바이브코딩 배우기의 첫 하위 페이지.
+ * 왜 바이브코딩인가?(/training/vibecoding/why) — 열린연수방 연수 1(특수교육을 위한 바이브코딩 시작하기)의 첫 쪽.
  * 내용은 환경구축과 같은 steps.ts(WHY)에서 읽고, 화면도 같은 16:9 슬라이드(SlideFrame·WhyView)를 쓴다.
- * 표지 + 3장. 몇 번째 장인지는 ?p= 로만 관리(표지는 p 없음). 마지막 장에서 환경구축으로 넘어간다.
+ * 표지 + 3장. 몇 번째 장인지는 ?p= 로만 관리(표지는 p 없음). 마지막 장에서 연수 3의 환경구축으로 넘어간다.
  */
 export function VibeWhy() {
   const [params, setParams] = useSearchParams()
@@ -24,7 +24,7 @@ export function VibeWhy() {
 
   const go = (i: number) => {
     if (i < 0) return
-    if (i >= count) navigate(vibecodingPath("setup"))
+    if (i >= count) navigate(vibecoding.setupPath)
     else setParams(i === 0 ? {} : { p: String(i + 1) })
   }
 

@@ -1,7 +1,7 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from "react-router-dom"
 import { AuthProvider } from "@/lib/auth"
 import { Layout } from "@/components/layout/Layout"
-import { vibecoding, vibecodingPath } from "@/config/vibecoding"
+import { vibecoding } from "@/config/vibecoding"
 import { Home } from "@/pages/Home"
 import { lazyPage } from "@/lib/lazyPage"
 
@@ -25,7 +25,8 @@ const NotFound = lazyPage(() => import("@/pages/NotFound").then((m) => ({ defaul
 const PracticeList = lazyPage(() => import("@/pages/PracticeList").then((m) => ({ default: m.PracticeList })))
 const PracticeDetail = lazyPage(() => import("@/pages/PracticeDetail").then((m) => ({ default: m.PracticeDetail })))
 const PracticeWritePage = lazyPage(() => import("@/pages/PracticeWritePage").then((m) => ({ default: m.PracticeWritePage })))
-const VibecodingPage = lazyPage(() => import("@/pages/VibecodingPage").then((m) => ({ default: m.VibecodingPage })))
+const TrainingPage = lazyPage(() => import("@/pages/TrainingPage").then((m) => ({ default: m.TrainingPage })))
+const TrainingGuide = lazyPage(() => import("@/components/training/TrainingGuide").then((m) => ({ default: m.TrainingGuide })))
 const VibeSetup = lazyPage(() => import("@/components/vibecoding/setup/VibeSetup").then((m) => ({ default: m.VibeSetup })))
 const VibeWhy = lazyPage(() => import("@/components/vibecoding/why/VibeWhy").then((m) => ({ default: m.VibeWhy })))
 const VibeSurvey = lazyPage(() => import("@/components/vibecoding/survey/VibeSurvey").then((m) => ({ default: m.VibeSurvey })))
@@ -63,18 +64,25 @@ function App() {
             <Route path="practices/write" element={<PracticeWritePage />} />
             <Route path="practices/:id" element={<PracticeDetail />} />
             <Route path="practices/:id/edit" element={<PracticeWritePage />} />
-            {/* 바이브코딩: 오른쪽 사이드바 + 하위 페이지. /vibecoding 은 첫 하위 페이지로 */}
-            <Route path="vibecoding" element={<VibecodingPage />}>
-              <Route
-                index
-                element={<Navigate to={vibecodingPath(vibecoding.pages[0].slug)} replace />}
-              />
-              <Route path="why" element={<VibeWhy />} />
-              <Route path="setup" element={<VibeSetup />} />
-              <Route path="survey" element={<VibeSurvey />} />
+            {/* 열린연수방: 왼쪽 사이드바 + 하위 페이지. /training 은 열린연수방이란?, 연수 주소만 치면 그 연수 첫 쪽으로.
+                연수 쪽은 인증 교사만(TrainingPage 가 막음). 준비 중인 연수·쪽은 라우트 없음 */}
+            <Route path="training" element={<TrainingPage />}>
+              <Route index element={<TrainingGuide />} />
+              {/* 연수 1. 특수교육을 위한 바이브코딩 시작하기 */}
+              <Route path="vibecoding">
+                <Route index element={<Navigate to="why" replace />} />
+                <Route path="why" element={<VibeWhy />} />
+              </Route>
+              {/* 연수 3. 에이전트 코딩 최소한의 환경구축 */}
+              <Route path="agent">
+                <Route index element={<Navigate to="setup" replace />} />
+                <Route path="setup" element={<VibeSetup />} />
+                <Route path="survey" element={<VibeSurvey />} />
+              </Route>
             </Route>
-            {/* 옛 주소(단독 튜토리얼을 넘겨주던 때) → 허브 하위 페이지로 */}
-            <Route path="vibe-setup/*" element={<Navigate to={vibecodingPath("setup")} replace />} />
+            {/* 옛 주소(바이브코딩 메뉴 때·단독 튜토리얼을 넘겨주던 때) → 열린연수방의 같은 쪽으로 */}
+            <Route path="vibecoding/*" element={<OldVibecodingRedirect />} />
+            <Route path="vibe-setup/*" element={<Navigate to={vibecoding.setupPath} replace />} />
 
             {/* 자리만 / 준비 중 */}
             <Route path="board" element={<BoardLayout />}>
@@ -101,6 +109,15 @@ function App() {
       </BrowserRouter>
     </AuthProvider>
   )
+}
+
+/** 옛 주소 /vibecoding/<쪽> → 열린연수방의 같은 쪽(왜는 연수 1, 환경구축·돌아보기는 연수 3). ?p= ?step= 도 그대로 */
+function OldVibecodingRedirect() {
+  const { "*": rest } = useParams()
+  const { search, hash } = useLocation()
+  const to =
+    rest === "setup" ? vibecoding.setupPath : rest === "survey" ? vibecoding.surveyPath : vibecoding.whyPath
+  return <Navigate to={`${to}${search}${hash}`} replace />
 }
 
 export default App
