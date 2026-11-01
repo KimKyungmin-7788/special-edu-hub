@@ -44,7 +44,7 @@ export const site = {
 
   /**
    * 히어로 캐러셀: 문구 슬라이드 + 배너 이미지 슬라이드를 배열로(순서대로 넘김).
-   * 1장이면 넘김 표시 없이 고정. 참여 안내 + 수업 나눔 + 바이브코딩 준비.
+   * 1장이면 넘김 표시 없이 고정. 참여 안내 + 수업 나눔 + 열린연수방.
    */
   heroSlides: [
     {
@@ -68,10 +68,10 @@ export const site = {
     {
       type: "text",
       keyword: "시작",
-      title: "처음 시작하는 선생님을 위한\n바이브코딩 준비",
-      subtitle: "Windows에서 Claude Code·Codex 설치부터 첫 앱 공개까지, 한 화면씩 따라 해요.",
-      ctaLabel: "시작하기",
-      ctaHref: "/training/agent/setup",
+      title: "처음 시작하는 선생님을 위한\n열린연수방",
+      subtitle: "왜 바이브코딩인지부터 첫 앱 공개까지, 한 단계씩 따라 배워요.",
+      ctaLabel: "열린연수방 가기",
+      ctaHref: "/training",
       image: { src: "/hero/first-app-start.png", position: "right center" },
     },
   ] satisfies HeroSlide[],

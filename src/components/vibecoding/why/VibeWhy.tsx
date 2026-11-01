@@ -8,9 +8,9 @@ import { WhyView } from "@/components/vibecoding/setup/components/WhyView"
 import { WhyCover } from "@/components/vibecoding/setup/components/WhyCover"
 
 /**
- * 왜 바이브코딩인가?(/training/vibecoding/why) — 열린연수방 연수 1(특수교육을 위한 바이브코딩 시작하기)의 첫 쪽.
+ * 왜 바이브코딩인가?(/training/vibecoding/why) — 열린연수방 1(특수교육 바이브코딩 기초)의 첫 세부 연수.
  * 내용은 환경구축과 같은 steps.ts(WHY)에서 읽고, 화면도 같은 16:9 슬라이드(SlideFrame·WhyView)를 쓴다.
- * 표지 + 3장. 몇 번째 장인지는 ?p= 로만 관리(표지는 p 없음). 마지막 장에서 연수 3의 환경구축으로 넘어간다.
+ * 표지 + 3장. 몇 번째 장인지는 ?p= 로만 관리(표지는 p 없음). 마지막 장에서 2의 환경구축으로 넘어간다.
  */
 export function VibeWhy() {
   const [params, setParams] = useSearchParams()
@@ -47,6 +47,8 @@ export function VibeWhy() {
       number={index}
       total={WHY.length}
       nextLabel={last ? "환경구축 시작하기" : "다음"}
+      // 1의 다른 세부 연수(기초 익히기 등)가 열리면 넘어가는 곳(go)과 이 안내를 함께 고친다
+      nextNote={last ? "1의 다른 세부 연수는 준비 중이라, 2. 에이전트 코딩의 환경구축으로 바로 이어져요." : undefined}
       onPrev={() => go(index - 1)}
       onNext={() => go(index + 1)}
     />

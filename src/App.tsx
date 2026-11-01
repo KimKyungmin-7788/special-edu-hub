@@ -68,12 +68,12 @@ function App() {
                 연수 쪽은 인증 교사만(TrainingPage 가 막음). 준비 중인 연수·쪽은 라우트 없음 */}
             <Route path="training" element={<TrainingPage />}>
               <Route index element={<TrainingGuide />} />
-              {/* 연수 1. 특수교육을 위한 바이브코딩 시작하기 */}
+              {/* 1. 특수교육 바이브코딩 기초 */}
               <Route path="vibecoding">
                 <Route index element={<Navigate to="why" replace />} />
                 <Route path="why" element={<VibeWhy />} />
               </Route>
-              {/* 연수 3. 에이전트 코딩 최소한의 환경구축 */}
+              {/* 2. 에이전트 코딩의 환경구축 */}
               <Route path="agent">
                 <Route index element={<Navigate to="setup" replace />} />
                 <Route path="setup" element={<VibeSetup />} />
@@ -111,7 +111,7 @@ function App() {
   )
 }
 
-/** 옛 주소 /vibecoding/<쪽> → 열린연수방의 같은 쪽(왜는 연수 1, 환경구축·돌아보기는 연수 3). ?p= ?step= 도 그대로 */
+/** 옛 주소 /vibecoding/<쪽> → 열린연수방의 같은 쪽(왜는 1, 환경구축·돌아보기는 2). ?p= ?step= 도 그대로 */
 function OldVibecodingRedirect() {
   const { "*": rest } = useParams()
   const { search, hash } = useLocation()

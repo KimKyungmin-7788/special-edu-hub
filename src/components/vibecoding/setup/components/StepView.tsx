@@ -31,8 +31,8 @@ interface Props {
   onToggle: (id: string) => void
   /** 이전 단계 이름. 첫 단계면 "처음 화면" */
   prevLabel: string
-  /** 다음 단계 이름. 마지막 단계면 null */
-  nextLabel: string | null
+  /** 다음 단계 이름. 마지막 단계면 그다음 갈 곳(연수 돌아보기) */
+  nextLabel: string
   onPrev: () => void
   onNext: () => void
   /** 화면에 다 안 들어가면 true — 할 일이 5개 미만이어도 촘촘하게 보여 줘요(허브 전용) */
@@ -348,7 +348,7 @@ function StepNav({
 }: {
   allDone: boolean
   prevLabel: string
-  nextLabel: string | null
+  nextLabel: string
   onPrev: () => void
   onNext: () => void
 }) {
@@ -363,26 +363,20 @@ function StepNav({
         이전
         <span className="sr-only">: {prevLabel}</span>
       </button>
-      {nextLabel ? (
-        <button
-          type="button"
-          onClick={onNext}
-          className={
-            "inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-md px-5 text-base font-semibold transition " +
-            (allDone
-              ? "bg-cta text-cta-foreground shadow-sm hover:opacity-90"
-              : "border-2 border-cta bg-background text-cta-foreground hover:bg-cta/30")
-          }
-        >
-          {allDone ? "다 했어요, 다음 단계로" : "다음 단계로"}
-          <span className="font-normal opacity-80">· {nextLabel}</span>
-          <ArrowRight aria-hidden className="size-5" />
-        </button>
-      ) : (
-        <p className="flex h-12 flex-1 items-center justify-center rounded-md bg-brand-soft text-sm font-semibold text-brand-muted-foreground ring-1 ring-brand-line">
-          마지막 단계예요
-        </p>
-      )}
+      <button
+        type="button"
+        onClick={onNext}
+        className={
+          "inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-md px-5 text-base font-semibold transition " +
+          (allDone
+            ? "bg-cta text-cta-foreground shadow-sm hover:opacity-90"
+            : "border-2 border-cta bg-background text-cta-foreground hover:bg-cta/30")
+        }
+      >
+        {allDone ? "다 했어요, 다음 단계로" : "다음 단계로"}
+        <span className="font-normal opacity-80">· {nextLabel}</span>
+        <ArrowRight aria-hidden className="size-5" />
+      </button>
     </nav>
   )
 }

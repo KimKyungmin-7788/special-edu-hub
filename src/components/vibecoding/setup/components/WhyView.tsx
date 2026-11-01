@@ -36,6 +36,8 @@ interface Props {
   number: number
   total: number
   nextLabel: string
+  /** 다음 버튼 아래 작은 안내(예: 어디로 넘어가는지) */
+  nextNote?: string
   /** 없으면 이전 버튼을 숨겨요(첫 장) */
   onPrev?: () => void
   onNext: () => void
@@ -47,6 +49,7 @@ export function WhyView({
   number,
   total,
   nextLabel,
+  nextNote,
   onPrev,
   onNext,
 }: Props) {
@@ -91,6 +94,7 @@ export function WhyView({
           <ArrowRight aria-hidden className="size-5" />
         </button>
       </div>
+      {nextNote && <p className="mt-3 text-sm text-hero-muted">{nextNote}</p>}
     </div>
   )
 }

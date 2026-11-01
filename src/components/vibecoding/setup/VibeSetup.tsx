@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
-import { useSearchParams } from "react-router-dom"
+import { useNavigate, useSearchParams } from "react-router-dom"
 import { ArrowLeft, ArrowRight } from "lucide-react"
+import { vibecoding } from "@/config/vibecoding"
 import {
   CHAPTERS,
   STEPS,
@@ -55,13 +56,14 @@ function useWide() {
 }
 
 /**
- * 바이브코딩 최소한의 환경구축(/training/agent/setup, 열린연수방 연수 3). 원래 vibecoding-setting 단독 앱이던 것을 허브로 옮겼다.
+ * 바이브코딩 최소한의 환경구축(/training/agent/setup, 열린연수방 2. 에이전트 코딩의 환경구축). 원래 vibecoding-setting 단독 앱이던 것을 허브로 옮겼다.
  * 현재 위치는 ?step= 으로만 관리(도구를 고르기 전에는 표지·시작만, 목차를 누르면 도구부터 고르게 함).
- * "왜 바이브코딩인가?"는 따로 하위 페이지(/training/vibecoding/why, VibeWhy, 연수 1)라 여기선 빼요.
+ * "왜 바이브코딩인가?"는 따로 하위 페이지(/training/vibecoding/why, VibeWhy, 열린연수방 1)라 여기선 빼요.
  * 허브 헤더 아래 한 칸: [목차] + [16:9 슬라이드]. 넓은 화면에선 화면 높이에 맞춰 스크롤 없이 보이게 한다.
  */
 export function VibeSetup() {
   const [params, setParams] = useSearchParams()
+  const navigate = useNavigate()
   const { tool, checks, toggleCheck, setTool } = useProgress()
   const wide = useWide()
   // 허브는 왼쪽 메뉴(12rem)가 따로 있어서, 목차까지 펼치면 슬라이드가 작아져요.
@@ -170,9 +172,10 @@ export function VibeSetup() {
         checks={checks}
         onToggle={toggleCheck}
         prevLabel={PAGES[page - 1].label}
-        nextLabel={page < PAGES.length - 1 ? PAGES[page + 1].label : null}
+        // 마지막 단계(과제) 다음은 같은 연수의 연수 돌아보기
+        nextLabel={page < PAGES.length - 1 ? PAGES[page + 1].label : "연수 돌아보기"}
         onPrev={() => go(page - 1)}
-        onNext={() => go(page + 1)}
+        onNext={() => (page < PAGES.length - 1 ? go(page + 1) : navigate(vibecoding.surveyPath))}
       />
     )
 
