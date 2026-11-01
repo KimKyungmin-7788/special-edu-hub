@@ -2,7 +2,7 @@ import { Fragment, type ReactNode } from "react"
 import { NavLink, Outlet, useLocation } from "react-router-dom"
 import { TrainingAccessNotice } from "@/components/training/TrainingAccessNotice"
 import { WIDE_CONTAINER } from "@/config/layout"
-import { training, trainingPath } from "@/config/training"
+import { courseLabels, training, trainingPath } from "@/config/training"
 import { useAuth } from "@/lib/auth"
 import { cn } from "@/lib/utils"
 import { usePageTitle } from "@/lib/usePageTitle"
@@ -54,7 +54,7 @@ function TrainingSidebar() {
             <Fragment key={course.slug}>
               <li className="hidden items-start justify-between gap-2 px-3 pt-3 pb-1 text-xs font-semibold text-muted-foreground lg:flex">
                 <span className="break-keep">
-                  연수 {ci + 1}. {course.title}
+                  연수 {courseLabels[ci]}. {course.title}
                 </span>
                 {course.pages.length === 0 && <SoonBadge />}
               </li>
@@ -62,7 +62,7 @@ function TrainingSidebar() {
                 const label = (
                   <>
                     {/* 넓은 화면은 위에 연수 이름 줄이 있어 쪽 번호만, 좁은 화면 칩은 1-1처럼 연수 번호까지 */}
-                    <span className="lg:hidden">{ci + 1}-</span>
+                    <span className="lg:hidden">{courseLabels[ci]}-</span>
                     {pi + 1}. {page.label}
                   </>
                 )
