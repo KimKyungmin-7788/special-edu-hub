@@ -93,7 +93,9 @@ export function VerifyForm({
               <li>본인 이름이 보이는 나이스 화면 캡처 이미지</li>
             </ul>
           </li>
-          <li>운영자가 확인 후 승인하면 자료 등록 등 교사 전용 기능이 열립니다. 결과는 메일로 알려 드립니다.</li>
+          <li>
+            <span className="font-medium text-foreground">서류가 도착해야 심사가 시작됩니다.</span> 운영자가 확인 후 승인하면 자료 등록 등 교사 전용 기능이 열리고, 결과는 메일로 알려 드립니다.
+          </li>
         </ol>
       </div>
 
@@ -191,6 +193,9 @@ export function VerifyForm({
             <p className="text-sm text-muted-foreground">
               아래 내용으로 메일을 쓰고 서류를 직접 첨부해{" "}
               <span className="font-medium text-foreground">{site.verification.email}</span> 로 보내 주세요.
+            </p>
+            <p className="rounded-md border border-brand-line bg-brand-soft px-3 py-2 text-sm text-brand-muted-foreground">
+              메일 창을 열기만 하고 보내지 않으면 심사가 시작되지 않아요. <span className="font-semibold">서류를 첨부한 메일이 도착해야</span> 심사합니다.
             </p>
             <VerifyMailPreview mail={mail} />
             <VerifyMailActions mail={mail} onAction={handleMailAction} />
