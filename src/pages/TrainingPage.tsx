@@ -21,7 +21,8 @@ export function TrainingPage() {
   const inside = (path: string) => pathname === path || pathname.startsWith(`${path}/`)
   const course = training.courses.find((c) => inside(trainingPath(c.slug)))
   const page = course?.pages.find((p) => inside(trainingPath(course.slug, p.slug)))
-  usePageTitle(course && page ? `${page.label} · ${course.title}` : training.title)
+  // 함께 여는 연수 쪽은 하위 화면이 글 제목 등으로 다시 정한다(부모 효과가 나중에 돌아 덮어쓰지 않게 같은 이름으로)
+  usePageTitle(course && page ? `${page.label} · ${course.title}` : inside(training.share.path) ? training.share.title : training.title)
   // 로그인 직후엔 프로필이 조금 늦게 와서, 그동안은 안내를 띄우지 않고 기다린다
   const checking = loading || (!!user && !profile)
   return (
@@ -132,6 +133,10 @@ function TrainingSidebar() {
               </Fragment>
             )
           })}
+          {/* 회원이 여는 연수 — 단계형 연수와 나누려고 구분선 아래 따로(누구나 볼 수 있음) */}
+          <li className="shrink-0 lg:mt-3 lg:border-t lg:pt-3">
+            <SidebarLink to={training.share.path} label={training.share.title} />
+          </li>
           {/* 연수 흐름 밖의 활동 — 구분선 아래 따로. 지금은 준비중이라 좁은 화면 칩엔 없다 */}
           <li className="mt-3 hidden items-start gap-2 border-t px-2 pt-4 pb-1 lg:flex">
             {/* 연수 단계 그림의 스터디 활동 칸처럼 점선 동그라미 */}

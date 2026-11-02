@@ -2,7 +2,11 @@ import { useEffect, useRef, useState, type FormEvent } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import { useAuth } from "@/lib/auth"
 import { usePageTitle } from "@/lib/usePageTitle"
-import { boardError, getBoardPost, POST_TITLE_MAX, saveBoardPost, type BoardPost, type BoardSlug, boardName } from "@/lib/board"
+import { boardError, boardListPath, boardPostPath, getBoardPost, POST_TITLE_MAX, saveBoardPost, saveTrainingPost, type BoardPost, type BoardSlug, type TrainingLink, boardName } from "@/lib/board"
+import { uploadThumbnail } from "@/lib/apps"
+import { training } from "@/config/training"
+import { CoverField, type CoverValue } from "@/components/practice/CoverField"
+import { TrainingLinkField } from "@/components/training/TrainingLinkField"
 import { BoardNotice } from "@/components/board/BoardNotice"
 import { RichTextEditor } from "@/components/app/RichTextEditor"
 import { resolveResearchImages } from "@/lib/researchImages"
@@ -10,16 +14,19 @@ import { resolveResearchImages } from "@/lib/researchImages"
 export function BoardWritePage({ slug = "free" }: { slug?: BoardSlug }) {
   const { id } = useParams()
   const { user, profile, loading } = useAuth()
-  usePageTitle(id ? "게시글 수정" : `${boardName(slug)} 글쓰기`)
-  return <div className="mx-auto max-w-3xl px-4 py-10">
-    <Link to={id ? `/board/${id}` : `/board/${slug}`} className="text-sm text-muted-foreground hover:text-primary">← {id ? "게시글로" : "목록으로"}</Link>
-    <h1 className="mb-2 mt-6 text-2xl font-bold">{id ? "게시글 수정" : "이야기 나누기"}</h1>
-    <p className="mb-8 text-sm text-muted-foreground">서로의 경험을 존중하며 편하게 나눠 주세요. 학생을 식별할 수 있는 정보는 담지 말아 주세요.</p>
+  const isTraining = slug === "training"
+  usePageTitle(id ? "게시글 수정" : isTraining ? training.share.writeHeading : `${boardName(slug)} 글쓰기`)
+  return <div className={isTraining ? "rounded-xl border bg-card p-5 shadow-sm sm:p-7" : "mx-auto max-w-3xl px-4 py-10"}>
+    <Link to={id ? boardPostPath(slug, id) : boardListPath(slug)} className="text-sm text-muted-foreground hover:text-primary">← {id ? "게시글로" : "목록으로"}</Link>
+    <h1 className="mb-2 mt-6 text-2xl font-bold">{id ? "게시글 수정" : isTraining ? training.share.writeHeading : "이야기 나누기"}</h1>
+    {isTraining
+      ? <p className="mb-8 rounded-lg border border-brand-line bg-brand-soft px-4 py-3 text-sm text-brand-muted-foreground break-keep">{training.share.writeGuard}</p>
+      : <p className="mb-8 text-sm text-muted-foreground">서로의 경험을 존중하며 편하게 나눠 주세요. 학생을 식별할 수 있는 정보는 담지 말아 주세요.</p>}
     {loading ? <p role="status">로그인 상태를 확인하고 있어요…</p>
       : !user ? <BoardNotice title="로그인이 필요합니다" body="로그인 후 작성 권한을 확인할 수 있어요." to="/login" label="로그인하기" />
       : !profile ? <p role="status">교사인증 상태를 확인하고 있어요…</p>
       : !id && slug === "research" && !profile.isResearchMember ? <BoardNotice title="접근 권한이 없습니다" />
-      : !id && slug === "free" && !profile.isTeacherVerified ? <BoardNotice title="교사인증이 필요합니다" body="인증을 마치면 글과 댓글을 남길 수 있어요." to="/verify" label="교사인증하기" />
+      : !id && slug !== "research" && !profile.isTeacherVerified ? <BoardNotice title="교사인증이 필요합니다" body="인증을 마치면 글과 댓글을 남길 수 있어요." to="/verify" label="교사인증하기" />
       : <LoadForm key={`${slug}:${user.id}:${id ?? "new"}`} id={id} userId={user.id} slug={slug} />}
   </div>
 }
@@ -50,11 +57,15 @@ function PostForm({ post, slug }: { post: BoardPost | null; slug: BoardSlug }) {
   const navigate = useNavigate()
   const [title, setTitle] = useState(post?.title ?? "")
   const [body, setBody] = useState(post?.body ?? "")
+  // 함께 여는 연수만 — 카드 대표 사진(선택)과 연수 자료 링크
+  const [cover, setCover] = useState<CoverValue>({ file: null, url: post?.cover_url ?? "" })
+  const [links, setLinks] = useState<TrainingLink[]>(post?.links ?? [])
   const [busy, setBusy] = useState(false)
   const [imageBusy, setImageBusy] = useState(false)
   const submitting = useRef(false)
   const [error, setError] = useState("")
   const dirty = title !== (post?.title ?? "") || body !== (post?.body ?? "")
+    || !!cover.file || cover.url !== (post?.cover_url ?? "") || JSON.stringify(links) !== JSON.stringify(post?.links ?? [])
   useEffect(() => {
     if (!dirty) return
     const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = "" }
@@ -66,18 +77,27 @@ function PostForm({ post, slug }: { post: BoardPost | null; slug: BoardSlug }) {
     if (submitting.current || imageBusy) return
     submitting.current = true; setBusy(true); setError("")
     try {
-      const id = await saveBoardPost(title, body, post?.id, slug)
-      navigate(`/board/${id}`, { replace: true })
+      let id: string
+      if (slug === "training") {
+        const coverUrl = cover.file ? await uploadThumbnail(cover.file) : cover.url || null
+        if (cover.file && coverUrl) setCover({ file: null, url: coverUrl }) // 다시 눌러도 재업로드 안 하게
+        id = await saveTrainingPost(title, body, coverUrl, links, post?.id)
+      } else id = await saveBoardPost(title, body, post?.id, slug)
+      navigate(boardPostPath(slug, id), { replace: true })
     } catch (e) { setError(boardError(e)) }
     finally { submitting.current = false; setBusy(false) }
   }
   function cancel() {
-    if (!dirty || window.confirm("작성 중인 내용을 저장하지 않고 나갈까요?")) navigate(post ? `/board/${post.id}` : `/board/${slug}`)
+    if (!dirty || window.confirm("작성 중인 내용을 저장하지 않고 나갈까요?")) navigate(post ? boardPostPath(slug, post.id) : boardListPath(slug))
   }
   return <form onSubmit={submit}>
     <fieldset disabled={busy} className="space-y-6 disabled:opacity-60">
-      <div><label htmlFor="post-title" className="mb-2 block text-sm font-medium">제목 <span className="text-muted-foreground">(필수)</span></label><input id="post-title" required maxLength={POST_TITLE_MAX} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="어떤 이야기를 나누고 싶으신가요?" className="w-full rounded-md border border-input bg-background px-3 py-2.5" /><p className="mt-1 text-right text-xs text-muted-foreground">{title.length} / {POST_TITLE_MAX}</p></div>
-      <div><p id="post-body-label" className="mb-2 text-sm font-medium">본문 <span className="text-muted-foreground">(필수)</span></p><div role="group" aria-labelledby="post-body-label"><RichTextEditor imageStore={slug === "research" ? "research" : "public"} value={body} onChange={setBody} disabled={busy} onBusyChange={setImageBusy} placeholder="나누고 싶은 이야기를 적어 주세요." /></div></div>
+      <div><label htmlFor="post-title" className="mb-2 block text-sm font-medium">제목 <span className="text-muted-foreground">(필수)</span></label><input id="post-title" required maxLength={POST_TITLE_MAX} value={title} onChange={(e) => setTitle(e.target.value)} placeholder={slug === "training" ? "어떤 연수인지 한 줄로 알려 주세요" : "어떤 이야기를 나누고 싶으신가요?"} className="w-full rounded-md border border-input bg-background px-3 py-2.5" /><p className="mt-1 text-right text-xs text-muted-foreground">{title.length} / {POST_TITLE_MAX}</p></div>
+      {slug === "training" && <>
+        <div><p className="mb-2 text-sm font-medium">대표 사진 <span className="text-muted-foreground">(선택 · 카드에 보여요)</span></p><CoverField value={cover} onChange={setCover} disabled={busy} /></div>
+        <div><p className="mb-2 text-sm font-medium">연수 자료 링크 <span className="text-muted-foreground">(선택 · 새 탭으로 열려요)</span></p><TrainingLinkField value={links} onChange={setLinks} disabled={busy} /></div>
+      </>}
+      <div><p id="post-body-label" className="mb-2 text-sm font-medium">본문 <span className="text-muted-foreground">(필수)</span></p><div role="group" aria-labelledby="post-body-label"><RichTextEditor imageStore={slug === "research" ? "research" : "public"} value={body} onChange={setBody} disabled={busy} onBusyChange={setImageBusy} placeholder={slug === "training" ? "무엇을 알려 주고 싶은지, 어떤 필요에서 만들었는지, 준비물은 무엇인지 적어 주세요." : "나누고 싶은 이야기를 적어 주세요."} /></div></div>
     </fieldset>
     {error && <p role="alert" className="mt-4 text-sm text-destructive">{error}</p>}
     <div className="mt-6 flex justify-end gap-2"><button type="button" disabled={busy} onClick={cancel} className="rounded-md border px-4 py-2.5 text-sm hover:bg-accent disabled:opacity-50">취소</button><button disabled={busy || imageBusy} type="submit" className="rounded-md bg-cta px-5 py-2.5 text-sm font-semibold text-cta-foreground disabled:opacity-50">{busy ? "저장 중…" : imageBusy ? "이미지 작업 중…" : post ? "수정 완료" : "게시글 등록"}</button></div>

@@ -26,6 +26,7 @@ const PracticeList = lazyPage(() => import("@/pages/PracticeList").then((m) => (
 const PracticeDetail = lazyPage(() => import("@/pages/PracticeDetail").then((m) => ({ default: m.PracticeDetail })))
 const PracticeWritePage = lazyPage(() => import("@/pages/PracticeWritePage").then((m) => ({ default: m.PracticeWritePage })))
 const TrainingPage = lazyPage(() => import("@/pages/TrainingPage").then((m) => ({ default: m.TrainingPage })))
+const TrainingShareList = lazyPage(() => import("@/components/training/TrainingShareList").then((m) => ({ default: m.TrainingShareList })))
 const TrainingGuide = lazyPage(() => import("@/components/training/TrainingGuide").then((m) => ({ default: m.TrainingGuide })))
 const VibeSetup = lazyPage(() => import("@/components/vibecoding/setup/VibeSetup").then((m) => ({ default: m.VibeSetup })))
 const VibeWhy = lazyPage(() => import("@/components/vibecoding/why/VibeWhy").then((m) => ({ default: m.VibeWhy })))
@@ -78,6 +79,13 @@ function App() {
                 <Route index element={<Navigate to="setup" replace />} />
                 <Route path="setup" element={<VibeSetup />} />
                 <Route path="survey" element={<VibeSurvey />} />
+              </Route>
+              {/* 함께 여는 연수 — 회원이 올리는 연수 게시판(누구나 보고 인증 교사가 올림). 글 보기·쓰기는 게시판 화면을 같이 쓴다 */}
+              <Route path="share">
+                <Route index element={<TrainingShareList />} />
+                <Route path="write" element={<BoardWritePage slug="training" />} />
+                <Route path=":id" element={<BoardDetail />} />
+                <Route path=":id/edit" element={<BoardWritePage slug="training" />} />
               </Route>
             </Route>
             {/* 옛 주소(바이브코딩 메뉴 때·단독 튜토리얼을 넘겨주던 때) → 열린연수방의 같은 쪽으로 */}

@@ -3,8 +3,11 @@ import { supabase } from "@/lib/supabase"
 import { getMyBlocks } from "@/lib/blocks"
 import { stripResearchImageSrc } from "@/lib/researchImages"
 
-export type BoardSlug = "free" | "research"
-export const boardName = (slug: BoardSlug) => slug === "research" ? "연구회게시판" : "자유게시판"
+export type BoardSlug = "free" | "research" | "training"
+export const boardName = (slug: BoardSlug) => slug === "research" ? "연구회게시판" : slug === "training" ? "함께 여는 연수" : "자유게시판"
+/** 글 목록·글 보기 주소 — 함께 여는 연수(49)는 열린연수방 안에 있다 */
+export const boardListPath = (slug: BoardSlug) => slug === "training" ? "/training/share" : `/board/${slug}`
+export const boardPostPath = (slug: BoardSlug, id: string) => slug === "training" ? `/training/share/${id}` : `/board/${id}`
 
 export const BOARD_PAGE_SIZE = 15
 export const POST_TITLE_MAX = 100
@@ -22,7 +25,20 @@ export type BoardPost = {
   like_count: number
   author: { nickname: string | null; avatar_url: string | null } | null
   comments: { count: number }[]
+  /** 함께 여는 연수(49)만 — 카드 대표 사진과 연수 자료 링크 */
+  cover_url?: string | null
+  links?: TrainingLink[]
 }
+export type TrainingLinkKind = "slides" | "video" | "file" | "link"
+export type TrainingLink = { kind: TrainingLinkKind; label: string; url: string }
+/** label = 글쓰기·글 보기, short = 카드의 작은 표시 */
+export const TRAINING_LINK_KINDS: { kind: TrainingLinkKind; label: string; short: string }[] = [
+  { kind: "slides", label: "HTML 슬라이드", short: "슬라이드" },
+  { kind: "video", label: "영상", short: "영상" },
+  { kind: "file", label: "자료", short: "자료" },
+  { kind: "link", label: "링크", short: "링크" },
+]
+export const TRAINING_LINK_MAX = 10
 const POST_SELECT = "id, author_id, title, pinned, created_at, updated_at, view_count, like_count, author:profiles!posts_author_id_fkey(nickname, avatar_url), comments(count), boards!inner(slug)"
 
 export function boardError(error: unknown): string {
@@ -36,7 +52,8 @@ export function boardError(error: unknown): string {
 
 export async function getBoardPosts(search: string, page: number, slug: BoardSlug = "free") {
   const blocks = await getMyBlocks()
-  let query = supabase.from("posts").select(POST_SELECT, { count: "exact" })
+  // 함께 여는 연수 카드에는 대표 사진·링크가 필요하다(컬럼은 49 에만 있다)
+  let query = supabase.from("posts").select(slug === "training" ? `${POST_SELECT}, cover_url, links` : POST_SELECT, { count: "exact" })
     .eq("boards.slug", slug).is("deleted_at", null)
     .order("pinned", { ascending: false }).order("created_at", { ascending: false }).order("id", { ascending: false })
   if (search.trim()) query = query.ilike("title", `%${search.trim().replace(/[\\%_]/g, "\\$&")}%`)
@@ -54,7 +71,14 @@ export async function getBoardPost(id: string): Promise<BoardPost | null> {
   if (!data) return null
   const post = data as unknown as BoardPost
   const blocks = await getMyBlocks()
-  return blocks.some((b) => b.id === post.author_id) ? null : post
+  if (blocks.some((b) => b.id === post.author_id)) return null
+  // 대표 사진·링크 컬럼은 49 에만 있어, 다른 게시판 글은 따로 묻지 않는다
+  if (post.boards.slug === "training") {
+    const { data: extra, error: extraError } = await supabase.from("posts").select("cover_url, links").eq("id", id).single()
+    if (extraError) throw extraError
+    Object.assign(post, extra)
+  }
+  return post
 }
 
 export async function saveBoardPost(title: string, body: string, id?: string, slug: BoardSlug = "free"): Promise<string> {
@@ -66,6 +90,19 @@ export async function saveBoardPost(title: string, body: string, id?: string, sl
   if (!text) throw new Error("본문 내용을 입력하세요.")
   if (clean.length > POST_BODY_MAX) throw new Error("본문이 너무 깁니다. 내용을 조금 줄여 주세요.")
   const { data, error } = await supabase.rpc("save_board_post_in_board", { p_title: title.trim(), p_body: clean, p_id: id ?? null, p_slug: slug })
+  if (error) throw error
+  return data as string
+}
+/** 함께 여는 연수 저장 — 제목·본문 검사는 게시판과 같고, 대표 사진·링크를 함께 넘긴다(49) */
+export async function saveTrainingPost(title: string, body: string, coverUrl: string | null, links: TrainingLink[], id?: string): Promise<string> {
+  const clean = DOMPurify.sanitize(body)
+  const text = new DOMParser().parseFromString(clean, "text/html").body.textContent?.trim()
+  if (!title.trim() || [...title.trim()].length > POST_TITLE_MAX) throw new Error("제목은 1~100자로 입력하세요.")
+  if (!text) throw new Error("본문 내용을 입력하세요.")
+  if (clean.length > POST_BODY_MAX) throw new Error("본문이 너무 깁니다. 내용을 조금 줄여 주세요.")
+  const filled = links.map((l) => ({ ...l, label: l.label.trim(), url: l.url.trim() })).filter((l) => l.url)
+  if (filled.some((l) => !/^https:\/\/\S+$/.test(l.url))) throw new Error("연수 자료 링크는 https:// 로 시작하는 주소로 넣어 주세요.")
+  const { data, error } = await supabase.rpc("save_training_post", { p_title: title.trim(), p_body: clean, p_cover_url: coverUrl, p_links: filled, p_id: id ?? null })
   if (error) throw error
   return data as string
 }

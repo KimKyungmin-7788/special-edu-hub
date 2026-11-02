@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react"
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
-import { ArrowLeft, Eye, Heart, List, Pin, Share2 } from "lucide-react"
+import { Link, Navigate, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom"
+import { ArrowLeft, ExternalLink, Eye, Heart, List, Pin, Share2 } from "lucide-react"
 import { useAuth } from "@/lib/auth"
 import { usePageTitle } from "@/lib/usePageTitle"
-import { boardError, deleteBoardPost, getBoardPost, incrementPostView, isPostLiked, setPostLike, pinBoardPost, reportBoardPost, type BoardPost, boardName } from "@/lib/board"
+import { boardError, boardListPath, boardPostPath, deleteBoardPost, getBoardPost, incrementPostView, isPostLiked, setPostLike, pinBoardPost, reportBoardPost, TRAINING_LINK_KINDS, type BoardPost, type TrainingLink, boardName } from "@/lib/board"
 import { BoardNotice } from "@/components/board/BoardNotice"
 import { BoardAccessNotice } from "@/components/board/BoardAccessNotice"
 import { BoardShareDialog } from "@/components/board/BoardShareDialog"
@@ -21,6 +21,7 @@ export function BoardDetail() {
 function BoardDetailContent({ id }: { id: string }) {
   const { user, profile, isStaff, loading: authLoading } = useAuth()
   const [params] = useSearchParams()
+  const { pathname, search } = useLocation()
   const navigate = useNavigate()
   const [post, setPost] = useState<BoardPost | null>(null)
   const [loading, setLoading] = useState(true)
@@ -69,7 +70,7 @@ function BoardDetailContent({ id }: { id: string }) {
   async function remove() {
     if (busy || !window.confirm("이 게시글을 삭제할까요? 삭제한 글은 목록에서 사라집니다.")) return
     setBusy(true); setError("")
-    try { await deleteBoardPost(id); navigate(`/board/${slug}`, { replace: true }) }
+    try { await deleteBoardPost(id); navigate(boardListPath(slug), { replace: true }) }
     catch (e) { setError(boardError(e)) }
     finally { setBusy(false) }
   }
@@ -80,8 +81,11 @@ function BoardDetailContent({ id }: { id: string }) {
     catch (e) { setError(boardError(e)) }
     finally { setBusy(false) }
   }
-  return <div className="mx-auto max-w-3xl px-4 py-10">
-    <Link to={`/board/${slug}`} className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary"><ArrowLeft className="size-4" aria-hidden />{boardName(slug)}</Link>
+  // 함께 여는 연수 글은 열린연수방 안에서 보여 준다(알림·옛 공유 주소 /board/:id 로 와도 옮겨 감). 반대 방향도 같다
+  if (post && pathname !== boardPostPath(slug, id)) return <Navigate to={boardPostPath(slug, id) + search} replace />
+  const training = slug === "training"
+  return <div className={training ? "rounded-xl border bg-card p-5 shadow-sm sm:p-7" : "mx-auto max-w-3xl px-4 py-10"}>
+    <Link to={boardListPath(slug)} className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary"><ArrowLeft className="size-4" aria-hidden />{boardName(slug)}</Link>
     {loading || authLoading ? <p role="status" className="py-16 text-center text-sm text-muted-foreground">게시글을 불러오는 중…</p>
       : loadError ? <div role="alert"><BoardNotice title={loadError} /><button onClick={() => setRetry((n) => n + 1)} className="mt-3 text-sm text-primary underline">다시 시도</button></div>
       : !post || !canRead ? <BoardAccessNotice research={post?.boards.slug === "research" || params.get("board") === "research"} />
@@ -90,6 +94,7 @@ function BoardDetailContent({ id }: { id: string }) {
           {post.pinned && <span className="mb-3 inline-flex items-center gap-1 rounded bg-brand-muted px-2 py-1 text-xs text-brand-muted-foreground"><Pin className="size-3" aria-hidden />상단 고정</span>}
           <h1 className="break-words text-2xl font-bold">{post.title}</h1>
           <div className="mt-4 flex flex-wrap items-center gap-3 border-b pb-6 text-sm text-muted-foreground"><ProfileTrigger userId={post.author_id} className="font-medium text-foreground">{post.author?.nickname || "사용자"}</ProfileTrigger><time dateTime={post.created_at}>{new Date(post.created_at).toLocaleString("ko-KR")}</time>{post.updated_at !== post.created_at && <span>(수정됨)</span>}<span className="inline-flex items-center gap-1"><Eye className="size-4" aria-hidden />조회 {post.view_count.toLocaleString()}</span></div>
+          {training && !!post.links?.length && <TrainingLinks links={post.links} />}
           <div className="py-8"><RichTextViewer html={post.body} /></div>
           <div className="flex justify-center pb-8">
             <button type="button" onClick={() => void toggleLike()} disabled={likeBusy} aria-pressed={liked} title={user ? undefined : "로그인하면 좋아요를 누를 수 있어요"}
@@ -99,11 +104,11 @@ function BoardDetailContent({ id }: { id: string }) {
           </div>
           <div className="flex flex-wrap justify-end gap-2 border-t pt-4 text-sm">
             <div className="mr-auto flex gap-2">
-              <Link to={`/board/${slug}`} className="inline-flex items-center gap-1.5 rounded-md border px-3 py-2 hover:bg-accent"><List className="size-4" aria-hidden />목록</Link>
+              <Link to={boardListPath(slug)} className="inline-flex items-center gap-1.5 rounded-md border px-3 py-2 hover:bg-accent"><List className="size-4" aria-hidden />목록</Link>
               <button type="button" onClick={() => setSharing(true)} className="inline-flex items-center gap-1.5 rounded-md border px-3 py-2 hover:bg-accent"><Share2 className="size-4" aria-hidden />공유</button>
             </div>
             {isStaff && <button disabled={busy} onClick={togglePin} className="rounded-md border px-3 py-2 hover:bg-accent disabled:opacity-50">{post.pinned ? "고정 해제" : "상단 고정"}</button>}
-            {user?.id === post.author_id && canWrite && <Link to={`/board/${id}/edit`} className="rounded-md border px-3 py-2 hover:bg-accent">수정</Link>}
+            {user?.id === post.author_id && canWrite && <Link to={`${boardPostPath(slug, id)}/edit`} className="rounded-md border px-3 py-2 hover:bg-accent">수정</Link>}
             {(user?.id === post.author_id || isStaff) && <button disabled={busy} onClick={remove} className="rounded-md border px-3 py-2 text-destructive hover:bg-accent disabled:opacity-50">{busy ? "처리 중…" : "삭제"}</button>}
             {user && user.id !== post.author_id && <button onClick={() => setReport(true)} className="rounded-md px-3 py-2 text-muted-foreground hover:bg-accent">신고</button>}
           </div>
@@ -114,4 +119,20 @@ function BoardDetailContent({ id }: { id: string }) {
         <ReportDialog open={report} onClose={() => setReport(false)} targetLabel="게시글" onSubmit={(reason, detail) => reportBoardPost(id, reason, detail)} />
       </>}
   </div>
+}
+
+/** 함께 여는 연수의 연수 자료 링크 — 본문 위 상자에 모으고, 모두 새 탭으로 연다(iframe 쓰지 않음) */
+function TrainingLinks({ links }: { links: TrainingLink[] }) {
+  return <section aria-label="연수 자료" className="mt-6 rounded-xl border border-brand-line bg-brand-soft p-4">
+    <h2 className="text-sm font-bold text-brand-muted-foreground">연수 자료</h2>
+    <ul className="mt-2 space-y-2">
+      {links.map((l, i) => {
+        const kind = TRAINING_LINK_KINDS.find((k) => k.kind === l.kind)?.label ?? "링크"
+        return <li key={i}><a href={l.url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between gap-3 rounded-lg border bg-card px-3 py-2.5 hover:border-primary">
+          <span className="min-w-0 break-keep"><span className="font-semibold">{l.label || kind}</span>{l.label && <span className="ml-2 text-xs text-muted-foreground">{kind}</span>}</span>
+          <span className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-primary">새 탭에서 열기<ExternalLink className="size-3.5" aria-hidden /></span>
+        </a></li>
+      })}
+    </ul>
+  </section>
 }

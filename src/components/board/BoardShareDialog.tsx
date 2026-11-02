@@ -2,12 +2,12 @@ import { useEffect, useRef, useState } from "react"
 import { Check, Link2, Mail, MessageCircle, type LucideIcon } from "lucide-react"
 import { Modal } from "@/components/ui/Modal"
 import { site } from "@/config/site"
-import type { BoardSlug } from "@/lib/board"
+import { boardPostPath, type BoardSlug } from "@/lib/board"
 import { cn } from "@/lib/utils"
 
 /** 게시글 공유 주소. 연구회 글은 ?board=research — 권한 없는 사람이 열면 '연구회원 전용'으로 안내하기 위해. */
 export function boardPostUrl(id: string, slug: BoardSlug) {
-  return `${window.location.origin}/board/${id}${slug === "research" ? "?board=research" : ""}`
+  return `${window.location.origin}${boardPostPath(slug, id)}${slug === "research" ? "?board=research" : ""}`
 }
 
 /**
