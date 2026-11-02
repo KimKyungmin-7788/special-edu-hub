@@ -27,7 +27,7 @@ import { PracticeRow } from "@/components/practice/PracticeCard"
 import { getPracticesByApp, type Practice } from "@/lib/practices"
 import { ProfileTrigger } from "@/components/profile/ProfileTrigger"
 import { PromoLinks } from "@/components/profile/PromoLinks"
-import { appFileDownloadUrl, getApp, getAppFile, setAppStatus, displayTitle, type App, type AppFile } from "@/lib/apps"
+import { appFileDownloadUrl, getApp, getAppFiles, setAppStatus, displayTitle, type App, type AppFile } from "@/lib/apps"
 import { fileSizeLabel } from "@/components/app/AppFileField"
 import { getProfile, type Profile } from "@/lib/profile"
 import { useAuth } from "@/lib/auth"
@@ -53,7 +53,7 @@ export function AppDetail() {
   const location = useLocation()
   const { user, isAdmin } = useAuth()
   const [app, setApp] = useState<App | undefined>()
-  const [file, setFile] = useState<AppFile | null>(null) // 자료 파일(50). 잠긴 자료면 null
+  const [files, setFiles] = useState<AppFile[]>([]) // 자료 파일(51). 잠긴 자료면 빈 배열
   const [fileError, setFileError] = useState("")
   usePageTitle(app ? displayTitle(app) : undefined)
   const [owner, setOwner] = useState<Profile | null>(null)
@@ -81,9 +81,9 @@ export function AppDetail() {
     setLoading(true)
     setOwner(null)
     setPractices([])
-    setFile(null)
-    getAppFile(id ?? "").then((f) => {
-      if (active) setFile(f)
+    setFiles([])
+    getAppFiles(id ?? "").then((list) => {
+      if (active) setFiles(list)
     })
     getPracticesByApp(id ?? "").then((list) => {
       if (active) setPractices(list)
@@ -320,9 +320,10 @@ export function AppDetail() {
           </a>
         )}
 
-        {/* 자료 파일 — 누를 때 1분짜리 서명 주소를 받아 원래 이름으로 내려받는다 */}
-        {file && (
+        {/* 자료 파일 — 누를 때 1분짜리 서명 주소를 받아 원래 이름으로 내려받는다. 웹앱 주소가 없으면 첫 파일이 주 버튼 */}
+        {files.map((file, i) => (
           <button
+            key={file.path}
             type="button"
             onClick={async () => {
               setFileError("")
@@ -332,17 +333,18 @@ export function AppDetail() {
                 setFileError("파일을 받지 못했어요. 잠시 뒤 다시 시도해 주세요.")
               }
             }}
+            title={`${file.name} 받기`}
             className={
-              app.appUrl
-                ? "inline-flex items-center gap-2 rounded-md border bg-card px-4 py-2 text-sm font-medium hover:bg-accent"
-                : "inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+              app.appUrl || i > 0
+                ? "inline-flex max-w-full items-center gap-2 rounded-md border bg-card px-4 py-2 text-sm font-medium hover:bg-accent"
+                : "inline-flex max-w-full items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
             }
           >
-            <Download className="size-4" aria-hidden />
-            자료 받기
-            <span className="text-xs font-normal opacity-80">{fileSizeLabel(file.size)}</span>
+            <Download className="size-4 shrink-0" aria-hidden />
+            <span className="max-w-56 truncate">{files.length > 1 ? file.name : "자료 받기"}</span>
+            <span className="shrink-0 text-xs font-normal opacity-80">{fileSizeLabel(file.size)}</span>
           </button>
-        )}
+        ))}
         {fileError && <p role="alert" className="order-last basis-full text-sm text-destructive">{fileError}</p>}
 
         {/* 수정 — 작성자 본인·관리자만 */}

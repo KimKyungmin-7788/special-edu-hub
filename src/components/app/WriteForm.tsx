@@ -15,7 +15,7 @@ import {
 } from "@/config/categories"
 import {
   createApp,
-  getAppFile,
+  getAppFiles,
   removeAppFile,
   updateApp,
   uploadAppFile,
@@ -29,7 +29,7 @@ import {
   charCount,
 } from "@/lib/apps"
 import { SubcategorySelect } from "@/components/app/SubcategorySelect"
-import { AppFileField } from "@/components/app/AppFileField"
+import { AppFileField, type FileItem } from "@/components/app/AppFileField"
 import { RichTextEditor } from "@/components/app/RichTextEditor"
 import { ThumbnailCropper } from "@/components/app/ThumbnailCropper"
 import { StandardsFinderModal } from "@/components/app/StandardsFinderModal"
@@ -131,12 +131,16 @@ export function WriteForm({
   // ── 내용 ──
   const [title, setTitle] = useState(app?.title ?? "")
   const [appUrl, setAppUrl] = useState(app?.appUrl ?? "")
-  // 자료 파일(50): savedFile = 이미 올린 것, pickedFile = 새로 고른 것. fileChanged 일 때만 저장에 반영한다.
-  const [savedFile, setSavedFile] = useState<AppFile | null>(null)
-  const [pickedFile, setPickedFile] = useState<File | null>(null)
-  const [fileChanged, setFileChanged] = useState(false)
+  // 자료 파일(51): savedFiles = 이미 올린 것, files = 칸에 보이는 목록(올린 것 + 새로 고른 File). filesChanged 일 때만 저장에 반영한다.
+  const [savedFiles, setSavedFiles] = useState<AppFile[]>([])
+  const [files, setFiles] = useState<FileItem[]>([])
+  const [filesChanged, setFilesChanged] = useState(false)
   useEffect(() => {
-    if (app) getAppFile(app.id).then(setSavedFile)
+    if (app)
+      getAppFiles(app.id).then((list) => {
+        setSavedFiles(list)
+        setFiles((cur) => [...list, ...cur.filter((f) => f instanceof File)]) // 불러오기 전에 고른 파일은 살린다
+      })
   }, [app])
   const [summary, setSummary] = useState(app?.summary ?? "")
   const [achievementCodes, setAchievementCodes] = useState<string[]>(app?.achievementCodes ?? [])
@@ -242,7 +246,7 @@ export function WriteForm({
     setSubmitError(null)
 
     if (title.trim() === "") return setSubmitError("앱 이름을 입력하세요.")
-    if (appUrl.trim() === "" && !pickedFile && !(savedFile && !fileChanged))
+    if (appUrl.trim() === "" && files.length === 0)
       return setSubmitError("앱 링크나 자료 파일 중 하나는 넣어 주세요.")
     if (summary.trim() === "") return setSubmitError("한줄 설명을 입력하세요.")
     if (!primary) return setSubmitError("교과를 선택하세요.")
@@ -258,7 +262,10 @@ export function WriteForm({
       let thumbnailUrl = ""
       if (thumbFile) thumbnailUrl = await uploadThumbnail(thumbFile)
       else if (thumbPreview && !thumbPreview.startsWith("blob:")) thumbnailUrl = thumbPreview
-      const file = pickedFile ? await uploadAppFile(pickedFile) : fileChanged ? null : undefined
+      // 새로 고른 파일만 올리고, 이미 올린 파일은 그대로 담는다
+      const nextFiles = filesChanged
+        ? await Promise.all(files.map((f) => (f instanceof File ? uploadAppFile(f) : f)))
+        : undefined
 
       const payload = {
         title,
@@ -276,13 +283,16 @@ export function WriteForm({
         educationalIntent: intent,
         useCaseType,
         useCase,
-        ...(file !== undefined ? { file } : {}),
+        ...(nextFiles ? { files: nextFiles } : {}),
       }
       const saved = app
         ? await updateApp(app.id, payload) // 작성자 이름은 그대로 둔다
         : await createApp({ ...payload, authorName: defaultAuthorName, achievementStandards: "" })
-      // 바꾸거나 뺀 이전 파일은 저장소에서 정리(실패해도 무시)
-      if (file !== undefined && savedFile) removeAppFile(savedFile.path).catch(() => {})
+      // 뺀 이전 파일은 저장소에서 정리(실패해도 무시)
+      if (nextFiles)
+        savedFiles
+          .filter((f) => !nextFiles.some((n) => n.path === f.path))
+          .forEach((f) => removeAppFile(f.path).catch(() => {}))
       // replace: 폼 페이지를 히스토리에서 치워, 상세에서 "목록으로"가 폼으로 되돌아가지 않게.
       navigate(`/app/${saved.id}`, { replace: true })
     } catch (err) {
@@ -332,18 +342,13 @@ export function WriteForm({
           label="자료 파일"
           htmlFor="app-file"
           optional
-          hint="PDF·한글·파워포인트·워드·엑셀·zip, 5MB 이하 한 개. 학생 얼굴·이름이 나오는 파일은 올리지 말아 주세요."
+          hint="PDF·한글·파워포인트·워드·엑셀·zip, 파일마다 5MB 이하, 3개까지. 학생 얼굴·이름이 나오는 파일은 올리지 말아 주세요."
         >
           <AppFileField
-            saved={fileChanged ? null : savedFile}
-            picked={pickedFile}
-            onPick={(f) => {
-              setPickedFile(f)
-              setFileChanged(true)
-            }}
-            onClear={() => {
-              setPickedFile(null)
-              setFileChanged(true)
+            value={files}
+            onChange={(v) => {
+              setFiles(v)
+              setFilesChanged(true)
             }}
             disabled={submitting}
           />

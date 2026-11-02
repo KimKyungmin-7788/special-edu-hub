@@ -298,15 +298,16 @@ export type AppInput = {
   useCaseType: UseCaseType
   useCase: string
   achievementCodes: string[]
-  /** 첨부 파일(50). undefined = 그대로 / null = 없앰 */
-  file?: AppFile | null
+  /** 첨부 파일(51, 최대 APP_FILE_LIMIT 개). undefined = 그대로 */
+  files?: AppFile[]
 }
 
-/** 자료에 단 파일 한 개(50). 비공개 버킷 app-files 의 경로와 원래 이름·크기 */
+/** 자료에 단 파일 한 개(50·51). 비공개 버킷 app-files 의 경로와 원래 이름·크기 */
 export type AppFile = { path: string; name: string; size: number }
 
 const APP_FILE_BUCKET = "app-files"
 export const APP_FILE_MAX_BYTES = 5 * 1024 * 1024 // 5MB (버킷 정책과 동일)
+export const APP_FILE_LIMIT = 3 // 자료 하나에 올릴 수 있는 파일 수(51 검사와 동일)
 /** 올릴 수 있는 확장자 → 저장할 형식. 한글 파일은 브라우저가 형식을 비워 주는 일이 많아 확장자로 정한다 */
 export const APP_FILE_TYPES: Record<string, string> = {
   pdf: "application/pdf",
@@ -343,15 +344,11 @@ export async function removeAppFile(path: string) {
   await supabase.storage.from(APP_FILE_BUCKET).remove([path])
 }
 
-/** 자료의 파일 정보. 잠긴 자료·파일 없는 자료·50 미적용 DB 는 null(apps RLS 가 잠금을 판단) */
-export async function getAppFile(id: string): Promise<AppFile | null> {
-  const { data, error } = await supabase
-    .from("apps")
-    .select("file_path, file_name, file_size")
-    .eq("id", id)
-    .maybeSingle()
-  if (error || !data?.file_path) return null
-  return { path: data.file_path, name: data.file_name ?? "", size: data.file_size ?? 0 }
+/** 자료의 파일 목록. 잠긴 자료·51 미적용 DB 는 빈 배열(apps RLS 가 잠금을 판단) */
+export async function getAppFiles(id: string): Promise<AppFile[]> {
+  const { data, error } = await supabase.from("apps").select("files").eq("id", id).maybeSingle()
+  if (error || !Array.isArray(data?.files)) return []
+  return data.files as AppFile[]
 }
 
 /** 내려받기용 1분짜리 서명 주소(원래 파일 이름으로 받아진다) */
@@ -387,10 +384,6 @@ export async function uploadThumbnail(file: File): Promise<string> {
   return data.publicUrl
 }
 
-function fileColumns(file: AppFile | null) {
-  return { file_path: file?.path ?? null, file_name: file?.name ?? null, file_size: file?.size ?? null }
-}
-
 /** 새 앱 등록. id 는 uuid 자동생성, owner_id=본인, status='published'(RLS 가 인증교사 강제). */
 export async function createApp(input: AppInput): Promise<App> {
   const uid = await currentUserId()
@@ -399,7 +392,7 @@ export async function createApp(input: AppInput): Promise<App> {
   const title = input.title.trim()
   const appUrl = input.appUrl.trim()
   if (title === "") throw new Error("제목을 입력하세요.")
-  if (appUrl === "" && !input.file) throw new Error("웹앱 주소나 파일 중 하나는 넣어 주세요.")
+  if (appUrl === "" && !input.files?.length) throw new Error("웹앱 주소나 파일 중 하나는 넣어 주세요.")
   if (input.categoryIds.length === 0)
     throw new Error("분류를 한 개 이상 선택하세요.")
 
@@ -422,7 +415,7 @@ export async function createApp(input: AppInput): Promise<App> {
       achievement_codes: input.achievementCodes,
       owner_id: uid,
       status: "published",
-      ...(input.file ? fileColumns(input.file) : {}),
+      ...(input.files?.length ? { files: input.files } : {}),
     })
     .select()
     .single()
@@ -453,7 +446,7 @@ export async function updateApp(
     row.use_case_type = patch.useCase.trim() ? (patch.useCaseType ?? "field") : ""
   }
   if (patch.achievementCodes !== undefined) row.achievement_codes = patch.achievementCodes
-  if (patch.file !== undefined) Object.assign(row, fileColumns(patch.file))
+  if (patch.files !== undefined) row.files = patch.files
 
   const { data, error } = await supabase
     .from("apps")
