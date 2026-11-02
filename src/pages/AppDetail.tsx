@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { Link, useNavigate, useLocation, useParams } from "react-router-dom"
 import {
   ArrowLeft,
+  Download,
   ExternalLink,
   Eye,
   Heart,
@@ -26,7 +27,8 @@ import { PracticeRow } from "@/components/practice/PracticeCard"
 import { getPracticesByApp, type Practice } from "@/lib/practices"
 import { ProfileTrigger } from "@/components/profile/ProfileTrigger"
 import { PromoLinks } from "@/components/profile/PromoLinks"
-import { getApp, setAppStatus, displayTitle, type App } from "@/lib/apps"
+import { appFileDownloadUrl, getApp, getAppFile, setAppStatus, displayTitle, type App, type AppFile } from "@/lib/apps"
+import { fileSizeLabel } from "@/components/app/AppFileField"
 import { getProfile, type Profile } from "@/lib/profile"
 import { useAuth } from "@/lib/auth"
 import {
@@ -51,6 +53,8 @@ export function AppDetail() {
   const location = useLocation()
   const { user, isAdmin } = useAuth()
   const [app, setApp] = useState<App | undefined>()
+  const [file, setFile] = useState<AppFile | null>(null) // 자료 파일(50). 잠긴 자료면 null
+  const [fileError, setFileError] = useState("")
   usePageTitle(app ? displayTitle(app) : undefined)
   const [owner, setOwner] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
@@ -77,6 +81,10 @@ export function AppDetail() {
     setLoading(true)
     setOwner(null)
     setPractices([])
+    setFile(null)
+    getAppFile(id ?? "").then((f) => {
+      if (active) setFile(f)
+    })
     getPracticesByApp(id ?? "").then((list) => {
       if (active) setPractices(list)
     })
@@ -301,7 +309,7 @@ export function AppDetail() {
 
       {/* 액션: 앱 열기(작동) + 담기·공유(모양만) */}
       <div className="mt-6 flex flex-wrap items-center gap-2">
-        {!app.locked && (
+        {!app.locked && app.appUrl && (
           <a
             href={app.appUrl}
             target="_blank"
@@ -311,6 +319,31 @@ export function AppDetail() {
             <ExternalLink className="size-4" aria-hidden />앱 열기
           </a>
         )}
+
+        {/* 자료 파일 — 누를 때 1분짜리 서명 주소를 받아 원래 이름으로 내려받는다 */}
+        {file && (
+          <button
+            type="button"
+            onClick={async () => {
+              setFileError("")
+              try {
+                window.location.href = await appFileDownloadUrl(file)
+              } catch {
+                setFileError("파일을 받지 못했어요. 잠시 뒤 다시 시도해 주세요.")
+              }
+            }}
+            className={
+              app.appUrl
+                ? "inline-flex items-center gap-2 rounded-md border bg-card px-4 py-2 text-sm font-medium hover:bg-accent"
+                : "inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+            }
+          >
+            <Download className="size-4" aria-hidden />
+            자료 받기
+            <span className="text-xs font-normal opacity-80">{fileSizeLabel(file.size)}</span>
+          </button>
+        )}
+        {fileError && <p role="alert" className="order-last basis-full text-sm text-destructive">{fileError}</p>}
 
         {/* 수정 — 작성자 본인·관리자만 */}
         {canEdit && (

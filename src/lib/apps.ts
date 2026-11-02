@@ -298,6 +298,69 @@ export type AppInput = {
   useCaseType: UseCaseType
   useCase: string
   achievementCodes: string[]
+  /** 첨부 파일(50). undefined = 그대로 / null = 없앰 */
+  file?: AppFile | null
+}
+
+/** 자료에 단 파일 한 개(50). 비공개 버킷 app-files 의 경로와 원래 이름·크기 */
+export type AppFile = { path: string; name: string; size: number }
+
+const APP_FILE_BUCKET = "app-files"
+export const APP_FILE_MAX_BYTES = 5 * 1024 * 1024 // 5MB (버킷 정책과 동일)
+/** 올릴 수 있는 확장자 → 저장할 형식. 한글 파일은 브라우저가 형식을 비워 주는 일이 많아 확장자로 정한다 */
+export const APP_FILE_TYPES: Record<string, string> = {
+  pdf: "application/pdf",
+  hwp: "application/x-hwp",
+  hwpx: "application/vnd.hancom.hwpx",
+  ppt: "application/vnd.ms-powerpoint",
+  pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  doc: "application/msword",
+  docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  xls: "application/vnd.ms-excel",
+  xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  zip: "application/zip",
+}
+
+/** 파일 올리기 → 경로 app-files/<uid>/<uuid>.<ext>. 자료 저장 전에 부른다 */
+export async function uploadAppFile(file: File): Promise<AppFile> {
+  const uid = await currentUserId()
+  if (!uid) throw new Error("로그인이 필요합니다.")
+  const ext = file.name.split(".").pop()?.toLowerCase() ?? ""
+  const contentType = APP_FILE_TYPES[ext]
+  if (!contentType) throw new Error("PDF·한글·파워포인트·워드·엑셀·zip 파일만 올릴 수 있습니다.")
+  if (file.size > APP_FILE_MAX_BYTES) throw new Error("파일은 5MB 이하만 올릴 수 있습니다.")
+
+  const path = `${uid}/${crypto.randomUUID()}.${ext}`
+  const { error } = await supabase.storage
+    .from(APP_FILE_BUCKET)
+    .upload(path, file, { contentType, upsert: false })
+  if (error) throw error
+  return { path, name: file.name.slice(0, 200), size: file.size }
+}
+
+/** 파일 지우기(바꾸거나 뺀 뒤 이전 파일 정리). 실패해도 자료 저장에는 영향 없음 */
+export async function removeAppFile(path: string) {
+  await supabase.storage.from(APP_FILE_BUCKET).remove([path])
+}
+
+/** 자료의 파일 정보. 잠긴 자료·파일 없는 자료·50 미적용 DB 는 null(apps RLS 가 잠금을 판단) */
+export async function getAppFile(id: string): Promise<AppFile | null> {
+  const { data, error } = await supabase
+    .from("apps")
+    .select("file_path, file_name, file_size")
+    .eq("id", id)
+    .maybeSingle()
+  if (error || !data?.file_path) return null
+  return { path: data.file_path, name: data.file_name ?? "", size: data.file_size ?? 0 }
+}
+
+/** 내려받기용 1분짜리 서명 주소(원래 파일 이름으로 받아진다) */
+export async function appFileDownloadUrl(file: AppFile): Promise<string> {
+  const { data, error } = await supabase.storage
+    .from(APP_FILE_BUCKET)
+    .createSignedUrl(file.path, 60, { download: file.name })
+  if (error) throw error
+  return data.signedUrl
 }
 
 /**
@@ -324,6 +387,10 @@ export async function uploadThumbnail(file: File): Promise<string> {
   return data.publicUrl
 }
 
+function fileColumns(file: AppFile | null) {
+  return { file_path: file?.path ?? null, file_name: file?.name ?? null, file_size: file?.size ?? null }
+}
+
 /** 새 앱 등록. id 는 uuid 자동생성, owner_id=본인, status='published'(RLS 가 인증교사 강제). */
 export async function createApp(input: AppInput): Promise<App> {
   const uid = await currentUserId()
@@ -332,7 +399,7 @@ export async function createApp(input: AppInput): Promise<App> {
   const title = input.title.trim()
   const appUrl = input.appUrl.trim()
   if (title === "") throw new Error("제목을 입력하세요.")
-  if (appUrl === "") throw new Error("앱 URL 을 입력하세요.")
+  if (appUrl === "" && !input.file) throw new Error("웹앱 주소나 파일 중 하나는 넣어 주세요.")
   if (input.categoryIds.length === 0)
     throw new Error("분류를 한 개 이상 선택하세요.")
 
@@ -355,6 +422,7 @@ export async function createApp(input: AppInput): Promise<App> {
       achievement_codes: input.achievementCodes,
       owner_id: uid,
       status: "published",
+      ...(input.file ? fileColumns(input.file) : {}),
     })
     .select()
     .single()
@@ -385,6 +453,7 @@ export async function updateApp(
     row.use_case_type = patch.useCase.trim() ? (patch.useCaseType ?? "field") : ""
   }
   if (patch.achievementCodes !== undefined) row.achievement_codes = patch.achievementCodes
+  if (patch.file !== undefined) Object.assign(row, fileColumns(patch.file))
 
   const { data, error } = await supabase
     .from("apps")

@@ -15,16 +15,21 @@ import {
 } from "@/config/categories"
 import {
   createApp,
+  getAppFile,
+  removeAppFile,
   updateApp,
+  uploadAppFile,
   uploadThumbnail,
   THUMBNAIL_MIME,
   type App,
+  type AppFile,
   type AppVisibility,
   type UseCaseType,
   SUMMARY_MAX,
   charCount,
 } from "@/lib/apps"
 import { SubcategorySelect } from "@/components/app/SubcategorySelect"
+import { AppFileField } from "@/components/app/AppFileField"
 import { RichTextEditor } from "@/components/app/RichTextEditor"
 import { ThumbnailCropper } from "@/components/app/ThumbnailCropper"
 import { StandardsFinderModal } from "@/components/app/StandardsFinderModal"
@@ -126,6 +131,13 @@ export function WriteForm({
   // ── 내용 ──
   const [title, setTitle] = useState(app?.title ?? "")
   const [appUrl, setAppUrl] = useState(app?.appUrl ?? "")
+  // 자료 파일(50): savedFile = 이미 올린 것, pickedFile = 새로 고른 것. fileChanged 일 때만 저장에 반영한다.
+  const [savedFile, setSavedFile] = useState<AppFile | null>(null)
+  const [pickedFile, setPickedFile] = useState<File | null>(null)
+  const [fileChanged, setFileChanged] = useState(false)
+  useEffect(() => {
+    if (app) getAppFile(app.id).then(setSavedFile)
+  }, [app])
   const [summary, setSummary] = useState(app?.summary ?? "")
   const [achievementCodes, setAchievementCodes] = useState<string[]>(app?.achievementCodes ?? [])
   const [finderOpen, setFinderOpen] = useState(false)
@@ -230,7 +242,8 @@ export function WriteForm({
     setSubmitError(null)
 
     if (title.trim() === "") return setSubmitError("앱 이름을 입력하세요.")
-    if (appUrl.trim() === "") return setSubmitError("앱 링크를 입력하세요.")
+    if (appUrl.trim() === "" && !pickedFile && !(savedFile && !fileChanged))
+      return setSubmitError("앱 링크나 자료 파일 중 하나는 넣어 주세요.")
     if (summary.trim() === "") return setSubmitError("한줄 설명을 입력하세요.")
     if (!primary) return setSubmitError("교과를 선택하세요.")
     if (hasSubs && subIds.length === 0)
@@ -245,6 +258,7 @@ export function WriteForm({
       let thumbnailUrl = ""
       if (thumbFile) thumbnailUrl = await uploadThumbnail(thumbFile)
       else if (thumbPreview && !thumbPreview.startsWith("blob:")) thumbnailUrl = thumbPreview
+      const file = pickedFile ? await uploadAppFile(pickedFile) : fileChanged ? null : undefined
 
       const payload = {
         title,
@@ -262,10 +276,13 @@ export function WriteForm({
         educationalIntent: intent,
         useCaseType,
         useCase,
+        ...(file !== undefined ? { file } : {}),
       }
       const saved = app
         ? await updateApp(app.id, payload) // 작성자 이름은 그대로 둔다
         : await createApp({ ...payload, authorName: defaultAuthorName, achievementStandards: "" })
+      // 바꾸거나 뺀 이전 파일은 저장소에서 정리(실패해도 무시)
+      if (file !== undefined && savedFile) removeAppFile(savedFile.path).catch(() => {})
       // replace: 폼 페이지를 히스토리에서 치워, 상세에서 "목록으로"가 폼으로 되돌아가지 않게.
       navigate(`/app/${saved.id}`, { replace: true })
     } catch (err) {
@@ -298,8 +315,7 @@ export function WriteForm({
         <FormField
           label="앱 링크"
           htmlFor="app-url"
-          required
-          hint="앱은 새 탭으로 열립니다. https:// 로 시작하는 전체 주소를 넣어 주세요."
+          hint="앱은 새 탭으로 열립니다. https:// 로 시작하는 전체 주소를 넣어 주세요. 앱 링크와 자료 파일 중 하나 이상은 꼭 넣어 주세요."
         >
           <input
             id="app-url"
@@ -308,7 +324,27 @@ export function WriteForm({
             placeholder="https://..."
             value={appUrl}
             onChange={(e) => setAppUrl(e.target.value)}
-            required
+            disabled={submitting}
+          />
+        </FormField>
+
+        <FormField
+          label="자료 파일"
+          htmlFor="app-file"
+          optional
+          hint="PDF·한글·파워포인트·워드·엑셀·zip, 5MB 이하 한 개. 학생 얼굴·이름이 나오는 파일은 올리지 말아 주세요."
+        >
+          <AppFileField
+            saved={fileChanged ? null : savedFile}
+            picked={pickedFile}
+            onPick={(f) => {
+              setPickedFile(f)
+              setFileChanged(true)
+            }}
+            onClear={() => {
+              setPickedFile(null)
+              setFileChanged(true)
+            }}
             disabled={submitting}
           />
         </FormField>
