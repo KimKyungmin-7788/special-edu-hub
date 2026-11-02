@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom"
-import { navItems, type NavItem } from "@/config/nav"
+import { navItems, type NavChild, type NavItem } from "@/config/nav"
 import { cn } from "@/lib/utils"
 
 /**
@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils"
  *
  * variant
  *  - "bar"  : 넓은 화면 헤더 가로 메뉴. 헤더 높이를 꽉 채우고, 현재 메뉴는 아래 굵은 밑줄.
+ *             children 이 있는 메뉴는 마우스를 올리거나(키보드로 들어가면) 아래로 하부 섹션이 펼쳐진다.
  *  - "list" : 좁은 화면 펼침 메뉴. 세로 목록, 현재 메뉴는 배경 강조.
  *
  * density(bar 전용): 헤더 자리가 모자랄 때 Header 가 올려 준다(글꼴이 넓은 윈도우·로그인 버튼 등).
@@ -55,8 +56,9 @@ export function Nav({
     <nav aria-label="주 메뉴" className="h-full">
       <ul className="flex h-full items-stretch">
         {navItems.map((item) => (
-          <li key={item.to} className="flex">
+          <li key={item.to} className="group/nav relative flex">
             <BarLink item={item} density={density} />
+            {item.children && <SubMenu label={item.label} items={item.children} />}
           </li>
         ))}
       </ul>
@@ -86,6 +88,38 @@ function BarLink({ item, density }: { item: NavItem; density: number }) {
       {item.label}
       {item.status === "soon" && density < 2 && <SoonBadge />}
     </NavLink>
+  )
+}
+
+/** 하부 섹션 — 메뉴 바로 아래 담백한 목록. 고른 뒤에는 포커스를 풀어 바로 닫히게 한다. */
+function SubMenu({ label, items }: { label: string; items: NavChild[] }) {
+  return (
+    <div className="absolute left-0 top-full z-50 hidden pt-px group-focus-within/nav:block group-hover/nav:block">
+      <ul
+        aria-label={`${label} 하부 메뉴`}
+        className="min-w-48 rounded-b-md border bg-popover py-1.5 text-popover-foreground shadow-md"
+      >
+        {items.map((child) => (
+          <li key={child.label}>
+            <NavLink
+              to={child.to}
+              end
+              onClick={(e) => e.currentTarget.blur()}
+              className={({ isActive }) =>
+                cn(
+                  "block whitespace-nowrap px-4 py-2 text-sm transition-colors",
+                  isActive
+                    ? "bg-brand-soft font-semibold text-primary"
+                    : "text-foreground/80 hover:bg-accent hover:text-foreground",
+                )
+              }
+            >
+              {child.label}
+            </NavLink>
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }
 
