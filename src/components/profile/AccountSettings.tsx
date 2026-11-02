@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react"
 import { useNavigate } from "react-router-dom"
 import { deleteMyAccount, getMySchool, saveMySchool } from "@/lib/account"
+import { SchoolInput } from "@/components/profile/SchoolInput"
 
 const inputClass =
   "w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
@@ -50,15 +51,7 @@ function SchoolForm({ uid }: { uid: string }) {
       <p className="mt-1 text-sm text-muted-foreground">운영진만 볼 수 있어요. 다른 회원에게는 보이지 않아요.</p>
       <form onSubmit={handleSubmit} className="mt-4 flex max-w-md flex-col gap-3 sm:flex-row">
         <label htmlFor="my-school" className="sr-only">소속 학교</label>
-        <input
-          id="my-school"
-          value={school}
-          onChange={(e) => setSchool(e.target.value)}
-          maxLength={60}
-          placeholder="예: ○○특수학교"
-          className={inputClass}
-          disabled={saving}
-        />
+        <SchoolInput id="my-school" value={school} onChange={setSchool} disabled={saving} />
         <button
           type="submit"
           disabled={saving}

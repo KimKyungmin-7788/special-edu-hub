@@ -40,6 +40,21 @@ export async function saveMySchool(uid: string, school: string): Promise<void> {
   if (error) throw error
 }
 
+export type SchoolHit = { name: string; kind: string; region: string }
+
+/** 학교 이름 검색(/api/school-search → 나이스 학교기본정보). 실패하면 빈 목록 — 직접 입력은 그대로 된다 */
+export async function searchSchools(q: string, signal?: AbortSignal): Promise<SchoolHit[]> {
+  const res = await fetch(`/api/school-search?q=${encodeURIComponent(q)}`, { signal })
+  if (!res.ok) return []
+  const data = await res.json().catch(() => null)
+  return Array.isArray(data?.schools) ? data.schools : []
+}
+
+/** 저장하는 학교 표기 — 같은 이름 학교를 지역으로 구분 */
+export function schoolLabel(hit: SchoolHit): string {
+  return hit.region ? `${hit.name} (${hit.region})` : hit.name
+}
+
 /** 운영진 회원 목록용: 회원 id → 학교. 운영진이 아니면 RLS 로 본인 것만 온다 */
 export async function listMemberSchools(): Promise<Map<string, string>> {
   const { data, error } = await supabase.from("member_schools").select("user_id, school")
