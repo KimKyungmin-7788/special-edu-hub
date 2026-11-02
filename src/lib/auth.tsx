@@ -11,6 +11,8 @@ import { supabase } from "@/lib/supabase"
 import { getProfile, type Profile } from "@/lib/profile"
 import { VerifiedCelebrationDialog } from "@/components/verify/VerifiedCelebrationDialog"
 import { NicknameOnboardingDialog } from "@/components/auth/NicknameOnboardingDialog"
+import { SchoolOnboardingDialog } from "@/components/auth/SchoolOnboardingDialog"
+import { needsSchool } from "@/lib/account"
 
 /**
  * 로그인 세션 토대 (2단계 묶음 A-1).
@@ -50,6 +52,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     initial: string
   } | null>(null)
 
+  // 소속 학교가 없는 사용자에게 띄울 창(52). 닉네임 창 다음 차례.
+  const [schoolAsk, setSchoolAsk] = useState<string | null>(null)
+
   /** uid 의 교사인증 축하(계정 기준 1회) 여부를 확인해 띄운다. */
   const maybeCelebrate = useCallback(async (uid: string) => {
     const profile = await getProfile(uid)
@@ -60,7 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   /**
    * 로그인 직후 처리: 닉네임 미확정이면 온보딩 먼저(이름 있어도 항상),
-   * 확정된 사용자는 교사인증 축하 체크.
+   * 그다음 소속 학교가 없으면 묻고, 끝나면 교사인증 축하 체크.
    */
   const runPostLogin = useCallback(
     async (uid: string) => {
@@ -69,12 +74,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!profile) return
       if (profile.nicknameSet === false) {
         setOnboarding({ userId: uid, initial: profile.nickname ?? "" })
-        return // 닉네임 확정 후 축하는 onComplete 에서 이어서
+        return // 닉네임 확정 후 학교·축하는 onComplete 에서 이어서
       }
-      maybeCelebrate(uid)
+      askSchoolOrCelebrate(uid)
     },
     [maybeCelebrate],
   )
+
+  /** 학교가 없으면 학교 창, 있으면 교사인증 축하 체크 */
+  async function askSchoolOrCelebrate(uid: string) {
+    if (await needsSchool(uid)) setSchoolAsk(uid)
+    else maybeCelebrate(uid)
+  }
 
   function handleCloseCelebration() {
     setShowCelebration(false)
@@ -97,7 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   function handleOnboardingComplete() {
     const uid = onboarding?.userId
     setOnboarding(null)
-    if (uid) maybeCelebrate(uid) // 닉네임 확정됐으니 이어서 축하 체크
+    if (uid) askSchoolOrCelebrate(uid) // 닉네임 확정됐으니 이어서 학교·축하 체크
   }
 
   function handleOnboardingClose() {
@@ -190,6 +201,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           initialNickname={onboarding.initial}
           onComplete={handleOnboardingComplete}
           onClose={handleOnboardingClose}
+        />
+      )}
+      {schoolAsk && (
+        <SchoolOnboardingDialog
+          userId={schoolAsk}
+          onComplete={() => {
+            setSchoolAsk(null)
+            maybeCelebrate(schoolAsk)
+          }}
+          onClose={() => setSchoolAsk(null)} // 저장 없이 닫으면 다음 로그인에 다시 묻는다
         />
       )}
     </AuthContext.Provider>

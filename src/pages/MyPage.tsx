@@ -28,6 +28,7 @@ import { usePageTitle } from "@/lib/usePageTitle"
 import { avatarTone, AVATAR_PHOTO } from "@/lib/avatarTone"
 import { cn } from "@/lib/utils"
 import { ReceivedLikes } from "@/components/profile/ReceivedLikes"
+import { AccountSettings } from "@/components/profile/AccountSettings"
 import { NotificationList } from "@/components/notification/NotificationList"
 
 /**
@@ -436,6 +437,7 @@ export function MyPage() {
           </button>
         </form>
       )}
+      <AccountSettings uid={user.id} />
         </>
       )}
 

@@ -8,6 +8,7 @@ import {
   type Member,
   type Role,
 } from "@/lib/profile"
+import { listMemberSchools } from "@/lib/account"
 
 /**
  * 관리자 "회원" — 전체 회원 목록 + (관리자 전용) 권한 부여 (묶음 B-2 · 운영진 등급).
@@ -21,11 +22,15 @@ export function AdminMemberList() {
   const [members, setMembers] = useState<Member[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState("")
+  const [schools, setSchools] = useState<Map<string, string>>(new Map()) // 소속 학교(52, 운영진만 읽힘)
 
   useEffect(() => {
     let active = true
     listMembers().then((data) => {
       if (active) setMembers(data)
+    })
+    listMemberSchools().then((map) => {
+      if (active) setSchools(map)
     })
     return () => {
       active = false
@@ -64,7 +69,9 @@ export function AdminMemberList() {
   const shown = q
     ? members.filter(
         (m) =>
-          m.email?.toLowerCase().includes(q) || m.nickname?.toLowerCase().includes(q),
+          m.email?.toLowerCase().includes(q) ||
+          m.nickname?.toLowerCase().includes(q) ||
+          schools.get(m.id)?.toLowerCase().includes(q),
       )
     : members
 
@@ -77,7 +84,7 @@ export function AdminMemberList() {
         type="search"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="이메일 또는 닉네임 검색"
+        placeholder="이메일·닉네임·학교 검색"
         className="mb-3 w-full max-w-xs rounded-md border border-input bg-background px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring"
       />
       {error && <p className="mb-2 text-sm text-destructive">{error}</p>}
@@ -87,6 +94,7 @@ export function AdminMemberList() {
             <tr className="border-b border-border bg-surface text-left text-muted-foreground">
               <th className="px-3 py-2 font-medium">닉네임</th>
               <th className="px-3 py-2 font-medium">이메일</th>
+              <th className="px-3 py-2 font-medium">소속 학교</th>
               <th className="px-3 py-2 font-medium">권한</th>
               <th className="px-3 py-2 font-medium">인증</th>
               <th className="px-3 py-2 font-medium">연구회회원</th>
@@ -106,6 +114,9 @@ export function AdminMemberList() {
                 </td>
                 <td className="px-3 py-2 text-muted-foreground">
                   {m.email || "—"}
+                </td>
+                <td className="px-3 py-2 text-muted-foreground">
+                  {schools.get(m.id) || "—"}
                 </td>
                 <td className="px-3 py-2">
                   {isAdmin ? (
