@@ -16,6 +16,7 @@ const Privacy = lazyPage(() => import("@/pages/Privacy").then((m) => ({ default:
 const Terms = lazyPage(() => import("@/pages/Terms").then((m) => ({ default: m.Terms })))
 const Contact = lazyPage(() => import("@/pages/Contact").then((m) => ({ default: m.Contact })))
 const About = lazyPage(() => import("@/pages/About").then((m) => ({ default: m.About })))
+const Updates = lazyPage(() => import("@/pages/Updates").then((m) => ({ default: m.Updates })))
 const Login = lazyPage(() => import("@/pages/Login").then((m) => ({ default: m.Login })))
 const Signup = lazyPage(() => import("@/pages/Signup").then((m) => ({ default: m.Signup })))
 const MyPage = lazyPage(() => import("@/pages/MyPage").then((m) => ({ default: m.MyPage })))
@@ -107,6 +108,7 @@ function App() {
 
             {/* 정적·법적 페이지 (트랙 A) — 소개는 준비 중 */}
             <Route path="about" element={<About />} />
+            <Route path="updates" element={<Updates />} />
             <Route path="privacy" element={<Privacy />} />
             <Route path="terms" element={<Terms />} />
             <Route path="contact" element={<Contact />} />
