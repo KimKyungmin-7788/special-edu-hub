@@ -49,6 +49,7 @@ export type App = {
   useCaseType: UseCaseType // 활용사례 종류(35)
   useCase: string // 활용사례 본문(35). 잠긴 자료는 ''
   achievementCodes: string[] // 관련 성취기준 코드, 순서 있음(36). 잠긴 자료는 []
+  previewUrl: string | null // 카드 미리보기 영상 공개 주소(선택, 53). 잠긴 자료·없으면 null
 }
 
 /** DB row(snake_case) → App(camelCase) 변환. */
@@ -77,6 +78,7 @@ export type AppRow = {
   use_case_type?: UseCaseType
   use_case?: string
   achievement_codes?: string[] // 36 미적용 DB 대비 optional
+  preview_url?: string | null // 53 미적용 DB 대비 optional
 }
 
 export function mapRow(row: AppRow): App {
@@ -105,6 +107,7 @@ export function mapRow(row: AppRow): App {
     useCaseType: row.use_case_type ?? "",
     useCase: row.use_case ?? "",
     achievementCodes: row.achievement_codes ?? [],
+    previewUrl: row.preview_url ?? null,
   }
 }
 
@@ -300,6 +303,8 @@ export type AppInput = {
   achievementCodes: string[]
   /** 첨부 파일(51, 최대 APP_FILE_LIMIT 개). undefined = 그대로 */
   files?: AppFile[]
+  /** 미리보기 영상 주소(53). undefined = 그대로, null = 빼기 */
+  previewUrl?: string | null
 }
 
 /** 자료에 단 파일 한 개(50·51). 비공개 버킷 app-files 의 경로와 원래 이름·크기 */
@@ -384,6 +389,55 @@ export async function uploadThumbnail(file: File): Promise<string> {
   return data.publicUrl
 }
 
+const PREVIEW_BUCKET = "app-previews"
+export const PREVIEW_MAX_BYTES = 5 * 1024 * 1024 // 5MB (53 버킷 정책과 동일)
+export const PREVIEW_MAX_SECONDS = 10
+export const PREVIEW_MIME = ["video/mp4", "video/webm"]
+
+/** 영상 길이(초). 읽지 못하면 NaN */
+function videoSeconds(file: File): Promise<number> {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file)
+    const video = document.createElement("video")
+    video.preload = "metadata"
+    video.onloadedmetadata = () => { URL.revokeObjectURL(url); resolve(video.duration) }
+    video.onerror = () => { URL.revokeObjectURL(url); resolve(NaN) }
+    video.src = url
+  })
+}
+
+/** 고른 미리보기 영상이 받을 수 있는 것인지. 문제가 있으면 안내 문구, 괜찮으면 null */
+export async function checkPreviewVideo(file: File): Promise<string | null> {
+  if (!PREVIEW_MIME.includes(file.type)) return "MP4 또는 WebM 영상만 올릴 수 있어요."
+  if (file.size > PREVIEW_MAX_BYTES) return "미리보기 영상은 5MB 이하만 올릴 수 있어요."
+  const sec = await videoSeconds(file)
+  if (!Number.isFinite(sec)) return "영상을 읽지 못했어요. 다른 파일로 해 주세요."
+  if (sec > PREVIEW_MAX_SECONDS + 0.5) return `미리보기 영상은 ${PREVIEW_MAX_SECONDS}초 이내로 해 주세요.`
+  return null
+}
+
+/** 미리보기 영상 올리기 → 공개 주소. 경로 app-previews/<uid>/<uuid>.<ext> (53, 본인 폴더만) */
+export async function uploadPreview(file: File): Promise<string> {
+  const uid = await currentUserId()
+  if (!uid) throw new Error("로그인이 필요합니다.")
+  const problem = await checkPreviewVideo(file)
+  if (problem) throw new Error(problem)
+  const path = `${uid}/${crypto.randomUUID()}.${file.type === "video/webm" ? "webm" : "mp4"}`
+  const { error } = await supabase.storage
+    .from(PREVIEW_BUCKET)
+    .upload(path, file, { cacheControl: "3600", contentType: file.type, upsert: false })
+  if (error) throw error
+  return supabase.storage.from(PREVIEW_BUCKET).getPublicUrl(path).data.publicUrl
+}
+
+/** 이전 미리보기 영상 지우기(바꾸거나 뺀 뒤). 공개 주소에서 경로를 뽑는다. 실패해도 자료 저장엔 영향 없음 */
+export async function removePreview(publicUrl: string) {
+  const marker = `/${PREVIEW_BUCKET}/`
+  const i = publicUrl.indexOf(marker)
+  if (i < 0) return
+  await supabase.storage.from(PREVIEW_BUCKET).remove([publicUrl.slice(i + marker.length)])
+}
+
 /** 새 앱 등록. id 는 uuid 자동생성, owner_id=본인, status='published'(RLS 가 인증교사 강제). */
 export async function createApp(input: AppInput): Promise<App> {
   const uid = await currentUserId()
@@ -416,6 +470,7 @@ export async function createApp(input: AppInput): Promise<App> {
       owner_id: uid,
       status: "published",
       ...(input.files?.length ? { files: input.files } : {}),
+      ...(input.previewUrl ? { preview_url: input.previewUrl } : {}),
     })
     .select()
     .single()
@@ -447,6 +502,7 @@ export async function updateApp(
   }
   if (patch.achievementCodes !== undefined) row.achievement_codes = patch.achievementCodes
   if (patch.files !== undefined) row.files = patch.files
+  if (patch.previewUrl !== undefined) row.preview_url = patch.previewUrl
 
   const { data, error } = await supabase
     .from("apps")

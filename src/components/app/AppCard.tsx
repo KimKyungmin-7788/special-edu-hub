@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Link } from "react-router-dom"
 import {
   Eye,
@@ -68,11 +68,14 @@ export function AppCard({
   // 잠긴 카드는 가운데 "인증교사 전용" 오버레이가 있으므로 칩 생략
   const teachersOnly = app.visibility === "teachers" && !app.locked
   const [shareOpen, setShareOpen] = useState(false)
+  const preview = usePreviewOnHover(app.locked ? null : app.previewUrl)
 
   return (
     <>
       <Link
         to={`/app/${app.id}`}
+        onPointerEnter={preview.onEnter}
+        onPointerLeave={preview.onLeave}
         className="group flex h-full flex-col overflow-hidden rounded-xl border bg-card shadow-sm transition-[border-color,box-shadow,translate] duration-200 hover:border-primary/50 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring motion-safe:hover:-translate-y-1"
       >
         <div className="relative aspect-video overflow-hidden bg-surface">
@@ -80,6 +83,23 @@ export function AppCard({
           <div className="h-full w-full transition-transform duration-300 motion-safe:group-hover:scale-[1.04]">
             <AppThumbnail app={app} iconClassName="size-7" />
           </div>
+
+          {/* 미리보기 영상(53) — 마우스를 잠시 올리면 썸네일 위에서 소리 없이 반복 재생. 떼면 내려서 받기도 멈춘다 */}
+          {preview.play && app.previewUrl && (
+            <video
+              src={app.previewUrl}
+              muted
+              loop
+              autoPlay
+              playsInline
+              aria-hidden
+              onPlaying={() => preview.setShown(true)}
+              className={cn(
+                "absolute inset-0 h-full w-full object-cover transition-opacity duration-300",
+                preview.shown ? "opacity-100" : "opacity-0",
+              )}
+            />
+          )}
 
           {/* 잠금 — 교사 전용인데 볼 권한 없음. 제목·썸네일만 보여준다. */}
           {app.locked && (
@@ -264,4 +284,27 @@ function MoveButton({
       <Icon className="size-4" aria-hidden />
     </button>
   )
+}
+
+/** 마우스를 올리고 잠시(0.4초) 머물 때만 미리보기 재생. 터치·움직임 줄이기 설정·영상 없음이면 하지 않는다 */
+function usePreviewOnHover(url: string | null) {
+  const [play, setPlay] = useState(false)
+  const [shown, setShown] = useState(false)
+  const timer = useRef<number | undefined>(undefined)
+  useEffect(() => () => window.clearTimeout(timer.current), [])
+  return {
+    play,
+    shown,
+    setShown,
+    onEnter: (e: React.PointerEvent) => {
+      if (!url || e.pointerType !== "mouse") return
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
+      timer.current = window.setTimeout(() => setPlay(true), 400)
+    },
+    onLeave: () => {
+      window.clearTimeout(timer.current)
+      setPlay(false)
+      setShown(false)
+    },
+  }
 }

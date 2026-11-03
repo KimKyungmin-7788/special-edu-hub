@@ -17,8 +17,10 @@ import {
   createApp,
   getAppFiles,
   removeAppFile,
+  removePreview,
   updateApp,
   uploadAppFile,
+  uploadPreview,
   uploadThumbnail,
   THUMBNAIL_MIME,
   type App,
@@ -30,6 +32,7 @@ import {
 } from "@/lib/apps"
 import { SubcategorySelect } from "@/components/app/SubcategorySelect"
 import { AppFileField, type FileItem } from "@/components/app/AppFileField"
+import { AppPreviewField } from "@/components/app/AppPreviewField"
 import { RichTextEditor } from "@/components/app/RichTextEditor"
 import { ThumbnailCropper } from "@/components/app/ThumbnailCropper"
 import { StandardsFinderModal } from "@/components/app/StandardsFinderModal"
@@ -161,6 +164,8 @@ export function WriteForm({
     app?.thumbnailUrl ? app.thumbnailUrl : null,
   )
   const [thumbError, setThumbError] = useState<string | null>(null)
+  // 미리보기 영상(53): 새 파일 · 기존 주소 · 없음
+  const [preview, setPreview] = useState<File | string | null>(app?.previewUrl ?? null)
   // 자르기 창에 띄울 원본(열림 = 값 있음) / 마지막으로 고른 원본(다시 맞추기용)
   const [cropSource, setCropSource] = useState<File | null>(null)
   const [thumbSource, setThumbSource] = useState<File | null>(null)
@@ -266,6 +271,10 @@ export function WriteForm({
       const nextFiles = filesChanged
         ? await Promise.all(files.map((f) => (f instanceof File ? uploadAppFile(f) : f)))
         : undefined
+      // 미리보기 영상: 바뀐 경우에만 올리고 저장한다(53 적용 전 DB 에서도 다른 칸 저장이 막히지 않게)
+      const oldPreview = app?.previewUrl ?? null
+      const previewChanged = preview !== oldPreview
+      const nextPreview = preview instanceof File ? await uploadPreview(preview) : preview
 
       const payload = {
         title,
@@ -284,6 +293,7 @@ export function WriteForm({
         useCaseType,
         useCase,
         ...(nextFiles ? { files: nextFiles } : {}),
+        ...(previewChanged ? { previewUrl: nextPreview } : {}),
       }
       const saved = app
         ? await updateApp(app.id, payload) // 작성자 이름은 그대로 둔다
@@ -293,6 +303,7 @@ export function WriteForm({
         savedFiles
           .filter((f) => !nextFiles.some((n) => n.path === f.path))
           .forEach((f) => removeAppFile(f.path).catch(() => {}))
+      if (previewChanged && oldPreview) removePreview(oldPreview).catch(() => {})
       // replace: 폼 페이지를 히스토리에서 치워, 상세에서 "목록으로"가 폼으로 되돌아가지 않게.
       navigate(`/app/${saved.id}`, { replace: true })
     } catch (err) {
@@ -596,6 +607,14 @@ export function WriteForm({
             onDone={applyCropped}
           />
         </div>
+      </FormPanel>
+
+      {/* ── 5-1. 미리보기 영상 ── */}
+      <FormPanel
+        title="미리보기 영상 (선택)"
+        hint="목록 카드에 마우스를 올리면 썸네일 자리에서 소리 없이 반복 재생돼요. 앱 화면을 짧게 녹화해 올려 주세요(윈도우 Win+Shift+R, 맥 Shift+⌘+5). 학생 얼굴·이름이 나오는 화면은 올리지 마세요."
+      >
+        <AppPreviewField value={preview} onChange={setPreview} disabled={submitting} />
       </FormPanel>
 
       {/* ── 6. 공개 범위 ── */}
