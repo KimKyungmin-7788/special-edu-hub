@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
+import { X } from "lucide-react"
 import { useAuth } from "@/lib/auth"
 import {
   listMembers,
@@ -9,19 +10,44 @@ import {
   type Role,
 } from "@/lib/profile"
 import { listMemberSchools } from "@/lib/account"
+import { cn } from "@/lib/utils"
 
 /**
- * 관리자 "회원" — 전체 회원 목록 + (관리자 전용) 권한 부여 (묶음 B-2 · 운영진 등급).
+ * 관리자 "회원" — 전체 회원 목록 + 회원 상세 패널 (묶음 B-2 · 운영진 등급 · 2026-11-03 개편).
+ * 표는 상태만 보여 주고(한 줄, 넘치면 …), 행을 누르면 오른쪽 상세 패널에서 권한·인증·연구회원을 바꾼다.
+ * 걸러보기(전체·인증교사·미인증·운영진·연구회원), 정렬, 50명씩 나눠 보기는 화면에서 한다.
  * 조회는 운영진(staff) 가능, 권한 변경은 관리자(admin)만(select 노출 + DB RPC 가 강제).
- * 교사인증 부여/회수는 운영진 가능(25 의 set_teacher_verified RPC). 인증 메일을 받으면
- * 이메일로 검색해 [인증] 을 누른다.
- * 강제 탈퇴 등 처리는 신고 시스템과 함께 후속.
+ * 교사인증 부여/회수는 운영진 가능(25 의 set_teacher_verified RPC).
  */
+
+type Filter = "all" | "verified" | "unverified" | "staff" | "research"
+type Sort = "newest" | "oldest" | "nickname"
+
+const FILTERS: { id: Filter; label: string; match: (m: Member) => boolean }[] = [
+  { id: "all", label: "전체", match: () => true },
+  { id: "verified", label: "인증교사", match: (m) => m.isTeacherVerified },
+  { id: "unverified", label: "미인증", match: (m) => !m.isTeacherVerified },
+  { id: "staff", label: "운영진", match: (m) => m.role === "manager" || m.role === "admin" },
+  { id: "research", label: "연구회원", match: (m) => m.isResearchMember },
+]
+
+const SORTS: { id: Sort; label: string }[] = [
+  { id: "newest", label: "가입일 최신순" },
+  { id: "oldest", label: "가입일 오래된순" },
+  { id: "nickname", label: "닉네임순" },
+]
+
+const PAGE_SIZE = 50
+
 export function AdminMemberList() {
   const { isAdmin, isStaff, user } = useAuth()
   const [members, setMembers] = useState<Member[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState("")
+  const [filter, setFilter] = useState<Filter>("all")
+  const [sort, setSort] = useState<Sort>("newest")
+  const [page, setPage] = useState(0)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
   const [schools, setSchools] = useState<Map<string, string>>(new Map()) // 소속 학교(52, 운영진만 읽힘)
 
   useEffect(() => {
@@ -37,14 +63,28 @@ export function AdminMemberList() {
     }
   }, [])
 
-  function applyRole(id: string, role: Role) {
-    setMembers((list) => list?.map((m) => (m.id === id ? { ...m, role } : m)) ?? null)
-  }
+  // 검색·걸러보기·정렬이 바뀌면 첫 쪽으로
+  useEffect(() => setPage(0), [query, filter, sort])
 
-  function applyVerified(id: string, isTeacherVerified: boolean) {
-    setMembers(
-      (list) => list?.map((m) => (m.id === id ? { ...m, isTeacherVerified } : m)) ?? null,
+  const shown = useMemo(() => {
+    if (!members) return []
+    const q = query.trim().toLowerCase()
+    const match = FILTERS.find((f) => f.id === filter)!.match
+    const list = members.filter(
+      (m) =>
+        match(m) &&
+        (!q ||
+          m.email?.toLowerCase().includes(q) ||
+          m.nickname?.toLowerCase().includes(q) ||
+          schools.get(m.id)?.toLowerCase().includes(q)),
     )
+    if (sort === "oldest") list.reverse()
+    if (sort === "nickname") list.sort((a, b) => (a.nickname ?? "").localeCompare(b.nickname ?? "", "ko"))
+    return list
+  }, [members, schools, query, filter, sort])
+
+  function update(id: string, patch: Partial<Member>) {
+    setMembers((list) => list?.map((m) => (m.id === id ? { ...m, ...patch } : m)) ?? null)
   }
 
   if (members === null) {
@@ -59,106 +99,290 @@ export function AdminMemberList() {
     )
   }
 
-  const verified = members.filter((m) => m.isTeacherVerified).length
-  const researchMembers = members.filter((m) => m.isResearchMember).length
-  const staff = members.filter(
-    (m) => m.role === "manager" || m.role === "admin",
-  ).length
-
-  const q = query.trim().toLowerCase()
-  const shown = q
-    ? members.filter(
-        (m) =>
-          m.email?.toLowerCase().includes(q) ||
-          m.nickname?.toLowerCase().includes(q) ||
-          schools.get(m.id)?.toLowerCase().includes(q),
-      )
-    : members
+  const pages = Math.max(1, Math.ceil(shown.length / PAGE_SIZE))
+  const pageItems = shown.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
+  const selected = members.find((m) => m.id === selectedId) ?? null
 
   return (
     <>
-      <p className="mb-2 text-sm text-muted-foreground">
-        전체 {members.length}명 · 인증교사 {verified}명 · 운영진 {staff}명 · 연구회회원 {researchMembers}명
-      </p>
-      <input
-        type="search"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder="이메일·닉네임·학교 검색"
-        className="mb-3 w-full max-w-xs rounded-md border border-input bg-background px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring"
-      />
-      {error && <p className="mb-2 text-sm text-destructive">{error}</p>}
-      <div className="overflow-x-auto rounded-lg border border-border">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border bg-surface text-left text-muted-foreground">
-              <th className="px-3 py-2 font-medium">닉네임</th>
-              <th className="px-3 py-2 font-medium">이메일</th>
-              <th className="px-3 py-2 font-medium">소속 학교</th>
-              <th className="px-3 py-2 font-medium">권한</th>
-              <th className="px-3 py-2 font-medium">인증</th>
-              <th className="px-3 py-2 font-medium">연구회회원</th>
-              <th className="px-3 py-2 font-medium">가입일</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {shown.map((m) => (
-              <tr key={m.id}>
-                <td className="px-3 py-2">
-                  {m.nickname || (
-                    <span className="text-muted-foreground">(없음)</span>
-                  )}
-                  {m.id === user?.id && (
-                    <span className="ml-1 text-xs text-muted-foreground">(나)</span>
-                  )}
-                </td>
-                <td className="px-3 py-2 text-muted-foreground">
-                  {m.email || "—"}
-                </td>
-                <td className="px-3 py-2 text-muted-foreground">
-                  {schools.get(m.id) || "—"}
-                </td>
-                <td className="px-3 py-2">
-                  {isAdmin ? (
-                    <RoleSelect
-                      member={m}
-                      onChanged={(role) => applyRole(m.id, role)}
-                      onError={setError}
-                    />
-                  ) : (
-                    <RoleBadge role={m.role} />
-                  )}
-                </td>
-                <td className="px-3 py-2">
-                  {isStaff ? (
-                    <VerifiedToggle
-                      member={m}
-                      onChanged={(v) => applyVerified(m.id, v)}
-                      onError={setError}
-                    />
-                  ) : m.isTeacherVerified ? (
-                    <span className="text-foreground">✓</span>
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
-                </td>
-                <td className="px-3 py-2">
-                  <ResearchToggle member={m} editable={isAdmin} onChanged={(enabled) => setMembers((list) => list?.map((x) => x.id === m.id ? { ...x, isResearchMember: enabled } : x) ?? null)} onError={setError} />
-                </td>
-                <td className="px-3 py-2 text-muted-foreground">
-                  {formatDate(m.createdAt)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="닉네임·이메일·학교 검색"
+          className="w-full max-w-xs rounded-md border border-input bg-background px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring"
+        />
+        <div className="flex flex-wrap gap-1.5" role="group" aria-label="회원 걸러보기">
+          {FILTERS.map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              aria-pressed={filter === f.id}
+              onClick={() => setFilter(f.id)}
+              className={cn(
+                "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                filter === f.id
+                  ? "border-transparent bg-brand-muted text-brand-muted-foreground"
+                  : "border-border text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {f.label} {members.filter(f.match).length}
+            </button>
+          ))}
+        </div>
+        <select
+          value={sort}
+          onChange={(e) => setSort(e.target.value as Sort)}
+          aria-label="정렬"
+          className="ml-auto rounded-md border border-input bg-background px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring"
+        >
+          {SORTS.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.label}
+            </option>
+          ))}
+        </select>
       </div>
-      {isAdmin && (
-        <p className="mt-2 text-xs text-muted-foreground">
-          운영진은 앱 숨김·교사인증 부여/회수를 할 수 있어요. 권한 부여는 관리자만 가능합니다.
-        </p>
-      )}
+      {error && <p className="mb-2 text-sm text-destructive">{error}</p>}
+
+      <div className={cn("grid items-start gap-4", selected && "lg:grid-cols-[minmax(0,1fr)_18rem]")}>
+        {selected && (
+          <MemberPanel
+            member={selected}
+            school={schools.get(selected.id)}
+            isMe={selected.id === user?.id}
+            isAdmin={isAdmin}
+            isStaff={isStaff}
+            onUpdate={(patch) => update(selected.id, patch)}
+            onError={setError}
+            onClose={() => setSelectedId(null)}
+          />
+        )}
+        <div className={cn("min-w-0", selected && "lg:order-first")}>
+          <div className="overflow-x-auto rounded-lg border border-border bg-background">
+            <table className="w-full table-fixed text-sm">
+              <colgroup>
+                <col className="w-36" />
+                <col className="w-48" />
+                <col />
+                <col className="w-20" />
+                <col className="w-16" />
+                <col className="w-20" />
+                <col className="w-28" />
+              </colgroup>
+              <thead>
+                <tr className="border-b border-border bg-surface text-left text-muted-foreground">
+                  <th className="px-3 py-2 font-medium">닉네임</th>
+                  <th className="px-3 py-2 font-medium">이메일</th>
+                  <th className="px-3 py-2 font-medium">소속 학교</th>
+                  <th className="px-3 py-2 font-medium">권한</th>
+                  <th className="px-3 py-2 font-medium">인증</th>
+                  <th className="px-3 py-2 font-medium">연구회</th>
+                  <th className="px-3 py-2 font-medium">가입일</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {pageItems.map((m) => {
+                  const school = schools.get(m.id)
+                  return (
+                    <tr
+                      key={m.id}
+                      onClick={() => setSelectedId(m.id === selectedId ? null : m.id)}
+                      aria-selected={m.id === selectedId}
+                      className={cn(
+                        "cursor-pointer transition-colors",
+                        m.id === selectedId ? "bg-brand-soft" : "hover:bg-accent",
+                      )}
+                    >
+                      <td className="truncate px-3 py-2">
+                        <button
+                          type="button"
+                          className="max-w-full truncate text-left font-medium hover:underline"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setSelectedId(m.id === selectedId ? null : m.id)
+                          }}
+                        >
+                          {m.nickname || <span className="text-muted-foreground">(없음)</span>}
+                        </button>
+                        {m.id === user?.id && <span className="ml-1 text-xs text-muted-foreground">(나)</span>}
+                      </td>
+                      <td className="truncate px-3 py-2 text-muted-foreground" title={m.email ?? undefined}>
+                        {m.email || "—"}
+                      </td>
+                      <td className="truncate px-3 py-2 text-muted-foreground" title={school}>
+                        {school || "—"}
+                      </td>
+                      <td className="px-3 py-2">
+                        <RoleBadge role={m.role} />
+                      </td>
+                      <td className="px-3 py-2">
+                        {m.isTeacherVerified ? (
+                          <span className="text-primary">✓</span>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2">
+                        {m.isResearchMember ? (
+                          <span className="text-primary">✓</span>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2 text-muted-foreground">{formatDate(m.createdAt)}</td>
+                    </tr>
+                  )
+                })}
+                {pageItems.length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="px-3 py-8 text-center text-muted-foreground">
+                      조건에 맞는 회원이 없어요.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
+            <span>
+              {shown.length}명 중 {shown.length === 0 ? 0 : page * PAGE_SIZE + 1}–
+              {Math.min((page + 1) * PAGE_SIZE, shown.length)} · 행을 누르면 권한·인증을 바꿀 수 있어요
+            </span>
+            {pages > 1 && (
+              <span className="flex items-center gap-1">
+                <PageButton disabled={page === 0} onClick={() => setPage(page - 1)}>
+                  이전
+                </PageButton>
+                <span className="px-1">
+                  {page + 1} / {pages}
+                </span>
+                <PageButton disabled={page >= pages - 1} onClick={() => setPage(page + 1)}>
+                  다음
+                </PageButton>
+              </span>
+            )}
+          </div>
+          {isAdmin && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              운영진은 앱 숨김·교사인증 부여/회수를 할 수 있어요. 권한 부여는 관리자만 가능합니다.
+            </p>
+          )}
+        </div>
+      </div>
     </>
+  )
+}
+
+function PageButton({
+  disabled,
+  onClick,
+  children,
+}: {
+  disabled: boolean
+  onClick: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className="rounded-md border border-border px-2 py-1 font-medium text-foreground hover:bg-accent disabled:opacity-40"
+    >
+      {children}
+    </button>
+  )
+}
+
+/** 회원 상세 패널 — 기본 정보와 권한·교사인증·연구회원 바꾸기. 넓은 화면은 표 오른쪽, 좁으면 표 위. */
+function MemberPanel({
+  member,
+  school,
+  isMe,
+  isAdmin,
+  isStaff,
+  onUpdate,
+  onError,
+  onClose,
+}: {
+  member: Member
+  school: string | undefined
+  isMe: boolean
+  isAdmin: boolean
+  isStaff: boolean
+  onUpdate: (patch: Partial<Member>) => void
+  onError: (msg: string) => void
+  onClose: () => void
+}) {
+  return (
+    <aside
+      aria-label="회원 상세"
+      className="rounded-lg border border-border bg-background p-4 text-sm lg:sticky lg:top-20"
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="truncate text-base font-bold">
+            {member.nickname || "(닉네임 없음)"}
+            {isMe && <span className="ml-1 text-xs font-normal text-muted-foreground">(나)</span>}
+          </p>
+          <p className="mt-0.5 break-all text-xs text-muted-foreground">{member.email || "이메일 —"}</p>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="상세 닫기"
+          className="-mr-1 -mt-1 rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+        >
+          <X className="size-4" aria-hidden />
+        </button>
+      </div>
+
+      <dl className="mt-3 space-y-1 text-xs">
+        <div className="flex gap-2">
+          <dt className="w-14 shrink-0 text-muted-foreground">소속 학교</dt>
+          <dd className="break-keep">{school || "—"}</dd>
+        </div>
+        <div className="flex gap-2">
+          <dt className="w-14 shrink-0 text-muted-foreground">가입일</dt>
+          <dd>{formatDate(member.createdAt)}</dd>
+        </div>
+      </dl>
+
+      <div className="mt-4 space-y-3 border-t border-border pt-4">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-muted-foreground">권한</span>
+          {isAdmin ? (
+            <RoleSelect member={member} onChanged={(role) => onUpdate({ role })} onError={onError} />
+          ) : (
+            <RoleBadge role={member.role} />
+          )}
+        </div>
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-muted-foreground">교사인증</span>
+          {isStaff ? (
+            <VerifiedToggle
+              member={member}
+              onChanged={(v) => onUpdate({ isTeacherVerified: v })}
+              onError={onError}
+            />
+          ) : (
+            <span>{member.isTeacherVerified ? "완료" : "—"}</span>
+          )}
+        </div>
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-muted-foreground">연구회원</span>
+          <ResearchToggle
+            member={member}
+            editable={isAdmin}
+            onChanged={(enabled) => onUpdate({ isResearchMember: enabled })}
+            onError={onError}
+          />
+        </div>
+      </div>
+    </aside>
   )
 }
 
@@ -260,8 +484,8 @@ function VerifiedToggle({
 
   return (
     <div className="flex items-center gap-2 whitespace-nowrap">
-      <span className={verified ? "text-foreground" : "text-muted-foreground"}>
-        {verified ? "✓" : "—"}
+      <span className={verified ? "text-primary" : "text-muted-foreground"}>
+        {verified ? "완료" : "미인증"}
       </span>
       <button
         type="button"
@@ -314,5 +538,5 @@ function ResearchToggle({ member, editable, onChanged, onError }: { member: Memb
     catch { onError("연구회회원 등급을 변경하지 못했습니다. SQL 적용 여부와 관리자 권한을 확인해 주세요.") }
     finally { setBusy(false) }
   }
-  return <div className="flex items-center gap-2 whitespace-nowrap"><span>{member.isResearchMember ? "연구회회원" : "—"}</span>{editable && <button type="button" disabled={busy} onClick={toggle} className="rounded-md border px-2 py-1 text-xs disabled:opacity-50">{busy ? "처리 중…" : member.isResearchMember ? "회수" : "부여"}</button>}</div>
+  return <div className="flex items-center gap-2 whitespace-nowrap"><span>{member.isResearchMember ? "연구회원" : "—"}</span>{editable && <button type="button" disabled={busy} onClick={toggle} className="rounded-md border px-2 py-1 text-xs disabled:opacity-50">{busy ? "처리 중…" : member.isResearchMember ? "회수" : "부여"}</button>}</div>
 }
