@@ -1,5 +1,4 @@
-import { useState } from "react"
-import { Link, Navigate } from "react-router-dom"
+import { Link, Navigate, useSearchParams } from "react-router-dom"
 import { useAuth } from "@/lib/auth"
 import { AdminAppList } from "@/components/admin/AdminAppList"
 import { AdminVerifyQueue } from "@/components/admin/AdminVerifyQueue"
@@ -19,12 +18,17 @@ import { usePageTitle } from "@/lib/usePageTitle"
  * 권한 체크의 진짜 강제는 DB RLS(is_admin)다. 여기 가드는 화면 접근 차단일 뿐.
  */
 
-type AdminTab = "apps" | "verify" | "members" | "reports" | "inquiries" | "notice"
+const ADMIN_TABS = ["apps", "verify", "members", "reports", "inquiries", "notice"] as const
+type AdminTab = (typeof ADMIN_TABS)[number]
 
 export function AdminPage() {
   usePageTitle("관리")
   const { user, isStaff, loading } = useAuth()
-  const [tab, setTab] = useState<AdminTab>("apps")
+  // 탭은 주소(?tab=)를 따른다 — 알림 메일 링크(/admin?tab=verify)로 오면 그 탭이 바로 열린다. 없으면 앱 관리
+  const [params, setParams] = useSearchParams()
+  const asked = params.get("tab")
+  const tab: AdminTab = ADMIN_TABS.find((t) => t === asked) ?? "apps"
+  const setTab = (t: AdminTab) => setParams(t === "apps" ? {} : { tab: t }, { replace: true })
 
   // 최초 세션 확인 중에는 깜빡임 방지로 대기.
   if (loading) {

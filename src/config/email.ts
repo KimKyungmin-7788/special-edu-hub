@@ -136,7 +136,7 @@ const templates: Record<EmailKind, (i: EmailInput) => EmailContent> = {
       `가입 이메일: ${i.data.email ?? ""}`,
       `서류: ${i.data.hasDocument ? "인증센터에 올림 — 운영진 페이지의 '서류 보기'" : "이메일로 받기 — 메일함 확인"}`,
       "",
-      `심사하기: ${link("/admin")}`,
+      `심사하기: ${link("/admin?tab=verify")}`,
     ].join("\n"),
   }),
 }
