@@ -11,7 +11,7 @@ import {
 import { sendNotice } from "@/lib/notifications"
 import { shortDate } from "@/components/updates/UpdateEntry"
 import { AppPreviewField } from "@/components/app/AppPreviewField"
-import { removePreview, uploadPreview } from "@/lib/apps"
+import { getApp, removePreview, uploadPreview } from "@/lib/apps"
 
 /**
  * 운영진 '새 소식' 탭 — 소식 쓰기·고치기·지우기(SQL 54, RLS is_staff).
@@ -20,7 +20,7 @@ import { removePreview, uploadPreview } from "@/lib/apps"
  */
 
 const KINDS = Object.keys(UPDATE_KIND_LABEL) as UpdateKind[]
-const EMPTY: SiteUpdateInput = { kind: "new", title: "", body: "", linkLabel: "", linkTo: "", mediaUrl: null }
+const EMPTY: SiteUpdateInput = { kind: "new", title: "", body: "", linkLabel: "", linkTo: "", mediaUrl: null, appId: null }
 
 export function AdminUpdateManager() {
   const [items, setItems] = useState<SiteUpdate[]>([])
@@ -44,7 +44,7 @@ export function AdminUpdateManager() {
 
   function startEdit(u: SiteUpdate) {
     setEditingId(u.id)
-    setForm({ kind: u.kind, title: u.title, body: u.body, linkLabel: u.linkLabel ?? "", linkTo: u.linkTo ?? "", mediaUrl: u.mediaUrl })
+    setForm({ kind: u.kind, title: u.title, body: u.body, linkLabel: u.linkLabel ?? "", linkTo: u.linkTo ?? "", mediaUrl: u.mediaUrl, appId: u.appId })
     setMedia(u.mediaUrl)
     setDone(null)
     setError(null)
@@ -65,6 +65,13 @@ export function AdminUpdateManager() {
       setError("링크는 '/'로 시작하는 누리집 안 경로만 쓸 수 있어요. 예) /mypage")
       return
     }
+    // 자료 주소(…/app/<id>) 또는 id 만 붙여 넣어도 된다
+    const appRaw = form.appId?.trim() ?? ""
+    const appId = appRaw ? (appRaw.match(/\/app\/([^/?#]+)/)?.[1] ?? appRaw) : null
+    if (appId && !(await getApp(appId))) {
+      setError("그 자료를 찾지 못했어요. 자료 상세 페이지 주소를 그대로 붙여 넣어 주세요.")
+      return
+    }
     const sending = !editingId && notify
     if (sending && !window.confirm("소식을 올리고 모든 회원에게 알림도 보낼까요? 잘못 보낸 알림은 공지 알림 탭에서 거둘 수 있어요.")) return
     setSaving(true)
@@ -73,7 +80,7 @@ export function AdminUpdateManager() {
     try {
       const oldMedia = form.mediaUrl
       const mediaUrl = media instanceof File ? await uploadPreview(media) : media
-      const input = { ...form, mediaUrl }
+      const input = { ...form, mediaUrl, appId }
       if (editingId) {
         await updateUpdate(editingId, input)
         setDone("고쳤어요.")
@@ -177,6 +184,19 @@ export function AdminUpdateManager() {
             />
           </label>
         </div>
+        <label className="block space-y-1.5">
+          <span className="text-sm font-medium">보여 줄 자료 카드 (선택)</span>
+          <span className="block text-xs text-muted-foreground">
+            자료 상세 페이지 주소를 붙여 넣으면 소식 아래에 그 자료 카드가 목록과 똑같이 나와요. 마우스를 올리면 아래
+            영상(없으면 그 자료의 미리보기 영상)이 재생돼요.
+          </span>
+          <input
+            value={form.appId ?? ""}
+            onChange={(e) => set("appId", e.target.value)}
+            className={field}
+            placeholder="https://special-edu-hub.vercel.app/app/…"
+          />
+        </label>
         <div className="space-y-1.5">
           <span className="text-sm font-medium">보여 줄 영상 (선택)</span>
           <p className="text-xs text-muted-foreground">

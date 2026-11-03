@@ -15,6 +15,8 @@ export type SiteUpdate = {
   linkTo: string | null
   /** 소식 아래 보여 줄 짧은 영상(55). 없으면 null */
   mediaUrl: string | null
+  /** 소식 아래 통째로 보여 줄 자료 카드(57). 없으면 null */
+  appId: string | null
   createdAt: string
 }
 
@@ -25,6 +27,7 @@ export type SiteUpdateInput = {
   linkLabel: string | null
   linkTo: string | null
   mediaUrl: string | null
+  appId: string | null
 }
 
 type Row = {
@@ -35,10 +38,11 @@ type Row = {
   link_label: string | null
   link_to: string | null
   media_url: string | null
+  app_id: string | null
   created_at: string
 }
 
-const COLUMNS = "id, kind, title, body, link_label, link_to, media_url, created_at"
+const COLUMNS = "id, kind, title, body, link_label, link_to, media_url, app_id, created_at"
 
 function mapRow(r: Row): SiteUpdate {
   return {
@@ -49,6 +53,7 @@ function mapRow(r: Row): SiteUpdate {
     linkLabel: r.link_label,
     linkTo: r.link_to,
     mediaUrl: r.media_url,
+    appId: r.app_id,
     createdAt: r.created_at,
   }
 }
@@ -61,6 +66,7 @@ function toRow(i: SiteUpdateInput) {
     link_label: i.linkTo?.trim() ? i.linkLabel?.trim() || "자세히 보기" : null,
     link_to: i.linkTo?.trim() || null,
     media_url: i.mediaUrl,
+    app_id: i.appId,
   }
 }
 
