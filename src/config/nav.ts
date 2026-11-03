@@ -54,5 +54,13 @@ export const navItems: NavItem[] = [
     ],
   },
   { label: "교사인증센터", to: "/verify", status: "active" },
-  { label: "소개", to: "/about", status: "active" },
+  {
+    label: "소개",
+    to: "/about",
+    status: "active",
+    children: [
+      { label: "누리집 소개", to: "/about" },
+      { label: "새 소식", to: "/updates" },
+    ],
+  },
 ]

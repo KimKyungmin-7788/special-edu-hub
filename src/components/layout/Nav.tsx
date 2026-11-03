@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom"
+import { NavLink, useLocation } from "react-router-dom"
 import { navItems, type NavChild, type NavItem } from "@/config/nav"
 import { cn } from "@/lib/utils"
 
@@ -67,6 +67,9 @@ export function Nav({
 }
 
 function BarLink({ item, density }: { item: NavItem; density: number }) {
+  // 하부 섹션 주소가 메뉴 주소 밖에 있어도(소개 → 새 소식) 그 페이지에서는 메뉴를 현재로 표시한다
+  const { pathname } = useLocation()
+  const inChild = item.children?.some((c) => pathname.startsWith(c.to)) ?? false
   return (
     <NavLink
       to={item.to}
@@ -79,7 +82,7 @@ function BarLink({ item, density }: { item: NavItem; density: number }) {
             : "px-2.5 text-[15px] after:inset-x-2.5 2xl:px-3.5 2xl:after:inset-x-3.5",
           // 현재 메뉴 표시: 헤더 아래 테두리 위에 겹치는 2px 밑줄
           "after:absolute after:-bottom-px after:h-0.5 after:rounded-full after:transition-colors",
-          isActive
+          isActive || inChild
             ? "font-semibold text-primary after:bg-primary"
             : "font-medium text-foreground/70 hover:text-foreground after:bg-transparent hover:after:bg-border",
         )
