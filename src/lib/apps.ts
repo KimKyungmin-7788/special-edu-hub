@@ -392,7 +392,7 @@ export async function uploadThumbnail(file: File): Promise<string> {
 const PREVIEW_BUCKET = "app-previews"
 export const PREVIEW_MAX_BYTES = 5 * 1024 * 1024 // 5MB (53 버킷 정책과 동일)
 export const PREVIEW_MAX_SECONDS = 10
-export const PREVIEW_MIME = ["video/mp4", "video/webm"]
+const PREVIEW_MIME = ["video/mp4", "video/webm"]
 
 /** 영상 길이(초). 읽지 못하면 NaN */
 function videoSeconds(file: File): Promise<number> {
@@ -406,14 +406,83 @@ function videoSeconds(file: File): Promise<number> {
   })
 }
 
-/** 고른 미리보기 영상이 받을 수 있는 것인지. 문제가 있으면 안내 문구, 괜찮으면 null */
+/** 올리기 직전 최종 검사. 문제가 있으면 안내 문구, 괜찮으면 null */
 export async function checkPreviewVideo(file: File): Promise<string | null> {
   if (!PREVIEW_MIME.includes(file.type)) return "MP4 또는 WebM 영상만 올릴 수 있어요."
   if (file.size > PREVIEW_MAX_BYTES) return "미리보기 영상은 5MB 이하만 올릴 수 있어요."
   const sec = await videoSeconds(file)
-  if (!Number.isFinite(sec)) return "영상을 읽지 못했어요. 다른 파일로 해 주세요."
-  if (sec > PREVIEW_MAX_SECONDS + 0.5) return `미리보기 영상은 ${PREVIEW_MAX_SECONDS}초 이내로 해 주세요.`
+  // 브라우저에서 줄인 WebM 은 길이 정보가 없어 Infinity 로 읽힌다(원본에서 이미 길이를 확인함)
+  if (Number.isNaN(sec)) return "영상을 읽지 못했어요. 다른 파일로 해 주세요."
+  if (sec !== Infinity && sec > PREVIEW_MAX_SECONDS + 0.5) return `미리보기 영상은 ${PREVIEW_MAX_SECONDS}초 이내로 해 주세요.`
   return null
+}
+
+/** 받는 원본 크기 상한(화면 녹화 원본은 10초에 수십 MB). 줄인 뒤 5MB 이하로 올린다 */
+export const PREVIEW_SOURCE_MAX_BYTES = 200 * 1024 * 1024
+const SHRINK_WIDTH = 640
+const SHRINK_BITRATE = 800_000 // 10초 ≈ 1MB
+
+/**
+ * 고른 영상을 올릴 수 있는 미리보기로 만든다. 문제가 있으면 안내 문구를 담아 throw.
+ * 이미 작은 MP4·WebM 은 그대로, 크거나 다른 형식(맥 .mov 등)이면 브라우저 안에서
+ * 가로 640px·낮은 화질로 다시 녹화한다(canvas + MediaRecorder). 영상 길이만큼 걸린다.
+ */
+export async function preparePreviewVideo(file: File, onProgress: (ratio: number) => void): Promise<File> {
+  if (!file.type.startsWith("video/")) throw new Error("영상 파일만 올릴 수 있어요.")
+  if (file.size > PREVIEW_SOURCE_MAX_BYTES) throw new Error("영상이 너무 커요(200MB 이하). 더 짧게 녹화해 주세요.")
+  const sec = await videoSeconds(file)
+  if (!Number.isFinite(sec)) throw new Error("이 영상은 브라우저에서 열 수 없어요. MP4로 다시 저장해 주세요.")
+  if (sec > PREVIEW_MAX_SECONDS + 0.5) throw new Error(`미리보기 영상은 ${PREVIEW_MAX_SECONDS}초 이내로 해 주세요.`)
+  if (PREVIEW_MIME.includes(file.type) && file.size <= PREVIEW_MAX_BYTES) return file
+
+  const out = await shrinkVideo(file, onProgress)
+  if (out.size > PREVIEW_MAX_BYTES) throw new Error("줄여도 5MB가 넘어요. 더 짧게 녹화해 주세요.")
+  return out
+}
+
+/** 영상을 소리 없이 한 번 재생하며 작은 캔버스에 그려 다시 녹화한다 */
+function shrinkVideo(file: File, onProgress: (ratio: number) => void): Promise<File> {
+  const mime = ["video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm", "video/mp4"].find(
+    (m) => typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(m),
+  )
+  if (!mime) return Promise.reject(new Error("이 브라우저에서는 영상을 줄일 수 없어요. 크롬에서 해 주세요."))
+
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file)
+    const video = document.createElement("video")
+    video.muted = true
+    video.playsInline = true
+    video.src = url
+    const fail = () => { URL.revokeObjectURL(url); reject(new Error("영상을 줄이지 못했어요. 다른 파일로 해 주세요.")) }
+    video.onerror = fail
+
+    video.onloadedmetadata = () => {
+      const scale = Math.min(1, SHRINK_WIDTH / video.videoWidth)
+      const canvas = document.createElement("canvas")
+      canvas.width = Math.round((video.videoWidth * scale) / 2) * 2
+      canvas.height = Math.round((video.videoHeight * scale) / 2) * 2
+      const ctx = canvas.getContext("2d")
+      if (!ctx) return fail()
+
+      const recorder = new MediaRecorder(canvas.captureStream(30), { mimeType: mime, videoBitsPerSecond: SHRINK_BITRATE })
+      const chunks: Blob[] = []
+      recorder.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data) }
+      recorder.onstop = () => {
+        URL.revokeObjectURL(url)
+        const type = mime.split(";")[0]
+        resolve(new File(chunks, `preview.${type === "video/webm" ? "webm" : "mp4"}`, { type }))
+      }
+
+      const draw = () => {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+        onProgress(Math.min(1, video.currentTime / video.duration))
+        if (!video.ended) requestAnimationFrame(draw)
+      }
+      video.onended = () => { onProgress(1); recorder.stop() }
+      recorder.start()
+      video.play().then(draw, fail)
+    }
+  })
 }
 
 /** 미리보기 영상 올리기 → 공개 주소. 경로 app-previews/<uid>/<uuid>.<ext> (53, 본인 폴더만) */
