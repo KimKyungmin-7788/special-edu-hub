@@ -17,6 +17,7 @@ import {
 } from "lucide-react"
 import {
   firstActivePage,
+  soonLabel,
   training,
   trainingPath,
   type GuideIcon,
@@ -43,7 +44,7 @@ const ICONS: Record<GuideIcon, LucideIcon> = {
  * 연수 단계는 위에서 아래로 영역 칸(1·2·3)을 ↓ 로 잇고, 칸 안에 세부 연수를 보여 준다.
  * 갈래가 있는 영역(현장 활용)은 번호 동그라미에서 내려온 선이 칸 안에서 A·B·C 칸으로 갈라진다.
  * 스터디 활동은 연수 흐름 밖이라 화살표로 잇지 않고 아래에 점선 칸으로 따로 둔다.
- * 열린 칸은 연두 바탕+초록 테두리, 준비중 칸은 회색 바탕. 문구와 연수 목록은 config/training.ts 에서.
+ * 열린 칸은 연두 바탕+초록 테두리, 공개예정 칸은 회색 바탕. 문구와 연수 목록은 config/training.ts 에서.
  */
 export function TrainingGuide() {
   const { guide, courses } = training
@@ -91,7 +92,7 @@ export function TrainingGuide() {
             </span>
             <span className="inline-flex items-center gap-1.5">
               <span aria-hidden className="size-2.5 rounded-full border-2 border-primary" />
-              준비중
+              {training.soon.label}
             </span>
           </p>
         </div>
@@ -112,7 +113,7 @@ export function TrainingGuide() {
             <Users className="size-5" />
           </span>
           <h3 className="flex-1 text-base leading-snug font-bold break-keep sm:text-[17px]">{training.study.title}</h3>
-          <span className="rounded-full bg-muted px-2.5 text-xs leading-6 text-muted-foreground">준비중</span>
+          <span className="rounded-full bg-muted px-2.5 text-xs leading-6 text-muted-foreground">{training.soon.label}</span>
         </div>
       </section>
 
@@ -180,7 +181,7 @@ export function TrainingGuide() {
  * (사이드바에서 번호 동그라미 아래로 세부 연수가 이어지는 것과 같은 모양).
  * 선은 SVG 한 장으로 그려 이음새가 어긋나지 않게 한다. 칸 사이 간격은 칸 안 여백(px-2)으로 띄워 칸 가운데가 정확히 (2i+1)/2n.
  * 좁은 화면은 나란히 두기엔 칸이 너무 좁아, 선 없이 한 줄씩 쌓는다.
- * 칸 안: 좁은 화면은 [글자][이름][준비중] 한 줄, 넓은 화면은 [글자 … 준비중] 아래 이름(이름이 칸 너비를 다 쓰게).
+ * 칸 안: 좁은 화면은 [글자][이름][공개예정] 한 줄, 넓은 화면은 [글자 … 공개예정] 아래 이름(이름이 칸 너비를 다 쓰게).
  */
 function BranchPages({ course, pages }: { course: TrainingCourse; pages: TrainingPage[] }) {
   const n = pages.length
@@ -231,7 +232,9 @@ function BranchPages({ course, pages }: { course: TrainingCourse; pages: Trainin
               {active ? (
                 <ArrowRight aria-hidden className="size-4 shrink-0 text-primary" />
               ) : (
-                <span className="shrink-0 rounded-full bg-muted px-2.5 text-xs leading-6 text-muted-foreground">준비중</span>
+                <span className="shrink-0 rounded-full bg-muted px-2.5 text-xs leading-6 text-muted-foreground">
+                  {soonLabel(page.release)}
+                </span>
               )}
             </>
           )
@@ -276,7 +279,7 @@ function DownArrow() {
 
 /**
  * 영역 칸 — 모두 같은 모양, 내용만큼만. 왼쪽 동그라미(번호) + 영역 이름, 그 아래 세부 연수.
- * 세부 연수는 열린 것은 바로가기, 준비 중인 것은 '· 준비중'을 붙여 한 줄로. 갈래 세부 연수는 칸 안에서 A·B·C로 갈라진다.
+ * 세부 연수는 열린 것은 바로가기, 공개예정인 것은 '· (예정일) 공개예정'을 붙여 한 줄로. 갈래 세부 연수는 칸 안에서 A·B·C로 갈라진다.
  * 열린 영역은 연두 바탕+초록 테두리, 열린 세부 연수가 없는 영역은 회색 바탕.
  */
 function CourseCard({ course, label }: { course: TrainingCourse; label: string }) {
@@ -321,7 +324,9 @@ function CourseCard({ course, label }: { course: TrainingCourse; label: string }
                       <ArrowRight aria-hidden className="size-3.5" />
                     </Link>
                   ) : (
-                    <span className="text-muted-foreground">{page.label} · 준비중</span>
+                    <span className="text-muted-foreground">
+                      {page.label} · {soonLabel(page.release)}
+                    </span>
                   )}
                 </li>
               ))}

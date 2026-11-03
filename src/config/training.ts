@@ -3,7 +3,8 @@
  * 구조: 연수 영역(courses, 1·2·3 순서로 이어짐) 안에 세부 연수(pages). 스터디 활동은 연수 흐름 밖에 따로(study).
  * 주소: /training = 열린연수방이란?(누구나), /training/<영역 slug>/<세부 연수 slug> = 세부 연수 한 쪽(인증 교사만, everyone 쪽은 누구나).
  * 세부 연수를 늘릴 때는 pages 에 추가하고, 동작하는 쪽은 App.tsx 에 라우트를 붙인다.
- * status: "active" = 동작 / "soon" = 자리만(준비 중, 누르지 못함). 동작하는 쪽이 없는 영역은 번호 동그라미가 빈 동그라미.
+ * status: "active" = 동작 / "soon" = 공개예정(누르지 못함, 라우트가 있어도 운영진까지 모두 막는다). 열린 쪽이 없는 영역은 번호 동그라미가 빈 동그라미.
+ * 공개하려면 그 쪽의 status 를 "active" 로 바꾼다(release 는 지워도 되고 그대로 둬도 된다).
  */
 
 export type TrainingPage = {
@@ -17,6 +18,8 @@ export type TrainingPage = {
   branch?: string
   /** 사이드바처럼 좁은 곳에 쓰는 짧은 이름(없으면 label) */
   short?: string
+  /** 공개 예정일(예: "11월 8일") — 공개예정 쪽에 '11월 8일 공개예정'으로 보인다. 없으면 '공개예정'만 */
+  release?: string
 }
 
 export type TrainingCourse = {
@@ -37,9 +40,10 @@ export const training = {
     {
       slug: "vibecoding",
       title: "특수교육 바이브코딩 기초",
+      // 2026-11-03 사용자 요청: 열린연수방이란? 말고 모두 공개예정으로 잠금(운영진 포함). why·basics 는 11월 8일 공개 예정
       pages: [
-        { slug: "why", label: "왜 바이브코딩인가?", status: "active", everyone: true },
-        { slug: "basics", label: "기초 익히기", status: "soon" },
+        { slug: "why", label: "왜 바이브코딩인가?", status: "soon", release: "11월 8일", everyone: true },
+        { slug: "basics", label: "기초 익히기", status: "soon", release: "11월 8일" },
         { slug: "methods", label: "다양한 방법 익히기", status: "soon" },
         { slug: "subjects", label: "교과별 활용", status: "soon" },
       ],
@@ -48,8 +52,8 @@ export const training = {
       slug: "agent",
       title: "에이전트 코딩의 환경구축",
       pages: [
-        { slug: "setup", label: "환경구축", status: "active" },
-        { slug: "survey", label: "연수 돌아보기", status: "active" },
+        { slug: "setup", label: "환경구축", status: "soon" },
+        { slug: "survey", label: "연수 돌아보기", status: "soon" },
       ],
     },
     {
@@ -75,6 +79,8 @@ export const training = {
   share: {
     title: "함께 여는 연수",
     path: "/training/share",
+    /** "soon" 이면 목록·글·쓰기 모두 공개예정으로 막는다(이미 올린 글도, 운영진도). 화면에서만 막음 — 글 자체는 DB 에 그대로 */
+    status: "soon" as "active" | "soon",
     description: "선생님이 알려 주고 싶은 것을 연수로 열어 주세요. 누구나 보고 배울 수 있어요.",
     notice: "누구나 볼 수 있고, 교사인증 회원은 연수를 올리고 댓글을 남길 수 있어요. 학생 얼굴·이름이 나오는 자료는 올리지 않아요.",
     ctaLabel: "연수 올리기",
@@ -82,6 +88,12 @@ export const training = {
     emptyBody: "작은 팁 하나도 좋은 연수가 돼요. 알려 주고 싶은 것을 올려 주세요.",
     writeHeading: "연수 올리기",
     writeGuard: "학생의 얼굴·이름·개인 정보가 나오는 사진이나 자료는 올리지 말아 주세요.",
+  },
+  /** 공개예정 쪽 표시와, 그 주소로 바로 왔을 때의 안내 */
+  soon: {
+    label: "공개예정",
+    notice: "지금 준비하고 있어요. 공개되면 이곳에서 바로 볼 수 있어요.",
+    backLabel: "열린연수방이란? 보기",
   },
   /** 열린연수방이란?(/training) 문구 — 소개 띠 → 연수 단계(영역 칸을 세로 화살표로, 칸 안에 세부 연수) → 앞으로의 비전(가로). 글은 짧게, 그림이 먼저 */
   guide: {
@@ -120,6 +132,10 @@ export const trainingPath = (...slugs: string[]) =>
 /** 영역의 첫 번째 동작하는 쪽(없으면 준비 중인 영역) */
 export const firstActivePage = (course: TrainingCourse) =>
   course.pages.find((p) => p.status === "active")
+
+/** 공개예정 표시 — 예정일이 있으면 '11월 8일 공개예정', 없으면 '공개예정' */
+export const soonLabel = (release?: string) =>
+  release ? `${release} ${training.soon.label}` : training.soon.label
 
 /** 영역 안 갈래 수('· 3갈래' 표시용, 갈래가 없으면 0) */
 export const branchCount = (course: TrainingCourse) => course.pages.filter((p) => p.branch).length

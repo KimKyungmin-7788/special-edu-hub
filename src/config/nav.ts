@@ -35,10 +35,14 @@ export const navItems: NavItem[] = [
     label: "열린연수방",
     to: "/training",
     status: "active",
-    children: [
-      { label: "열린 연수", to: training.basePath },
-      { label: training.share.title, to: training.share.path },
-    ],
+    // 함께 여는 연수가 공개예정이면 하부 섹션 없이 열린연수방이란?으로만 간다
+    children:
+      training.share.status === "active"
+        ? [
+            { label: "열린 연수", to: training.basePath },
+            { label: training.share.title, to: training.share.path },
+          ]
+        : undefined,
   },
   {
     label: "게시판",
