@@ -66,7 +66,7 @@ export function AdminUpdateManager() {
       return
     }
     const sending = !editingId && notify
-    if (sending && !window.confirm("소식을 올리고 모든 회원에게 알림도 보낼까요? 알림은 보낸 뒤 취소할 수 없어요.")) return
+    if (sending && !window.confirm("소식을 올리고 모든 회원에게 알림도 보낼까요? 잘못 보낸 알림은 공지 알림 탭에서 거둘 수 있어요.")) return
     setSaving(true)
     setError(null)
     setDone(null)

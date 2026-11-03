@@ -126,6 +126,46 @@ export async function sendNotice(title: string, body: string, link: string): Pro
   return Number(data ?? 0)
 }
 
+/** 보낸 공지 한 건(같은 제목·같은 보낸 시각의 알림 묶음, 56). */
+export type SentNotice = {
+  title: string
+  snippet: string
+  link: string | null
+  sentAt: string
+  recipients: number
+  readCount: number
+}
+
+/** 보낸 공지 목록(최신 50건). 운영진만(RPC 가 강제). */
+export async function listSentNotices(): Promise<SentNotice[]> {
+  const { data, error } = await supabase.rpc("list_sent_notices")
+  if (error) throw error
+  return (
+    data as {
+      title: string
+      snippet: string
+      link: string | null
+      sent_at: string
+      recipients: number
+      read_count: number
+    }[]
+  ).map((r) => ({
+    title: r.title,
+    snippet: r.snippet,
+    link: r.link,
+    sentAt: r.sent_at,
+    recipients: r.recipients,
+    readCount: r.read_count,
+  }))
+}
+
+/** 보낸 공지 거두기 — 모든 회원의 알림에서 지운다. 지운 수를 돌려준다. */
+export async function recallNotice(title: string, sentAt: string): Promise<number> {
+  const { data, error } = await supabase.rpc("recall_notice", { p_title: title, p_sent_at: sentAt })
+  if (error) throw error
+  return Number(data ?? 0)
+}
+
 /** 내 알림 변화(새 알림·읽음) 구독. 해제 함수를 돌려준다. */
 export function subscribeNotifications(userId: string, onChange: () => void): () => void {
   const channel = supabase
