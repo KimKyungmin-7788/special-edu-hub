@@ -3,6 +3,7 @@ import { ArrowRight } from "lucide-react"
 import { UPDATE_KIND_LABEL } from "@/config/updates"
 import type { SiteUpdate } from "@/lib/siteUpdates"
 import { cn } from "@/lib/utils"
+import { UpdateMedia } from "@/components/updates/UpdateMedia"
 
 /** 소식 한 건 — 꼬리표·제목·내용·링크. 새 소식 페이지와 팝업이 함께 쓴다 */
 export function UpdateEntry({ update: u, onLink }: { update: SiteUpdate; onLink?: () => void }) {
@@ -22,6 +23,7 @@ export function UpdateEntry({ update: u, onLink }: { update: SiteUpdate; onLink?
       {u.body && (
         <p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">{u.body}</p>
       )}
+      {u.mediaUrl && <UpdateMedia src={u.mediaUrl} />}
       {u.linkTo && (
         <Link
           to={u.linkTo}

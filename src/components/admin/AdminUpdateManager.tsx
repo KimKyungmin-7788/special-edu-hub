@@ -10,6 +10,8 @@ import {
 } from "@/lib/siteUpdates"
 import { sendNotice } from "@/lib/notifications"
 import { shortDate } from "@/components/updates/UpdateEntry"
+import { AppPreviewField } from "@/components/app/AppPreviewField"
+import { removePreview, uploadPreview } from "@/lib/apps"
 
 /**
  * 운영진 '새 소식' 탭 — 소식 쓰기·고치기·지우기(SQL 54, RLS is_staff).
@@ -18,12 +20,14 @@ import { shortDate } from "@/components/updates/UpdateEntry"
  */
 
 const KINDS = Object.keys(UPDATE_KIND_LABEL) as UpdateKind[]
-const EMPTY: SiteUpdateInput = { kind: "new", title: "", body: "", linkLabel: "", linkTo: "" }
+const EMPTY: SiteUpdateInput = { kind: "new", title: "", body: "", linkLabel: "", linkTo: "", mediaUrl: null }
 
 export function AdminUpdateManager() {
   const [items, setItems] = useState<SiteUpdate[]>([])
   const [form, setForm] = useState<SiteUpdateInput>(EMPTY)
   const [editingId, setEditingId] = useState<string | null>(null)
+  // 보여 줄 영상(55): 새로 고른 파일 · 이미 올린 주소 · 없음. 저장할 때 올린다(app-previews 본인 폴더)
+  const [media, setMedia] = useState<File | string | null>(null)
   const [notify, setNotify] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -40,7 +44,8 @@ export function AdminUpdateManager() {
 
   function startEdit(u: SiteUpdate) {
     setEditingId(u.id)
-    setForm({ kind: u.kind, title: u.title, body: u.body, linkLabel: u.linkLabel ?? "", linkTo: u.linkTo ?? "" })
+    setForm({ kind: u.kind, title: u.title, body: u.body, linkLabel: u.linkLabel ?? "", linkTo: u.linkTo ?? "", mediaUrl: u.mediaUrl })
+    setMedia(u.mediaUrl)
     setDone(null)
     setError(null)
     window.scrollTo({ top: 0, behavior: "smooth" })
@@ -49,6 +54,7 @@ export function AdminUpdateManager() {
   function reset() {
     setEditingId(null)
     setForm(EMPTY)
+    setMedia(null)
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -65,11 +71,14 @@ export function AdminUpdateManager() {
     setError(null)
     setDone(null)
     try {
+      const oldMedia = form.mediaUrl
+      const mediaUrl = media instanceof File ? await uploadPreview(media) : media
+      const input = { ...form, mediaUrl }
       if (editingId) {
-        await updateUpdate(editingId, form)
+        await updateUpdate(editingId, input)
         setDone("고쳤어요.")
       } else {
-        await createUpdate(form)
+        await createUpdate(input)
         if (sending) {
           const n = await sendNotice(form.title.trim(), form.body.trim().slice(0, 300), "/updates")
           setDone(`올렸고, 회원 ${n.toLocaleString("ko-KR")}명에게 알림을 보냈어요.`)
@@ -77,6 +86,8 @@ export function AdminUpdateManager() {
           setDone("올렸어요.")
         }
       }
+      // 바꾸거나 뺀 이전 영상 정리(남의 폴더 파일이면 RLS 가 막아 그대로 남는다)
+      if (oldMedia && oldMedia !== mediaUrl) removePreview(oldMedia).catch(() => {})
       reset()
       reload()
     } catch (err) {
@@ -90,6 +101,7 @@ export function AdminUpdateManager() {
     if (!window.confirm(`'${u.title}' 소식을 지울까요?`)) return
     try {
       await deleteUpdate(u.id)
+      if (u.mediaUrl) removePreview(u.mediaUrl).catch(() => {})
       if (editingId === u.id) reset()
       reload()
     } catch (err) {
@@ -164,6 +176,13 @@ export function AdminUpdateManager() {
               placeholder="자세히 보기"
             />
           </label>
+        </div>
+        <div className="space-y-1.5">
+          <span className="text-sm font-medium">보여 줄 영상 (선택)</span>
+          <p className="text-xs text-muted-foreground">
+            소식 아래에 나오고, 마우스를 올리면 재생돼요. 길면 10초를 골라 담고, 크면 자동으로 줄여요.
+          </p>
+          <AppPreviewField value={media} onChange={setMedia} disabled={saving} />
         </div>
         {!editingId && (
           <label className="flex items-center gap-2 text-sm">
