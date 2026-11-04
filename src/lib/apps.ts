@@ -419,10 +419,13 @@ export async function checkPreviewVideo(file: File): Promise<string | null> {
 
 /** 받는 원본 크기 상한(화면 녹화 원본은 15초에 수십 MB). 줄인 뒤 5MB 이하로 올린다 */
 export const PREVIEW_SOURCE_MAX_BYTES = 200 * 1024 * 1024
-/** 받는 원본 길이 상한. 15초가 넘으면 선생님이 시작 지점을 골라 15초만 담는다 */
+/** 받는 원본 길이 상한. 15초가 넘으면 선생님이 장면(구간)을 골라 이어 붙여 15초 이내로 담는다 */
 export const PREVIEW_SOURCE_MAX_SECONDS = 5 * 60
 const SHRINK_WIDTH = 640
 const SHRINK_BITRATE = 800_000 // 15초 ≈ 1.5MB
+
+/** 원본에서 담을 장면 하나 [시작 초, 끝 초] */
+export type PreviewSegment = [number, number]
 
 /** 고른 원본을 받을 수 있는지 보고 길이(초)를 돌려준다. 문제가 있으면 안내 문구를 담아 throw */
 export async function inspectPreviewSource(file: File): Promise<number> {
@@ -435,26 +438,37 @@ export async function inspectPreviewSource(file: File): Promise<number> {
 }
 
 /**
- * 원본의 start 초부터 15초를 올릴 수 있는 미리보기로 만든다. 문제가 있으면 안내 문구를 담아 throw.
- * 처음부터 15초 이내인 작은 MP4·WebM 은 그대로, 아니면 브라우저 안에서
+ * 원본에서 고른 장면들을 순서대로 이어 올릴 수 있는 미리보기로 만든다. 문제가 있으면 안내 문구를 담아 throw.
+ * 장면이 원본 통째(15초 이내)이고 작은 MP4·WebM 이면 그대로, 아니면 브라우저 안에서
  * 가로 640px·낮은 화질로 다시 녹화한다(canvas + MediaRecorder). 담는 길이만큼 걸린다.
  */
 export async function preparePreviewVideo(
   file: File,
   duration: number,
-  start: number,
+  segments: PreviewSegment[],
   onProgress: (ratio: number) => void,
 ): Promise<File> {
-  const whole = start === 0 && duration <= PREVIEW_MAX_SECONDS + 0.5
+  const total = segments.reduce((sum, [s, e]) => sum + (e - s), 0)
+  if (total <= 0) throw new Error("담을 장면을 하나 이상 골라 주세요.")
+  if (total > PREVIEW_MAX_SECONDS + 0.5) throw new Error(`고른 장면을 합쳐 ${PREVIEW_MAX_SECONDS}초 이내로 해 주세요.`)
+  const whole = segments.length === 1 && segments[0][0] === 0 && segments[0][1] >= duration
   if (whole && PREVIEW_MIME.includes(file.type) && file.size <= PREVIEW_MAX_BYTES) return file
 
-  const out = await shrinkVideo(file, start, Math.min(PREVIEW_MAX_SECONDS, duration - start), onProgress)
-  if (out.size > PREVIEW_MAX_BYTES) throw new Error("줄여도 5MB가 넘어요. 더 짧게 녹화해 주세요.")
+  const out = await shrinkVideo(file, segments, total, onProgress)
+  if (out.size > PREVIEW_MAX_BYTES) throw new Error("줄여도 5MB가 넘어요. 더 짧게 골라 주세요.")
   return out
 }
 
-/** 영상의 start 초부터 length 초를 소리 없이 재생하며 작은 캔버스에 그려 다시 녹화한다 */
-function shrinkVideo(file: File, start: number, length: number, onProgress: (ratio: number) => void): Promise<File> {
+/**
+ * 장면마다 그 위치로 옮겨 소리 없이 재생하며 작은 캔버스에 그려 녹화하고,
+ * 장면 사이에는 녹화를 잠깐 멈춰(pause/resume) 하나의 영상으로 잇는다.
+ */
+function shrinkVideo(
+  file: File,
+  segments: PreviewSegment[],
+  total: number,
+  onProgress: (ratio: number) => void,
+): Promise<File> {
   const mime = ["video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm", "video/mp4"].find(
     (m) => typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(m),
   )
@@ -486,31 +500,48 @@ function shrinkVideo(file: File, start: number, length: number, onProgress: (rat
         resolve(new File(chunks, `preview.${type === "video/webm" ? "webm" : "mp4"}`, { type }))
       }
 
-      const end = start + length
-      const finish = () => {
-        if (recorder.state === "inactive") return
-        video.pause()
-        onProgress(1)
-        recorder.stop()
-      }
-      const draw = () => {
-        if (recorder.state === "inactive") return
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
-        onProgress(Math.min(1, (video.currentTime - start) / length))
-        if (video.ended || video.currentTime >= end) finish()
-        else next()
-      }
+      let index = 0 // 지금 담는 장면
+      let done = 0 // 끝낸 장면들의 길이 합
       // 영상 프레임마다 그린다(지원 안 하면 화면 새로 고침마다)
       const next = () =>
         "requestVideoFrameCallback" in video ? video.requestVideoFrameCallback(draw) : requestAnimationFrame(draw)
-      video.onended = finish
-      // 시작 지점으로 옮긴 뒤 녹화를 시작한다
-      video.onseeked = () => {
-        video.onseeked = null
-        recorder.start()
-        video.play().then(draw, fail)
+
+      const endSegment = () => {
+        // 그리기와 ended 이벤트가 겹쳐 두 번 불려도 한 번만 넘어가게(녹화 중일 때만)
+        if (recorder.state !== "recording") return
+        video.pause()
+        const [s, e] = segments[index]
+        done += e - s
+        index += 1
+        if (index >= segments.length) {
+          onProgress(1)
+          recorder.stop()
+        } else {
+          recorder.pause()
+          startSegment()
+        }
       }
-      video.currentTime = start
+      function draw() {
+        if (recorder.state !== "recording") return
+        const [s, e] = segments[index]
+        ctx!.drawImage(video, 0, 0, canvas.width, canvas.height)
+        onProgress(Math.min(1, (done + Math.max(0, video.currentTime - s)) / total))
+        if (video.ended || video.currentTime >= e) endSegment()
+        else next()
+      }
+      // 장면 시작 위치로 옮긴 뒤 첫 화면을 그리고 녹화를 시작(또는 이어서)한다
+      function startSegment() {
+        video.onseeked = () => {
+          video.onseeked = null
+          ctx!.drawImage(video, 0, 0, canvas.width, canvas.height)
+          if (recorder.state === "inactive") recorder.start()
+          else recorder.resume()
+          video.play().then(draw, fail)
+        }
+        video.currentTime = segments[index][0]
+      }
+      video.onended = endSegment
+      startSegment()
     }
   })
 }
