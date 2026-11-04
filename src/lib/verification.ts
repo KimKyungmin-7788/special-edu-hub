@@ -220,19 +220,29 @@ export type AdminVerificationRequest = VerificationRequest & {
 }
 
 type AdminVerificationRow = VerificationRow & {
-  applicant: { nickname: string | null; email: string | null } | null
+  applicant: { nickname: string | null } | null
+}
+
+/**
+ * 신청자 가입 이메일 — profiles.email 은 직접 읽을 수 없어(58) 관리자 전용 admin_member_emails 로 받는다.
+ * 관리자가 아니면(운영진) 빈 목록 → 이메일 없이 닉네임만 보인다.
+ */
+async function applicantEmails(): Promise<Map<string, string | null>> {
+  const { data, error } = await supabase.rpc("admin_member_emails")
+  if (error) return new Map()
+  return new Map((data as { id: string; email: string | null }[]).map((e) => [e.id, e.email]))
 }
 
 /**
  * 심사 대기(pending) 신청 목록(오래된 순 — 먼저 신청한 걸 먼저 처리).
- * 신청자 프로필(닉네임·이메일)을 user_id FK 로 임베드한다.
+ * 신청자 닉네임은 user_id FK 로 임베드하고, 이메일은 applicantEmails(관리자만)로 붙인다.
  * reviewed_by 도 profiles 를 참조하므로 FK 이름으로 명시해 모호함을 없앤다.
  */
 export async function listPendingRequests(): Promise<AdminVerificationRequest[]> {
   const { data, error } = await supabase
     .from("verification_requests")
     .select(
-      "*, applicant:profiles!verification_requests_user_id_fkey(nickname, email)",
+      "*, applicant:profiles!verification_requests_user_id_fkey(nickname)",
     )
     .eq("status", "pending")
     .order("created_at", { ascending: true })
@@ -241,10 +251,11 @@ export async function listPendingRequests(): Promise<AdminVerificationRequest[]>
     console.error("[verification] listPendingRequests 실패:", error.message)
     return []
   }
+  const emails = await applicantEmails()
   return (data as AdminVerificationRow[]).map((row) => ({
     ...mapRow(row),
     applicantNickname: row.applicant?.nickname ?? null,
-    applicantEmail: row.applicant?.email ?? null,
+    applicantEmail: emails.get(row.user_id) ?? null,
   }))
 }
 
@@ -257,7 +268,7 @@ export async function listReviewedRequests(): Promise<AdminVerificationRequest[]
   const { data, error } = await supabase
     .from("verification_requests")
     .select(
-      "*, applicant:profiles!verification_requests_user_id_fkey(nickname, email)",
+      "*, applicant:profiles!verification_requests_user_id_fkey(nickname)",
     )
     .in("status", ["approved", "rejected"])
     .order("reviewed_at", { ascending: false })
@@ -266,10 +277,11 @@ export async function listReviewedRequests(): Promise<AdminVerificationRequest[]
     console.error("[verification] listReviewedRequests 실패:", error.message)
     return []
   }
+  const emails = await applicantEmails()
   return (data as AdminVerificationRow[]).map((row) => ({
     ...mapRow(row),
     applicantNickname: row.applicant?.nickname ?? null,
-    applicantEmail: row.applicant?.email ?? null,
+    applicantEmail: emails.get(row.user_id) ?? null,
   }))
 }
 

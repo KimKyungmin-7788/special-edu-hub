@@ -31,7 +31,6 @@ export type Profile = {
 
 type ProfileRow = {
   id: string
-  email: string | null
   email_public: boolean
   nickname: string | null
   avatar_url: string | null
@@ -47,10 +46,14 @@ type ProfileRow = {
   created_at: string
 }
 
-function mapRow(row: ProfileRow): Profile {
+// profiles.email 칸은 직접 읽을 수 없다(58_member_email.sql). 이메일은 profile_email·admin_member_emails 함수로.
+const PROFILE_COLUMNS =
+  "id, email_public, nickname, avatar_url, blog_url, instagram_url, youtube_url, website_url, is_research_member, is_teacher_verified, nickname_set, verified_celebrated, role, created_at"
+
+function mapRow(row: ProfileRow, email: string | null = null): Profile {
   return {
     id: row.id,
-    email: row.email,
+    email,
     emailPublic: row.email_public,
     nickname: row.nickname,
     avatarUrl: row.avatar_url,
@@ -72,7 +75,7 @@ function mapRow(row: ProfileRow): Profile {
 export async function getProfile(id: string): Promise<Profile | undefined> {
   const { data, error } = await supabase
     .from("profiles")
-    .select("*")
+    .select(PROFILE_COLUMNS)
     .eq("id", id)
     .maybeSingle()
 
@@ -80,7 +83,20 @@ export async function getProfile(id: string): Promise<Profile | undefined> {
     console.error("[profile] getProfile 실패:", error.message)
     return undefined
   }
-  return data ? mapRow(data as ProfileRow) : undefined
+  if (!data) return undefined
+  const row = data as ProfileRow
+  // 공개를 켠 회원만 이메일을 받는다(본인 화면은 계정 이메일 user.email 을 쓴다).
+  const email = row.email_public ? await getProfileEmail(id) : null
+  return mapRow(row, email)
+}
+
+async function getProfileEmail(id: string): Promise<string | null> {
+  const { data, error } = await supabase.rpc("profile_email", { p_id: id })
+  if (error) {
+    console.error("[profile] profile_email 실패:", error.message)
+    return null
+  }
+  return typeof data === "string" ? data : null
 }
 
 /**
@@ -109,23 +125,26 @@ export type Member = {
 
 /**
  * 전체 회원 목록(가입 최신순) — 관리자 페이지(/admin)용.
- * profiles 는 공개 읽기(04_profiles.sql) 라 별도 SQL 없이 조회된다(화면은 admin 게이트).
+ * 회원 정보는 profiles(공개 읽기), 가입 이메일은 관리자만 받는 admin_member_emails(58)로 합친다.
  * 강제 탈퇴 등 처리 기능은 신고 시스템과 함께 후속 — 여기선 읽기만.
  */
 export async function listMembers(): Promise<Member[]> {
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, nickname, email, role, is_teacher_verified, is_research_member, created_at")
+    .select("id, nickname, role, is_teacher_verified, is_research_member, created_at")
     .order("created_at", { ascending: false })
 
   if (error) {
     console.error("[profile] listMembers 실패:", error.message)
     return []
   }
+  const { data: emails, error: emailError } = await supabase.rpc("admin_member_emails")
+  if (emailError) console.error("[profile] admin_member_emails 실패:", emailError.message)
+  const emailById = new Map(((emails ?? []) as { id: string; email: string | null }[]).map((e) => [e.id, e.email]))
   return (data as ProfileRow[]).map((row) => ({
     id: row.id,
     nickname: row.nickname,
-    email: row.email,
+    email: emailById.get(row.id) ?? null,
     role: row.role,
     isResearchMember: row.is_research_member ?? false,
     isTeacherVerified: row.is_teacher_verified,
@@ -189,7 +208,7 @@ export async function updateProfile(
       website_url: patch.websiteUrl,
     })
     .eq("id", id)
-    .select()
+    .select(PROFILE_COLUMNS)
     .single()
 
   if (error) throw error
