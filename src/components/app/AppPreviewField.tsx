@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
  * 미리보기 영상 칸(53) — 목록 카드에 마우스를 올리면 재생되는 짧은 영상 1개(선택).
  * 값: 새로 고른 영상(File) · 이미 올린 영상 주소(string) · 없음(null). 실제 업로드는 저장할 때 WriteForm 이 한다.
  * 화면 녹화 원본(크거나 맥 .mov)은 고를 때 브라우저 안에서 작게 줄여 담는다.
- * 10초보다 길면 막대로 시작 지점을 골라 그 10초만 담는다. 소리는 재생할 때 항상 끈다.
+ * 15초(PREVIEW_MAX_SECONDS)보다 길면 막대로 시작 지점을 골라 그 구간만 담는다. 소리는 재생할 때 항상 끈다.
  */
 export function AppPreviewField({
   value,
@@ -24,7 +24,7 @@ export function AppPreviewField({
   const [over, setOver] = useState(false)
   // 줄이는 중이면 진행률(0~1), 아니면 null
   const [shrinking, setShrinking] = useState<number | null>(null)
-  // 10초보다 긴 원본 — 시작 지점을 고르는 중
+  // 담을 길이보다 긴 원본 — 시작 지점을 고르는 중
   const [source, setSource] = useState<{ file: File; duration: number } | null>(null)
   const [start, setStart] = useState(0)
   const busy = disabled || shrinking !== null
@@ -68,7 +68,7 @@ export function AppPreviewField({
     }
   }
 
-  // 시작 지점을 옮기면 그 10초를 반복해서 보여 준다
+  // 시작 지점을 옮기면 그 구간을 반복해서 보여 준다
   function moveStart(sec: number) {
     setStart(sec)
     if (trimRef.current) trimRef.current.currentTime = sec
@@ -100,7 +100,7 @@ export function AppPreviewField({
           />
           <label className="flex flex-col gap-1.5 text-sm">
             <span>
-              담을 10초 고르기 <span className="text-muted-foreground">
+              담을 {PREVIEW_MAX_SECONDS}초 고르기 <span className="text-muted-foreground">
                 {clock(start)} ~ {clock(Math.min(start + PREVIEW_MAX_SECONDS, source.duration))}
               </span>
             </span>
@@ -122,7 +122,7 @@ export function AppPreviewField({
               disabled={busy}
               className="rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground disabled:opacity-60"
             >
-              {shrinking !== null ? `줄이는 중… ${Math.round(shrinking * 100)}%` : "이 10초 담기"}
+              {shrinking !== null ? `줄이는 중… ${Math.round(shrinking * 100)}%` : `이 ${PREVIEW_MAX_SECONDS}초 담기`}
             </button>
             <button
               type="button"

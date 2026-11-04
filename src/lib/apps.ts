@@ -391,7 +391,7 @@ export async function uploadThumbnail(file: File): Promise<string> {
 
 const PREVIEW_BUCKET = "app-previews"
 export const PREVIEW_MAX_BYTES = 5 * 1024 * 1024 // 5MB (53 버킷 정책과 동일)
-export const PREVIEW_MAX_SECONDS = 10
+export const PREVIEW_MAX_SECONDS = 15
 const PREVIEW_MIME = ["video/mp4", "video/webm"]
 
 /** 영상 길이(초). 읽지 못하면 NaN */
@@ -417,12 +417,12 @@ export async function checkPreviewVideo(file: File): Promise<string | null> {
   return null
 }
 
-/** 받는 원본 크기 상한(화면 녹화 원본은 10초에 수십 MB). 줄인 뒤 5MB 이하로 올린다 */
+/** 받는 원본 크기 상한(화면 녹화 원본은 15초에 수십 MB). 줄인 뒤 5MB 이하로 올린다 */
 export const PREVIEW_SOURCE_MAX_BYTES = 200 * 1024 * 1024
-/** 받는 원본 길이 상한. 10초가 넘으면 선생님이 시작 지점을 골라 10초만 담는다 */
+/** 받는 원본 길이 상한. 15초가 넘으면 선생님이 시작 지점을 골라 15초만 담는다 */
 export const PREVIEW_SOURCE_MAX_SECONDS = 5 * 60
 const SHRINK_WIDTH = 640
-const SHRINK_BITRATE = 800_000 // 10초 ≈ 1MB
+const SHRINK_BITRATE = 800_000 // 15초 ≈ 1.5MB
 
 /** 고른 원본을 받을 수 있는지 보고 길이(초)를 돌려준다. 문제가 있으면 안내 문구를 담아 throw */
 export async function inspectPreviewSource(file: File): Promise<number> {
@@ -435,8 +435,8 @@ export async function inspectPreviewSource(file: File): Promise<number> {
 }
 
 /**
- * 원본의 start 초부터 10초를 올릴 수 있는 미리보기로 만든다. 문제가 있으면 안내 문구를 담아 throw.
- * 처음부터 10초 이내인 작은 MP4·WebM 은 그대로, 아니면 브라우저 안에서
+ * 원본의 start 초부터 15초를 올릴 수 있는 미리보기로 만든다. 문제가 있으면 안내 문구를 담아 throw.
+ * 처음부터 15초 이내인 작은 MP4·WebM 은 그대로, 아니면 브라우저 안에서
  * 가로 640px·낮은 화질로 다시 녹화한다(canvas + MediaRecorder). 담는 길이만큼 걸린다.
  */
 export async function preparePreviewVideo(

@@ -200,7 +200,7 @@ export function AdminUpdateManager() {
         <div className="space-y-1.5">
           <span className="text-sm font-medium">보여 줄 영상 (선택)</span>
           <p className="text-xs text-muted-foreground">
-            소식 아래에 나오고, 마우스를 올리면 재생돼요. 길면 10초를 골라 담고, 크면 자동으로 줄여요.
+            소식 아래에 나오고, 마우스를 올리면 재생돼요. 길면 15초를 골라 담고, 크면 자동으로 줄여요.
           </p>
           <AppPreviewField value={media} onChange={setMedia} disabled={saving} />
         </div>
