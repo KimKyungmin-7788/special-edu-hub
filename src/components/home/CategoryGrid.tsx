@@ -35,7 +35,7 @@ export function CategoryGrid() {
                       aria-hidden
                     />
                   </span>
-                  <span className="text-sm font-bold leading-tight tracking-tight break-keep transition-colors group-hover:text-primary">
+                  <span className="text-sm font-semibold leading-tight tracking-tight break-keep transition-colors group-hover:text-primary">
                     {c.name}
                   </span>
                 </Link>

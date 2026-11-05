@@ -35,6 +35,13 @@
   font-weight: 400;
   font-display: swap;
 }
+/* font-medium·font-semibold 는 Medium 으로 그린다(없으면 semibold 가 Bold 로 튀어 너무 굵어진다). */
+@font-face {
+  font-family: "Spoqa Han Sans Neo";
+  src: url("/fonts/SpoqaHanSansNeo-Medium.woff2") format("woff2");
+  font-weight: 500 600;
+  font-display: swap;
+}
 @font-face {
   font-family: "Spoqa Han Sans Neo";
   src: url("/fonts/SpoqaHanSansNeo-Bold.woff2") format("woff2");

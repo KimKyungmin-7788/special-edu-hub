@@ -163,7 +163,7 @@ function Brand({ hideWordmark = false }: { hideWordmark?: boolean }) {
             {eyebrow}
           </span>
         )}
-        <span className="truncate text-sm leading-tight font-bold tracking-tight text-foreground sm:text-[15px]">
+        <span className="truncate text-sm leading-tight font-semibold tracking-tight text-foreground sm:text-[15px]">
           {title}
         </span>
       </span>
