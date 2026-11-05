@@ -97,7 +97,7 @@ function SlideContent({
       {slide.keyword && (
         <>
           <div className="relative hidden w-40 shrink-0 items-center justify-center sm:flex">
-            <span className="text-5xl font-bold tracking-tight text-primary">
+            <span className="font-(family-name:--font-accent) text-5xl tracking-tight text-primary">
               {slide.keyword}
             </span>
           </div>
@@ -108,7 +108,7 @@ function SlideContent({
       <div className="relative grid min-w-0 flex-1 content-center items-center gap-y-2 px-6 pt-6 pb-16 sm:pb-6 sm:grid-cols-[1fr_11rem] sm:gap-x-8 sm:px-8">
         <div className="min-w-0 sm:col-start-1 sm:row-start-1">
           {slide.keyword && (
-            <p className="mb-2 text-xl font-bold tracking-tight text-primary sm:hidden">
+            <p className="mb-2 font-(family-name:--font-accent) text-xl tracking-tight text-primary sm:hidden">
               {slide.keyword}
             </p>
           )}

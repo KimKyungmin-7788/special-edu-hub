@@ -13,9 +13,46 @@
      --primary           ← --color-primary   (브랜드 정해지면 여기부터)
    ============================================================ */
 
+/* 글꼴 — 모두 SIL OFL 1.1. 파일과 라이선스 전문은 public/fonts/ (OFL-*.txt).
+   각 공식 배포처의 웹용 파일을 변환 없이 그대로 쓴다.
+   IBM Plex Sans KR: github.com/IBM/plex · Spoqa Han Sans Neo: github.com/spoqa/spoqa-han-sans
+   도현체: github.com/google/fonts (ofl/dohyeon) */
+@font-face {
+  font-family: "IBM Plex Sans KR";
+  src: url("/fonts/IBMPlexSansKR-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "IBM Plex Sans KR";
+  src: url("/fonts/IBMPlexSansKR-SemiBold.woff2") format("woff2");
+  font-weight: 600 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Spoqa Han Sans Neo";
+  src: url("/fonts/SpoqaHanSansNeo-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Spoqa Han Sans Neo";
+  src: url("/fonts/SpoqaHanSansNeo-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Do Hyeon";
+  src: url("/fonts/DoHyeon-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
+
 :root {
   /* 타이포 */
-  --font-main: system-ui, -apple-system, "Pretendard", "Segoe UI", sans-serif;
+  --font-main: "Spoqa Han Sans Neo", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-heading: "IBM Plex Sans KR", var(--font-main);
+  --font-accent: "Do Hyeon", var(--font-main);
 
   /* 모양 */
   --radius: 12px;

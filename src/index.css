@@ -94,6 +94,12 @@
     font-family: var(--font-sans);
   }
 
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-heading);
+  }
+
   body {
     margin: 0;
     background-color: var(--color-background);
