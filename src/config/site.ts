@@ -38,7 +38,7 @@ export const site = {
    * title 을 비워 두면 name 을 쓴다. 헤더에서만 쓰는 표기 — SITE_NAME 은 그대로.
    */
   headerBrand: {
-    eyebrow: "특수교사가 만들고 나누는",
+    eyebrow: "함께 배우고 성장하는 커뮤니티",
     title: "",
   },
 
