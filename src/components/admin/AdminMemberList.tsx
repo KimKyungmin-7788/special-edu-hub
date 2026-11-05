@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
-import { BadgeCheck, X } from "lucide-react"
+import { BadgeCheck, BookOpen, X } from "lucide-react"
 import { useAuth } from "@/lib/auth"
 import {
   listMembers,
@@ -171,7 +171,7 @@ export function AdminMemberList() {
                 <col />
                 <col className="w-20" />
                 <col className="w-28" />
-                <col className="w-20" />
+                <col className="w-28" />
                 <col className="w-28" />
               </colgroup>
               <thead>
@@ -228,11 +228,7 @@ export function AdminMemberList() {
                         <VerifiedBadge verified={m.isTeacherVerified} />
                       </td>
                       <td className="px-3 py-2">
-                        {m.isResearchMember ? (
-                          <span className="text-primary">✓</span>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
+                        <ResearchBadge member={m.isResearchMember} />
                       </td>
                       <td className="px-3 py-2 text-muted-foreground">{formatDate(m.createdAt)}</td>
                     </tr>
@@ -526,6 +522,17 @@ function VerifiedBadge({ verified }: { verified: boolean }) {
   )
 }
 
+/** 연구회원 표시 — 인증교사(초록)와 구분되는 보라 꼬리표. */
+function ResearchBadge({ member }: { member: boolean }) {
+  if (!member) return <span className="text-xs text-muted-foreground">—</span>
+  return (
+    <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-research px-2 py-0.5 text-xs font-semibold text-research-foreground">
+      <BookOpen className="size-3.5" aria-hidden />
+      연구회원
+    </span>
+  )
+}
+
 /** 표의 이름 칸 — 인증 실명이 있으면 그것을, 없으면 구글 이름을 옅게. */
 function MemberName({ member }: { member: Member }) {
   if (member.realName) return <span title="교사인증 때 적은 성함">{member.realName}</span>
@@ -572,5 +579,5 @@ function ResearchToggle({ member, editable, onChanged, onError }: { member: Memb
     catch { onError("연구회회원 등급을 변경하지 못했습니다. SQL 적용 여부와 관리자 권한을 확인해 주세요.") }
     finally { setBusy(false) }
   }
-  return <div className="flex items-center gap-2 whitespace-nowrap"><span>{member.isResearchMember ? "연구회원" : "—"}</span>{editable && <button type="button" disabled={busy} onClick={toggle} className="rounded-md border px-2 py-1 text-xs disabled:opacity-50">{busy ? "처리 중…" : member.isResearchMember ? "회수" : "부여"}</button>}</div>
+  return <div className="flex items-center gap-2 whitespace-nowrap"><ResearchBadge member={member.isResearchMember} />{editable && <button type="button" disabled={busy} onClick={toggle} className="rounded-md border px-2 py-1 text-xs disabled:opacity-50">{busy ? "처리 중…" : member.isResearchMember ? "회수" : "부여"}</button>}</div>
 }

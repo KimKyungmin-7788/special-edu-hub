@@ -57,6 +57,8 @@
   --color-avatar-4-foreground: var(--avatar-4-foreground);
   --color-avatar-5: var(--avatar-5);
   --color-avatar-5-foreground: var(--avatar-5-foreground);
+  --color-research: var(--research);
+  --color-research-foreground: var(--research-foreground);
   --color-avatar-6: var(--avatar-6);
   --color-avatar-6-foreground: var(--avatar-6-foreground);
 

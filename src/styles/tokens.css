@@ -74,6 +74,10 @@
   --avatar-6-foreground: #1a5446;
 
   /* 강조 버튼(CTA) — 꿀빛 노랑. 화면당 핵심 버튼 1곳에만 쓴다. */
+  /* 연구회원 꼬리표 — 인증교사(초록)와 구분되는 보라 */
+  --research: #e9e4f6;
+  --research-foreground: #45366e; /* 대비 8.9:1 */
+
   --cta: #fcd34d;
   --cta-foreground: #1b3d22; /* 대비 8.4:1 */
 
