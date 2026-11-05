@@ -25,6 +25,7 @@ export type UseCaseType = "" | "field" | "expected"
 
 /** 앱 한 건의 모양. DB 컬럼(snake_case)을 이 camelCase 모양으로 변환해 쓴다. */
 export type App = {
+  isSeedling: boolean
   id: string
   title: string
   appUrl: string // 새 탭 실행 대상
@@ -54,6 +55,7 @@ export type App = {
 
 /** DB row(snake_case) → App(camelCase) 변환. */
 export type AppRow = {
+  is_seedling?: boolean
   id: string
   title: string
   app_url: string
@@ -83,6 +85,7 @@ export type AppRow = {
 
 export function mapRow(row: AppRow): App {
   return {
+    isSeedling: row.is_seedling ?? false,
     id: row.id,
     title: row.title,
     appUrl: row.app_url,
@@ -125,7 +128,7 @@ function byManualOrder(a: App, b: App): number {
 }
 
 /** 전체 앱 목록 (최신순). 공개(published)만 — RLS 와 별개로 명시적 이중 안전. */
-export async function getApps(): Promise<App[]> {
+export async function getApps(includeSeedling = false): Promise<App[]> {
   const { data, error } = await supabase
     .from(CATALOG)
     .select("*")
@@ -136,7 +139,19 @@ export async function getApps(): Promise<App[]> {
     console.error("[apps] getApps 실패:", error.message)
     return []
   }
-  return (data as AppRow[]).map(mapRow)
+  return (data as AppRow[]).map(mapRow).filter((app) => includeSeedling || !app.isSeedling)
+}
+
+/** 새싹자료 목록. 기존 카탈로그의 공개 범위·잠금 처리를 그대로 따른다. */
+export async function getSeedlingApps(): Promise<App[]> {
+  const { data, error } = await supabase
+    .from(CATALOG)
+    .select("*")
+    .eq("status", "published")
+    .order("created_at", { ascending: false })
+  if (error) throw error
+  // 61 적용 전에는 구분 칸이 없어 빈 목록으로 표시한다.
+  return (data as AppRow[]).map(mapRow).filter((app) => app.isSeedling)
 }
 
 /** id 로 단일 앱. */
@@ -205,7 +220,7 @@ export async function getAppsByCategory(categoryId: string): Promise<App[]> {
  * getApps 가 published 만 돌려주므로 남의 숨김앱은 노출되지 않는다.
  */
 export async function getAppsByOwner(ownerId: string): Promise<App[]> {
-  const apps = await getApps()
+  const apps = await getApps(true)
   return apps.filter((a) => a.ownerId === ownerId)
 }
 
@@ -288,6 +303,7 @@ function cleanSummary(text: string): string {
 
 /** 등록/수정 입력. id·owner_id·status·집계수는 코드/RLS 가 정한다. */
 export type AppInput = {
+  isSeedling?: boolean
   title: string
   appUrl: string
   thumbnailUrl: string
@@ -599,6 +615,7 @@ export async function createApp(input: AppInput): Promise<App> {
       achievement_codes: input.achievementCodes,
       owner_id: uid,
       status: "published",
+      ...(input.isSeedling ? { is_seedling: true } : {}),
       ...(input.files?.length ? { files: input.files } : {}),
       ...(input.previewUrl ? { preview_url: input.previewUrl } : {}),
     })

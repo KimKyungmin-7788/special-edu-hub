@@ -17,6 +17,7 @@ import {
   Lightbulb,
   type LucideIcon,
 } from "lucide-react"
+import { seedling } from "@/config/seedling"
 import { getCategory } from "@/config/categories"
 import { AppThumbnail } from "@/components/app/AppThumbnail"
 import { RichTextViewer } from "@/components/app/RichTextViewer"
@@ -72,7 +73,8 @@ export function AppDetail() {
 
   // "목록으로" — 직전 페이지로. 직접 진입(앱 내 이력 없음)이면 인기로.
   function goBack() {
-    if (location.key !== "default") navigate(-1)
+    if (app?.isSeedling) navigate("/seedling")
+    else if (location.key !== "default") navigate(-1)
     else navigate("/apps/subject")
   }
 
@@ -248,6 +250,12 @@ export function AppDetail() {
 
       {/* 헤더: 제목 · 개발자 · 조회수 · 태그 */}
       <div className="mt-6">
+        {app.isSeedling && (
+          <div className="mb-4 rounded-xl bg-brand-soft p-4 text-sm">
+            <Link to={seedling.path} className="font-semibold text-primary hover:underline">{seedling.title} · 시작의 기록</Link>
+            <p className="mt-2 leading-relaxed text-muted-foreground">{seedling.distinction}</p>
+          </div>
+        )}
         <h1 className="text-3xl font-semibold tracking-tight">{displayTitle(app)}</h1>
         {app.summary && (
           <p className="mt-2 text-base text-muted-foreground">{app.summary}</p>
@@ -427,12 +435,12 @@ export function AppDetail() {
           {/* 교육적 의도 · 활용사례 · 관련 성취기준(35·36) — 입력된 것만, 같은 카드 모양 */}
           <div className="mt-8 grid gap-4 border-t pt-8">
             {app.educationalIntent && (
-              <InfoBlock icon={Sprout} title="교육적 의도" body={app.educationalIntent} />
+              <InfoBlock icon={Sprout} title={app.isSeedling ? "나의 시작 이야기" : "교육적 의도"} body={app.educationalIntent} />
             )}
             {app.useCase && (
               <InfoBlock
                 icon={app.useCaseType === "expected" ? Lightbulb : School}
-                title={app.useCaseType === "expected" ? "예상되는 현장 변화" : "현장 활용 사례"}
+                title={app.isSeedling ? "더 해보고 싶은 것 · 도움받고 싶은 점" : app.useCaseType === "expected" ? "예상되는 현장 변화" : "현장 활용 사례"}
                 body={app.useCase}
               />
             )}
@@ -444,6 +452,7 @@ export function AppDetail() {
 
           {/* 개발자 소개 글(블로그형) — HTML 정화 후 렌더.
               위 요약 카드들과 구분되게 "본문 글" 모양: 사이트 공통 초록 막대 제목 + 넓은 여백의 글 카드 */}
+          {(!app.isSeedling || Boolean(app.description.trim())) && (
           <section className="mt-10">
             <h2 className="mb-3 flex items-center gap-2 text-lg font-bold tracking-tight">
               <span aria-hidden className="h-4 w-1 rounded-full bg-primary" />
@@ -457,6 +466,7 @@ export function AppDetail() {
               )}
             </div>
           </section>
+          )}
 
           {/* 작성자(또는 관리자) 전용 — 글 하단 수정·삭제 */}
           {canEdit && (
@@ -506,6 +516,12 @@ export function AppDetail() {
           )}
 
           {/* 댓글 (PRD 4단계) */}
+          {app.isSeedling && (
+            <aside className="mt-8 rounded-xl bg-brand-soft p-5 text-sm leading-relaxed">
+              <h2 className="font-semibold text-primary">응원과 경험을 나눠 주세요</h2>
+              <p className="mt-2 text-muted-foreground">{seedling.feedbackHint}</p>
+            </aside>
+          )}
           <CommentSection target={{ kind: "app", id: app.id }} />
         </>
       )}

@@ -12,15 +12,18 @@ import { CategoryPickerModal } from "@/components/app/CategoryPickerModal"
  */
 export function WriteButton({
   categoryId,
+  seedling = false,
   label = "글쓰기",
   variant = "solid",
   className,
 }: {
   categoryId?: string
+  seedling?: boolean
   label?: string
   variant?: "solid" | "outline"
   className?: string
 }) {
+  const suffix = seedling ? "?room=seedling" : ""
   const navigate = useNavigate()
   const [pickOpen, setPickOpen] = useState(false)
 
@@ -34,7 +37,7 @@ export function WriteButton({
 
   if (categoryId) {
     return (
-      <Link to={`/write/${categoryId}`} className={classes}>
+      <Link to={`/write/${categoryId}${suffix}`} className={classes}>
         <Pencil className="size-4" aria-hidden />
         {label}
       </Link>
@@ -52,7 +55,7 @@ export function WriteButton({
         onClose={() => setPickOpen(false)}
         onSelect={(id) => {
           setPickOpen(false)
-          navigate(`/write/${id}`)
+          navigate(`/write/${id}${suffix}`)
         }}
       />
     </>

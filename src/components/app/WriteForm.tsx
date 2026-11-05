@@ -78,15 +78,18 @@ const clip = (text: string, max: number) => Array.from(text).slice(0, max).join(
 export function WriteForm({
   categoryId,
   defaultAuthorName = "",
+  isSeedling: seedlingMode = false,
   app,
 }: {
   categoryId: string
   defaultAuthorName?: string
+  isSeedling?: boolean
   /** 주어지면 수정 모드. */
   app?: App
 }) {
   const navigate = useNavigate()
   const isEdit = app != null
+  const isSeedling = app?.isSeedling ?? seedlingMode
 
   // ── 카테고리 ──
   const [primaryId, setPrimaryId] = useState(categoryId)
@@ -127,7 +130,9 @@ export function WriteForm({
   // "목록"/"취소" → 수정이면 해당 글로, 등록이면 고른 교과 목록으로.
   const listTo = isEdit
     ? `/app/${app.id}`
-    : primary?.type === "work"
+    : isSeedling
+      ? "/seedling"
+      : primary?.type === "work"
       ? "/apps/work"
       : `/apps/subject/${primaryId}`
 
@@ -250,16 +255,16 @@ export function WriteForm({
     e.preventDefault()
     setSubmitError(null)
 
-    if (title.trim() === "") return setSubmitError("앱 이름을 입력하세요.")
+    if (title.trim() === "") return setSubmitError(isSeedling ? "자료 이름을 입력하세요." : "앱 이름을 입력하세요.")
     if (appUrl.trim() === "" && files.length === 0)
       return setSubmitError("앱 링크나 자료 파일 중 하나는 넣어 주세요.")
-    if (summary.trim() === "") return setSubmitError("한줄 설명을 입력하세요.")
+    if (!isSeedling && summary.trim() === "") return setSubmitError("한줄 설명을 입력하세요.")
     if (!primary) return setSubmitError("교과를 선택하세요.")
-    if (hasSubs && subIds.length === 0)
+    if (!isSeedling && hasSubs && subIds.length === 0)
       return setSubmitError(
         primary.monthly ? "해당하는 달을 한 개 이상 선택하세요." : "하위 주제를 한 개 이상 선택하세요.",
       )
-    if (intent.trim() === "") return setSubmitError("교육적 의도를 입력하세요.")
+    if (intent.trim() === "") return setSubmitError(isSeedling ? "만들게 된 계기와 시작 이야기를 짧게 남겨 주세요." : "교육적 의도를 입력하세요.")
 
     setSubmitting(true)
     try {
@@ -279,7 +284,7 @@ export function WriteForm({
       const payload = {
         title,
         appUrl,
-        summary,
+        summary: isSeedling ? summary.trim() || clip(title.trim(), SUMMARY_MAX) : summary,
         thumbnailUrl,
         description: content,
         categoryIds: [
@@ -297,7 +302,7 @@ export function WriteForm({
       }
       const saved = app
         ? await updateApp(app.id, payload) // 작성자 이름은 그대로 둔다
-        : await createApp({ ...payload, authorName: defaultAuthorName, achievementStandards: "" })
+        : await createApp({ ...payload, isSeedling, authorName: defaultAuthorName, achievementStandards: "" })
       // 뺀 이전 파일은 저장소에서 정리(실패해도 무시)
       if (nextFiles)
         savedFiles
@@ -321,7 +326,7 @@ export function WriteForm({
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
       {/* ── 1. 기본 정보 ── */}
       <FormPanel title="기본 정보">
-        <FormField label="앱 이름" htmlFor="app-title" required>
+        <FormField label={isSeedling ? "자료 이름" : "앱 이름"} htmlFor="app-title" required>
           <input
             id="app-title"
             className={fieldInput}
@@ -365,19 +370,19 @@ export function WriteForm({
           />
         </FormField>
 
-        <FormField label="한줄 설명" htmlFor="app-summary" required hint="목록 카드에서 제목 아래에 보이고, 관련 성취기준을 찾을 때도 쓰여요.">
+        <FormField label="한줄 설명" htmlFor="app-summary" required={!isSeedling} optional={isSeedling} hint={isSeedling ? "목록 카드에 보여 줄 소개예요. 비워 두면 자료 이름을 사용해요." : "목록 카드에서 제목 아래에 보이고, 관련 성취기준을 찾을 때도 쓰여요."}>
           <input
             id="app-summary"
             className={fieldInput}
             placeholder="한 문장으로: 누가, 무엇에 쓰나요?"
             value={summary}
             onChange={(e) => setSummary(clip(e.target.value, SUMMARY_MAX))}
-            required
+            required={!isSeedling}
             disabled={submitting}
           />
           <CharCounter count={charCount(summary)} max={SUMMARY_MAX} />
           {/* 성취기준 찾기 안내 — 버튼만 두면 작성자가 못 알아채서, 무엇을 해 주는지 문장으로 보여 준다. */}
-          <div className="mt-2 flex flex-col gap-3 rounded-xl border border-border bg-surface p-4 sm:flex-row sm:items-center">
+          {!isSeedling && <div className="mt-2 flex flex-col gap-3 rounded-xl border border-border bg-surface p-4 sm:flex-row sm:items-center">
             <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
               <Sparkles className="size-5" aria-hidden />
             </span>
@@ -399,12 +404,12 @@ export function WriteForm({
             >
               <Search className="size-4" aria-hidden /> 성취기준 찾기
             </button>
-          </div>
+          </div>}
         </FormField>
       </FormPanel>
 
       {/* ── 2. 카테고리 ── */}
-      <FormPanel title="카테고리" hint="고른 교과 목록에 이 자료가 보여요.">
+      <FormPanel title="카테고리" hint={isSeedling ? "새싹자료방에서 이 교과로 찾아볼 수 있어요. 처음 고른 교과를 그대로 두어도 됩니다." : "고른 교과 목록에 이 자료가 보여요."}>
         <FormField label="교과" htmlFor="app-primary" required>
           <SelectBox
             id="app-primary"
@@ -430,7 +435,7 @@ export function WriteForm({
           </SelectBox>
         </FormField>
 
-        {hasSubs && (
+        {!isSeedling && hasSubs && (
           <FormField
             label={primary?.monthly ? "해당 월" : "하위 주제"}
             required
@@ -449,6 +454,7 @@ export function WriteForm({
           </FormField>
         )}
 
+        {!isSeedling && (
         <FormField
           label="관련 성취기준"
           optional
@@ -462,8 +468,9 @@ export function WriteForm({
             disabled={submitting}
           />
         </FormField>
+        )}
 
-        {canRelate && (
+        {!isSeedling && canRelate && (
           <FormField
             label="연관 교과"
             htmlFor="app-related"
@@ -501,9 +508,10 @@ export function WriteForm({
       </FormPanel>
 
       {/* ── 3. 수업에서의 쓰임 ── */}
-      <FormPanel title="수업에서의 쓰임">
+      <FormPanel title={isSeedling ? "나의 시작 이야기" : "수업에서의 쓰임"}>
         <FormField
-          label="교육적 의도"
+          label={isSeedling ? "만들게 된 계기" : "교육적 의도"}
+          hint={isSeedling ? "왜 만들었나요? 어디까지 해봤나요? 한두 문장으로 편하게 남겨 주세요." : undefined}
           htmlFor="app-intent"
           required
         >
@@ -511,7 +519,7 @@ export function WriteForm({
             id="app-intent"
             rows={4}
             className={fieldTextarea}
-            placeholder="이 자료로 학생이 무엇을 배우고, 무엇을 할 수 있게 되길 바라나요?"
+            placeholder={isSeedling ? "예: 우리 반 학생들과 숫자 세기를 해보고 싶어 처음 만들어 봤어요. 버튼을 누르면 숫자가 바뀌는 것까지 해봤어요." : "이 자료로 학생이 무엇을 배우고, 무엇을 할 수 있게 되길 바라나요?"}
             value={intent}
             onChange={(e) => setIntent(clip(e.target.value, INTENT_MAX))}
             required
@@ -520,11 +528,11 @@ export function WriteForm({
           <CharCounter count={charCount(intent)} max={INTENT_MAX} />
         </FormField>
 
-        <FormField label="활용사례" optional>
+        <FormField label={isSeedling ? "더 해보고 싶은 것 · 도움받고 싶은 점" : "활용사례"} optional>
           <textarea
-            aria-label="활용사례 내용"
+            aria-label={isSeedling ? "더 해보고 싶은 것 · 도움받고 싶은 점" : "활용사례 내용"}
             rows={5}
-            placeholder={USE_CASE_HINT}
+            placeholder={isSeedling ? "다음에는 어떤 기능을 붙여 보고 싶나요? 막힌 부분이나 함께 나누고 싶은 고민이 있나요? 비워 두어도 괜찮아요." : USE_CASE_HINT}
             className={fieldTextarea}
             value={useCase}
             onChange={(e) => setUseCase(clip(e.target.value, USE_CASE_MAX))}
@@ -535,6 +543,7 @@ export function WriteForm({
       </FormPanel>
 
       {/* ── 4. 자세한 설명 ── */}
+      {(!isSeedling || Boolean(app?.description)) && (
       <FormPanel title="자세한 설명">
         <div className="text-base">
           <RichTextEditor
@@ -544,6 +553,7 @@ export function WriteForm({
           />
         </div>
       </FormPanel>
+      )}
 
       {/* ── 5. 썸네일 ── */}
       <FormPanel
@@ -610,12 +620,14 @@ export function WriteForm({
       </FormPanel>
 
       {/* ── 5-1. 미리보기 영상 ── */}
+      {(!isSeedling || Boolean(app?.previewUrl)) && (
       <FormPanel
         title="미리보기 영상 (선택)"
         hint="목록 카드에 마우스를 올리면 썸네일 자리에서 소리 없이 반복 재생돼요. 앱 화면을 짧게 녹화해 올려 주세요(윈도우 Win+Shift+R, 맥 Shift+⌘+5). 학생 얼굴·이름이 나오는 화면은 올리지 마세요."
       >
         <AppPreviewField value={preview} onChange={setPreview} disabled={submitting} />
       </FormPanel>
+      )}
 
       {/* ── 6. 공개 범위 ── */}
       <FormPanel
@@ -664,7 +676,7 @@ export function WriteForm({
           disabled={submitting}
           className="rounded-xl bg-primary px-8 py-3 text-base font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
         >
-          {submitting ? (isEdit ? "저장 중…" : "등록 중…") : isEdit ? "수정 저장" : "등록하기"}
+          {submitting ? (isEdit ? "저장 중…" : "등록 중…") : isEdit ? "수정 저장" : isSeedling ? "시작의 기록 남기기" : "등록하기"}
         </button>
       </div>
 

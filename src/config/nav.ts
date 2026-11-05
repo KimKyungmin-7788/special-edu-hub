@@ -7,6 +7,7 @@
 
 import { subjectCategories } from "@/config/categories"
 import { training } from "@/config/training"
+import { seedling } from "@/config/seedling"
 
 export type NavStatus = "active" | "soon"
 
@@ -30,6 +31,7 @@ export const navItems: NavItem[] = [
     children: subjectCategories.map((c) => ({ label: c.name, to: `/apps/subject/${c.id}` })),
   },
   { label: "업무혁신", to: "/apps/work", status: "active" },
+  { label: seedling.title, to: seedling.path, status: "active" },
   { label: "수업실천사례", to: "/practices", status: "active" },
   {
     label: "열린연수방",

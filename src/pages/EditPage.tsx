@@ -55,7 +55,7 @@ export function EditPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
-      <h1 className="mb-2 text-3xl font-bold tracking-tight">자료 수정</h1>
+      <h1 className="mb-2 text-3xl font-bold tracking-tight">{state.kind === "ready" && state.app.isSeedling ? "새싹자료 수정" : "자료 수정"}</h1>
       <p className="mb-8 text-base text-muted-foreground">
         등록한 자료의 내용을 수정합니다. 저장하면 바로 반영됩니다.
       </p>

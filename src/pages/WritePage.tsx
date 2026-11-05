@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react"
-import { Link, useParams } from "react-router-dom"
+import { Link, useParams, useSearchParams } from "react-router-dom"
 import { ShieldCheck } from "lucide-react"
 import { useAuth } from "@/lib/auth"
 import { getProfile } from "@/lib/profile"
 import { getCategory } from "@/config/categories"
+import { seedling } from "@/config/seedling"
 import { WriteForm } from "@/components/app/WriteForm"
 import { usePageTitle } from "@/lib/usePageTitle"
 
@@ -24,8 +25,10 @@ type State =
 
 export function WritePage() {
   const { categoryId } = useParams<{ categoryId: string }>()
+  const [params] = useSearchParams()
+  const isSeedling = params.get("room") === "seedling"
   const category = categoryId ? getCategory(categoryId) : undefined
-  usePageTitle(category ? `${category.name} 글쓰기` : "글쓰기")
+  usePageTitle(isSeedling ? "새싹자료 등록" : category ? `${category.name} 글쓰기` : "글쓰기")
   const { user, loading: authLoading } = useAuth()
   const [state, setState] = useState<State>({ kind: "loading" })
 
@@ -67,9 +70,11 @@ export function WritePage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
-      <h1 className="mb-2 text-3xl font-bold tracking-tight">자료 등록</h1>
+      <h1 className="mb-2 text-3xl font-bold tracking-tight">{isSeedling ? "새싹자료 등록" : "자료 등록"}</h1>
       <p className="mb-8 text-base text-muted-foreground">
-        인증교사가 만든 교육 웹앱을 누리집에 공개합니다. 등록하면 바로 목록에 나타납니다.
+        {isSeedling
+          ? seedling.writingHint
+          : "인증교사가 만든 교육 웹앱을 누리집에 공개합니다. 등록하면 바로 목록에 나타납니다."}
       </p>
 
       {state.kind === "loading" && (
@@ -97,7 +102,7 @@ export function WritePage() {
       )}
 
       {state.kind === "ready" && categoryId && (
-        <WriteForm categoryId={categoryId} defaultAuthorName={state.authorName} />
+        <WriteForm isSeedling={isSeedling} categoryId={categoryId} defaultAuthorName={state.authorName} />
       )}
     </div>
   )

@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from "
 import { AuthProvider } from "@/lib/auth"
 import { Layout } from "@/components/layout/Layout"
 import { vibecoding } from "@/config/vibecoding"
+import { seedling } from "@/config/seedling"
 import { Home } from "@/pages/Home"
 import { lazyPage } from "@/lib/lazyPage"
 
@@ -9,6 +10,7 @@ import { lazyPage } from "@/lib/lazyPage"
 const SubjectApps = lazyPage(() => import("@/pages/SubjectApps").then((m) => ({ default: m.SubjectApps })))
 const WorkApps = lazyPage(() => import("@/pages/WorkApps").then((m) => ({ default: m.WorkApps })))
 const LatestApps = lazyPage(() => import("@/pages/LatestApps").then((m) => ({ default: m.LatestApps })))
+const SeedlingRoom = lazyPage(() => import("@/pages/SeedlingRoom").then((m) => ({ default: m.SeedlingRoom })))
 const AppDetail = lazyPage(() => import("@/pages/AppDetail").then((m) => ({ default: m.AppDetail })))
 const WritePage = lazyPage(() => import("@/pages/WritePage").then((m) => ({ default: m.WritePage })))
 const EditPage = lazyPage(() => import("@/pages/EditPage").then((m) => ({ default: m.EditPage })))
@@ -48,6 +50,7 @@ function App() {
             {/* 전체(/apps)는 없앰 — 인기로 리다이렉트(옛 링크·뒤로가기 대비) */}
             <Route path="apps" element={<Navigate to="/apps/subject" replace />} />
             <Route path="apps/latest" element={<LatestApps />} />
+            <Route path={seedling.path} element={<SeedlingRoom />} />
             <Route path="write/:categoryId" element={<WritePage />} />
             <Route path="edit/:appId" element={<EditPage />} />
             <Route path="apps/subject" element={<SubjectApps />} />
