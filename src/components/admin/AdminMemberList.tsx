@@ -163,7 +163,8 @@ export function AdminMemberList() {
         )}
         <div className={cn("min-w-0", selected && "lg:order-first")}>
           <div className="overflow-x-auto rounded-lg border border-border bg-background">
-            <table className="w-full table-fixed text-sm">
+            {/* 고정 칸 합이 54rem — 소속 학교 칸이 0으로 눌리지 않게 최소 폭을 두고, 좁으면 가로 스크롤 */}
+            <table className="w-full min-w-5xl table-fixed text-sm">
               <colgroup>
                 <col className="w-36" />
                 <col className="w-28" />

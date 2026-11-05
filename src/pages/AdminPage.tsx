@@ -71,7 +71,7 @@ export function AdminPage() {
         앱 공개 상태·교사인증 신청·회원·신고·문의를 관리하고 공지 알림과 새 소식을 올립니다.
       </p>
 
-      <div className="mb-6 flex gap-1 overflow-x-auto border-b border-border">
+      <div className="mb-6 flex gap-1 overflow-x-auto overflow-y-hidden border-b border-border">
         <TabButton active={tab === "apps"} onClick={() => setTab("apps")}>
           앱 관리
         </TabButton>
