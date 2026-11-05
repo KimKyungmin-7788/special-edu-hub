@@ -117,6 +117,10 @@ export type Member = {
   id: string
   nickname: string | null
   email: string | null
+  /** 구글 가입 때 받은 계정 이름(관리자만, 60) */
+  googleName: string | null
+  /** 교사인증 때 적은 성함 — 인증된 회원만(관리자만, 60) */
+  realName: string | null
   role: Role
   isResearchMember: boolean
   isTeacherVerified: boolean
@@ -125,7 +129,8 @@ export type Member = {
 
 /**
  * 전체 회원 목록(가입 최신순) — 관리자 페이지(/admin)용.
- * 회원 정보는 profiles(공개 읽기), 가입 이메일은 관리자만 받는 admin_member_emails(58)로 합친다.
+ * 회원 정보는 profiles(공개 읽기), 가입 이메일은 관리자만 받는 admin_member_emails(58),
+ * 구글 이름·인증 실명은 관리자만 받는 admin_member_names(60)로 합친다.
  * 강제 탈퇴 등 처리 기능은 신고 시스템과 함께 후속 — 여기선 읽기만.
  */
 export async function listMembers(): Promise<Member[]> {
@@ -141,10 +146,16 @@ export async function listMembers(): Promise<Member[]> {
   const { data: emails, error: emailError } = await supabase.rpc("admin_member_emails")
   if (emailError) console.error("[profile] admin_member_emails 실패:", emailError.message)
   const emailById = new Map(((emails ?? []) as { id: string; email: string | null }[]).map((e) => [e.id, e.email]))
+  const { data: names, error: nameError } = await supabase.rpc("admin_member_names")
+  if (nameError) console.error("[profile] admin_member_names 실패:", nameError.message)
+  type NameRow = { id: string; google_name: string | null; real_name: string | null }
+  const nameById = new Map(((names ?? []) as NameRow[]).map((n) => [n.id, n]))
   return (data as ProfileRow[]).map((row) => ({
     id: row.id,
     nickname: row.nickname,
     email: emailById.get(row.id) ?? null,
+    googleName: nameById.get(row.id)?.google_name ?? null,
+    realName: nameById.get(row.id)?.real_name ?? null,
     role: row.role,
     isResearchMember: row.is_research_member ?? false,
     isTeacherVerified: row.is_teacher_verified,

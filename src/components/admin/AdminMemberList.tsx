@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
-import { X } from "lucide-react"
+import { BadgeCheck, X } from "lucide-react"
 import { useAuth } from "@/lib/auth"
 import {
   listMembers,
@@ -76,6 +76,8 @@ export function AdminMemberList() {
         (!q ||
           m.email?.toLowerCase().includes(q) ||
           m.nickname?.toLowerCase().includes(q) ||
+          m.realName?.toLowerCase().includes(q) ||
+          m.googleName?.toLowerCase().includes(q) ||
           schools.get(m.id)?.toLowerCase().includes(q)),
     )
     if (sort === "oldest") list.reverse()
@@ -164,16 +166,18 @@ export function AdminMemberList() {
             <table className="w-full table-fixed text-sm">
               <colgroup>
                 <col className="w-36" />
+                <col className="w-28" />
                 <col className="w-48" />
                 <col />
                 <col className="w-20" />
-                <col className="w-16" />
+                <col className="w-28" />
                 <col className="w-20" />
                 <col className="w-28" />
               </colgroup>
               <thead>
                 <tr className="border-b border-border bg-surface text-left text-muted-foreground">
                   <th className="px-3 py-2 font-medium">닉네임</th>
+                  <th className="px-3 py-2 font-medium">이름</th>
                   <th className="px-3 py-2 font-medium">이메일</th>
                   <th className="px-3 py-2 font-medium">소속 학교</th>
                   <th className="px-3 py-2 font-medium">권한</th>
@@ -208,6 +212,9 @@ export function AdminMemberList() {
                         </button>
                         {m.id === user?.id && <span className="ml-1 text-xs text-muted-foreground">(나)</span>}
                       </td>
+                      <td className="truncate px-3 py-2">
+                        <MemberName member={m} />
+                      </td>
                       <td className="truncate px-3 py-2 text-muted-foreground" title={m.email ?? undefined}>
                         {m.email || "—"}
                       </td>
@@ -218,11 +225,7 @@ export function AdminMemberList() {
                         <RoleBadge role={m.role} />
                       </td>
                       <td className="px-3 py-2">
-                        {m.isTeacherVerified ? (
-                          <span className="text-primary">✓</span>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
+                        <VerifiedBadge verified={m.isTeacherVerified} />
                       </td>
                       <td className="px-3 py-2">
                         {m.isResearchMember ? (
@@ -342,6 +345,16 @@ function MemberPanel({
 
       <dl className="mt-3 space-y-1 text-xs">
         <div className="flex gap-2">
+          <dt className="w-14 shrink-0 text-muted-foreground">실명</dt>
+          <dd className="break-keep">
+            {member.realName || <span className="text-muted-foreground">{member.isTeacherVerified ? "인증 신청에 성함 없음" : "교사인증 전"}</span>}
+          </dd>
+        </div>
+        <div className="flex gap-2">
+          <dt className="w-14 shrink-0 text-muted-foreground">구글 이름</dt>
+          <dd className="break-keep">{member.googleName || <span className="text-muted-foreground">—</span>}</dd>
+        </div>
+        <div className="flex gap-2">
           <dt className="w-14 shrink-0 text-muted-foreground">소속 학교</dt>
           <dd className="break-keep">{school || "—"}</dd>
         </div>
@@ -369,7 +382,7 @@ function MemberPanel({
               onError={onError}
             />
           ) : (
-            <span>{member.isTeacherVerified ? "완료" : "—"}</span>
+            <VerifiedBadge verified={member.isTeacherVerified} />
           )}
         </div>
         <div className="flex items-center justify-between gap-2">
@@ -484,9 +497,7 @@ function VerifiedToggle({
 
   return (
     <div className="flex items-center gap-2 whitespace-nowrap">
-      <span className={verified ? "text-primary" : "text-muted-foreground"}>
-        {verified ? "완료" : "미인증"}
-      </span>
+      <VerifiedBadge verified={verified} />
       <button
         type="button"
         onClick={toggle}
@@ -502,6 +513,29 @@ function VerifiedToggle({
       </button>
     </div>
   )
+}
+
+/** 교사인증 표시 — 인증이면 초록 꼬리표, 아니면 옅은 글자. */
+function VerifiedBadge({ verified }: { verified: boolean }) {
+  if (!verified) return <span className="text-xs text-muted-foreground">미인증</span>
+  return (
+    <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-brand-soft px-2 py-0.5 text-xs font-semibold text-primary">
+      <BadgeCheck className="size-3.5" aria-hidden />
+      인증교사
+    </span>
+  )
+}
+
+/** 표의 이름 칸 — 인증 실명이 있으면 그것을, 없으면 구글 이름을 옅게. */
+function MemberName({ member }: { member: Member }) {
+  if (member.realName) return <span title="교사인증 때 적은 성함">{member.realName}</span>
+  if (member.googleName)
+    return (
+      <span className="text-muted-foreground" title="구글 계정 이름">
+        {member.googleName}
+      </span>
+    )
+  return <span className="text-muted-foreground">—</span>
 }
 
 function RoleBadge({ role }: { role: Role }) {
