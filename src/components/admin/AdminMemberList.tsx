@@ -148,18 +148,26 @@ export function AdminMemberList() {
       </div>
       {error && <p className="mb-2 text-sm text-destructive">{error}</p>}
 
-      <div className={cn("grid items-start gap-4", selected && "lg:grid-cols-[minmax(0,1fr)_18rem]")}>
+      {/* 상세 카드: 아주 넓은 화면(3xl)은 본문 바깥 왼쪽 빈자리, 그보다 좁으면 표 오른쪽 칸 */}
+      <div
+        className={cn(
+          "relative grid items-start gap-4",
+          selected && "lg:grid-cols-[minmax(0,1fr)_18rem] 3xl:grid-cols-1",
+        )}
+      >
         {selected && (
-          <MemberPanel
-            member={selected}
-            school={schools.get(selected.id)}
-            isMe={selected.id === user?.id}
-            isAdmin={isAdmin}
-            isStaff={isStaff}
-            onUpdate={(patch) => update(selected.id, patch)}
-            onError={setError}
-            onClose={() => setSelectedId(null)}
-          />
+          <div className="lg:sticky lg:top-20 3xl:absolute 3xl:inset-y-0 3xl:right-full 3xl:mr-6 3xl:w-72">
+            <MemberPanel
+              member={selected}
+              school={schools.get(selected.id)}
+              isMe={selected.id === user?.id}
+              isAdmin={isAdmin}
+              isStaff={isStaff}
+              onUpdate={(patch) => update(selected.id, patch)}
+              onError={setError}
+              onClose={() => setSelectedId(null)}
+            />
+          </div>
         )}
         <div className={cn("min-w-0", selected && "lg:order-first")}>
           <div className="overflow-x-auto rounded-lg border border-border bg-background">
@@ -320,7 +328,7 @@ function MemberPanel({
   return (
     <aside
       aria-label="회원 상세"
-      className="rounded-lg border border-border bg-background p-4 text-sm lg:sticky lg:top-20"
+      className="rounded-lg border border-border bg-background p-4 text-sm 3xl:sticky 3xl:top-20"
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">

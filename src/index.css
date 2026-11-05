@@ -6,6 +6,11 @@
    → 컴포넌트는 bg-background / text-foreground / bg-primary /
      border-border / bg-surface / text-muted-foreground 등만 쓴다.
    색을 Tailwind 임의값(bg-[#...])으로 직접 쓰지 않는다. */
+/* 본문(72rem) 바깥 왼쪽에 18rem 카드를 띄울 만큼 넓은 화면 — 운영진 회원 상세 카드 */
+@theme {
+  --breakpoint-3xl: 111rem;
+}
+
 @theme inline {
   --font-sans: var(--font-main);
 
