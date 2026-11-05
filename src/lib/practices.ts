@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase"
-import { charCount } from "@/lib/apps"
+import { charCount, removeThumbnail } from "@/lib/apps"
 
 /**
  * 수업실천사례 데이터 접근 (PRD §13, 31_practices.sql).
@@ -327,6 +327,20 @@ export async function createPractice(input: PracticeInput): Promise<string> {
 export async function updatePractice(id: string, input: PracticeInput): Promise<void> {
   const { error } = await supabase.from("practices").update(toRow(input)).eq("id", id)
   if (error) throw error
+}
+
+/**
+ * 사례 완전 삭제(59, RLS: 작성자 본인·운영진). 댓글·좋아요·담기·자료 연결·알림은 DB 가 함께 지운다.
+ * 지운 뒤 대표 사진·첨부파일도 정리한다(본인 폴더만, 실패해도 삭제는 끝난 것).
+ */
+export async function deletePractice(practice: Practice): Promise<void> {
+  const { data, error } = await supabase.from("practices").delete().eq("id", practice.id).select("id")
+  if (error) throw error
+  if (!data?.length) throw new Error("삭제하지 못했어요. 본인이 쓴 사례인지 확인해 주세요.")
+  await Promise.allSettled([
+    removeThumbnail(practice.coverUrl),
+    ...practice.files.map((f) => removePracticeFile(f.path)),
+  ])
 }
 
 /** 숨김/복구(삭제 대신). */

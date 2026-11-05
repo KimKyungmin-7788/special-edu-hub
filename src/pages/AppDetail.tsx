@@ -27,7 +27,7 @@ import { PracticeRow } from "@/components/practice/PracticeCard"
 import { getPracticesByApp, type Practice } from "@/lib/practices"
 import { ProfileTrigger } from "@/components/profile/ProfileTrigger"
 import { PromoLinks } from "@/components/profile/PromoLinks"
-import { appFileDownloadUrl, getApp, getAppFiles, setAppStatus, displayTitle, type App, type AppFile } from "@/lib/apps"
+import { appFileDownloadUrl, deleteApp, getApp, getAppFiles, displayTitle, type App, type AppFile } from "@/lib/apps"
 import { fileSizeLabel } from "@/components/app/AppFileField"
 import { getProfile, type Profile } from "@/lib/profile"
 import { useAuth } from "@/lib/auth"
@@ -186,14 +186,14 @@ export function AppDetail() {
     if (!app || deleting) return
     if (
       !window.confirm(
-        "이 자료를 삭제할까요?\n목록에서 숨겨지며, 마이페이지 '내 활동'에서 다시 공개할 수 있어요.",
+        "이 자료를 완전히 삭제할까요?\n댓글·좋아요·첨부파일·미리보기 영상도 함께 지워지고 되돌릴 수 없어요.\n(잠시 내리기만 하려면 마이페이지 '내 활동'에서 숨기기를 쓰세요.)",
       )
     )
       return
     setDeleteError(null)
     setDeleting(true)
     try {
-      await setAppStatus(app.id, "hidden")
+      await deleteApp(app)
       navigate("/mypage")
     } catch (err) {
       setDeleteError(err instanceof Error ? err.message : "삭제에 실패했습니다.")

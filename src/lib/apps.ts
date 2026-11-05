@@ -645,6 +645,30 @@ export async function updateApp(
   return mapRow(data as AppRow)
 }
 
+/** 썸네일·본문 그림(app-thumbnails 공개 버킷) 지우기. 공개 주소에서 경로를 뽑는다. 본인 폴더만 지워지고 실패해도 무시 */
+export async function removeThumbnail(publicUrl: string) {
+  const marker = `/${THUMBNAIL_BUCKET}/`
+  const i = publicUrl.indexOf(marker)
+  if (i < 0) return
+  await supabase.storage.from(THUMBNAIL_BUCKET).remove([publicUrl.slice(i + marker.length)])
+}
+
+/**
+ * 자료 완전 삭제(59, RLS: 작성자 본인 또는 관리자). 댓글·좋아요·담기·알림은 DB 가 함께 지운다.
+ * 지운 뒤 저장소 파일(첨부·미리보기 영상·썸네일)도 정리한다(본인 폴더만, 실패해도 삭제는 끝난 것).
+ */
+export async function deleteApp(app: App): Promise<void> {
+  const files = await getAppFiles(app.id)
+  const { data, error } = await supabase.from("apps").delete().eq("id", app.id).select("id")
+  if (error) throw error
+  if (!data?.length) throw new Error("삭제하지 못했어요. 본인이 올린 자료인지 확인해 주세요.")
+  await Promise.allSettled([
+    ...files.map((f) => removeAppFile(f.path)),
+    app.previewUrl ? removePreview(app.previewUrl) : Promise.resolve(),
+    removeThumbnail(app.thumbnailUrl),
+  ])
+}
+
 /** 숨김/복구. 삭제 대신 status 토글(RLS: 본인 또는 관리자). */
 export async function setAppStatus(id: string, status: AppStatus): Promise<App> {
   const { data, error } = await supabase

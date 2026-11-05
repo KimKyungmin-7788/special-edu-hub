@@ -13,6 +13,7 @@ import {
   Lock,
   Pencil,
   Share2,
+  Trash2,
 } from "lucide-react"
 import { getCategory, subcategoriesEnabledFor } from "@/config/categories"
 import { useAuth } from "@/lib/auth"
@@ -21,6 +22,7 @@ import {
   getPractice,
   getPracticeApps,
   setPracticeStatus,
+  deletePractice,
   togglePracticeLike,
   togglePracticeBookmark,
   getMyPracticeReactions,
@@ -55,6 +57,7 @@ export function PracticeDetail() {
   const [apps, setApps] = useState<App[]>([])
   const [copied, setCopied] = useState(false)
   const [hiding, setHiding] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
   const [liked, setLiked] = useState(false)
   const [bookmarked, setBookmarked] = useState(false)
@@ -160,6 +163,25 @@ export function PracticeDetail() {
       setActionError(errorText(e, "처리하지 못했습니다."))
     } finally {
       setHiding(false)
+    }
+  }
+
+  async function handleDelete() {
+    if (!practice || deleting) return
+    if (
+      !window.confirm(
+        "이 사례를 완전히 삭제할까요?\n댓글·좋아요·첨부파일도 함께 지워지고 되돌릴 수 없어요.\n(잠시 내리기만 하려면 '숨기기'를 쓰세요.)",
+      )
+    )
+      return
+    setActionError(null)
+    setDeleting(true)
+    try {
+      await deletePractice(practice)
+      navigate("/practices", { replace: true })
+    } catch (e) {
+      setActionError(errorText(e, "삭제하지 못했습니다."))
+      setDeleting(false)
     }
   }
 
@@ -317,6 +339,15 @@ export function PracticeDetail() {
             >
               <EyeOff className="size-4" aria-hidden />
               {practice.status === "published" ? "숨기기" : "다시 공개"}
+            </button>
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={deleting}
+              className="inline-flex items-center gap-2 rounded-md border border-destructive/40 bg-card px-4 py-2 text-sm font-medium text-destructive hover:bg-destructive/10 disabled:opacity-60"
+            >
+              <Trash2 className="size-4" aria-hidden />
+              {deleting ? "삭제 중…" : "삭제"}
             </button>
           </>
         )}
