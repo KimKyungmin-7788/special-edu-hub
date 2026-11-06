@@ -27,7 +27,10 @@ export function ProfileTrigger({ userId, children, className }: ProfileTriggerPr
   const [loadedFor, setLoadedFor] = useState<string | null>(null)
   const titleId = useId()
 
-  function handleOpen() {
+  // 자료 카드처럼 링크 안에 놓여도 카드 이동이 일어나지 않게 막는다.
+  function handleOpen(e: React.MouseEvent) {
+    e.preventDefault()
+    e.stopPropagation()
     setOpen(true)
     if (loadedFor === userId) return // 같은 사용자면 재요청 안 함
     setLoading(true)
@@ -50,14 +53,17 @@ export function ProfileTrigger({ userId, children, className }: ProfileTriggerPr
       >
         {children}
       </button>
-      <Modal open={open} onClose={() => setOpen(false)} labelledBy={titleId}>
-        <ProfilePreview
-          profile={profile}
-          loading={loading}
-          titleId={titleId}
-          onClose={() => setOpen(false)}
-        />
-      </Modal>
+      {/* 모달은 포털이지만 React 이벤트는 부모로 올라가므로, 바깥 링크(카드)까지 가지 않게 끊는다 */}
+      <span className="contents" onClick={(e) => e.stopPropagation()}>
+        <Modal open={open} onClose={() => setOpen(false)} labelledBy={titleId}>
+          <ProfilePreview
+            profile={profile}
+            loading={loading}
+            titleId={titleId}
+            onClose={() => setOpen(false)}
+          />
+        </Modal>
+      </span>
     </>
   )
 }

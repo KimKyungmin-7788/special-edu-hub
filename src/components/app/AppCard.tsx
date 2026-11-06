@@ -17,6 +17,7 @@ import { ShareDialog } from "@/components/app/ShareDialog"
 import { cardSummary, displayTitle, type App } from "@/lib/apps"
 import { cn } from "@/lib/utils"
 import { avatarTone, AVATAR_PHOTO } from "@/lib/avatarTone"
+import { ProfileTrigger } from "@/components/profile/ProfileTrigger"
 import { relativeTime } from "@/lib/time"
 
 /** 아래줄 아이콘 버튼(바로가기·공유). */
@@ -167,10 +168,17 @@ export function AppCard({
 
           {/* 작성자 · 올린 때 */}
           <div className="mt-auto flex items-center justify-between gap-3 pt-1 text-xs text-muted-foreground">
-            <span className="flex min-w-0 items-center gap-1.5">
-              <OwnerAvatar name={app.authorName} url={app.ownerAvatarUrl} />
-              <span className="truncate">{app.authorName}</span>
-            </span>
+            {app.ownerId ? (
+              <ProfileTrigger userId={app.ownerId} className="min-w-0 gap-1.5 hover:text-foreground">
+                <OwnerAvatar name={app.authorName} url={app.ownerAvatarUrl} />
+                <span className="truncate">{app.authorName}</span>
+              </ProfileTrigger>
+            ) : (
+              <span className="flex min-w-0 items-center gap-1.5">
+                <OwnerAvatar name={app.authorName} url={app.ownerAvatarUrl} />
+                <span className="truncate">{app.authorName}</span>
+              </span>
+            )}
             <span className="shrink-0">{relativeTime(app.createdAt)}</span>
           </div>
 
