@@ -21,11 +21,10 @@ export function TrainingPage() {
   const catalogue = pathname === training.basePath || pathname === training.share.path
   const back = course ? `${training.basePath}?stage=${course.slug}` : training.basePath
   return <div className={`${WIDE_CONTAINER} py-6 lg:py-8`}>
-    {!catalogue && <Link to={back} className="mb-5 inline-block text-sm text-muted-foreground hover:text-primary">← {training.title}</Link>}
+    {!catalogue && (!inShare || soon) && <Link to={back} className="mb-5 inline-block text-sm text-muted-foreground hover:text-primary">← {training.title}</Link>}
     {soon ? <div role="status" className="rounded-xl border bg-card p-6">
       <p className="text-sm font-semibold text-primary">{soonLabel(soon.release)}</p>
       <h1 className="mt-1 text-xl font-bold">{soon.title}</h1>
-      <p className="mt-2 text-sm text-muted-foreground">{training.soon.notice}</p>
     </div> : !course || page?.everyone || profile?.isTeacherVerified ? <Outlet />
       : checking ? <p role="status">교사인증 상태를 확인하고 있어요…</p> : <TrainingAccessNotice />}
   </div>

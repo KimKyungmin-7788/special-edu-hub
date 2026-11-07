@@ -59,6 +59,7 @@ export function TrainingGuide() {
             {guide.heading}
           </h1>
           <p className="mt-2 text-base text-hero-muted break-keep">{guide.lead}</p>
+          <p className="mt-3 text-base font-semibold text-brand-muted-foreground break-keep">{guide.access}</p>
           <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-brand-muted-foreground">
             {guide.facts.map((fact) => {
               const Icon = ICONS[fact.icon]

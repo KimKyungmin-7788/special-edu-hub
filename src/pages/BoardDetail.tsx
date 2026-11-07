@@ -89,7 +89,7 @@ function BoardDetailContent({ id }: { id: string }) {
   const training = slug === "training"
   const listPath = training ? `${trainingConfig.basePath}?stage=${post?.training_stage ?? "all"}` : boardListPath(slug)
   return <div className={training ? "rounded-xl border bg-card p-5 shadow-sm sm:p-7" : "mx-auto max-w-3xl px-4 py-10"}>
-    <Link to={listPath} className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary"><ArrowLeft className="size-4" aria-hidden />{boardName(slug)}</Link>
+    <Link to={listPath} className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary"><ArrowLeft className="size-4" aria-hidden />{training ? "연수 목록" : boardName(slug)}</Link>
     {loading || authLoading ? <p role="status" className="py-16 text-center text-sm text-muted-foreground">게시글을 불러오는 중…</p>
       : loadError ? <div role="alert"><BoardNotice title={loadError} /><button onClick={() => setRetry((n) => n + 1)} className="mt-3 text-sm text-primary underline">다시 시도</button></div>
       : !post || !canRead ? <BoardAccessNotice research={post?.boards.slug === "research" || params.get("board") === "research"} />
@@ -108,7 +108,7 @@ function BoardDetailContent({ id }: { id: string }) {
           </div>
           <div className="flex flex-wrap justify-end gap-2 border-t pt-4 text-sm">
             <div className="mr-auto flex gap-2">
-              <Link to={listPath} className="inline-flex items-center gap-1.5 rounded-md border px-3 py-2 hover:bg-accent"><List className="size-4" aria-hidden />목록</Link>
+              {!training && <Link to={listPath} className="inline-flex items-center gap-1.5 rounded-md border px-3 py-2 hover:bg-accent"><List className="size-4" aria-hidden />목록</Link>}
               <button type="button" onClick={() => setSharing(true)} className="inline-flex items-center gap-1.5 rounded-md border px-3 py-2 hover:bg-accent"><Share2 className="size-4" aria-hidden />공유</button>
             </div>
             {isStaff && <button disabled={busy} onClick={togglePin} className="rounded-md border px-3 py-2 hover:bg-accent disabled:opacity-50">{post.pinned ? "고정 해제" : "상단 고정"}</button>}
