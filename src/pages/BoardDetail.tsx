@@ -129,21 +129,13 @@ function BoardDetailContent({ id }: { id: string }) {
 function TrainingLinks({ links }: { links: TrainingLink[] }) {
   const primaryIndex = Math.max(0, links.findIndex((link) => link.kind === "slides" || link.kind === "video"))
   const primary = links[primaryIndex]
-  const primaryKind = TRAINING_LINK_KINDS.find((kind) => kind.kind === primary.kind)?.label ?? "링크"
   const primaryVideoId = primary.kind === "video" ? youtubeVideoId(primary.url) : null
   const startLabel = primary.kind === "slides" || primary.kind === "video" ? "연수 시작하기" : "연수 자료 열기"
-  return <section aria-label="연수 시작 안내" className="mt-6 rounded-xl border border-brand-line bg-brand-soft p-5 sm:p-6">
-    <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-      <div className="min-w-0">
-        <h2 className="text-xl font-bold text-brand-muted-foreground">여기서 연수를 시작하세요</h2>
-        <p className="mt-2 text-sm leading-relaxed text-foreground">‘{startLabel}’ 버튼을 누르면 연수 자료가 새 탭에서 열립니다.</p>
-        <p className="mt-3 text-sm text-muted-foreground">{primaryKind}{primary.label && <> · {primary.label}</>}</p>
-      </div>
-      <div className="flex shrink-0 flex-col gap-2 sm:min-w-48">
+  return <section aria-label="연수 자료" className="mt-6">
+      <div className="flex flex-col gap-2 sm:w-64">
         <a href={primary.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center rounded-lg bg-cta px-6 py-4 text-lg font-bold text-cta-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">{startLabel}</a>
-        <span className="text-center text-xs text-muted-foreground">새 탭에서 열립니다</span>
+        <span className="text-center text-xs text-muted-foreground">새 탭에서 열림</span>
       </div>
-    </div>
     {primaryVideoId && <TrainingVideo videoId={primaryVideoId} title={primary.label || "연수 영상"} />}
     {links.length > 1 && <div className="mt-6 border-t border-brand-line pt-4">
       <h3 className="text-sm font-semibold text-brand-muted-foreground">함께 볼 연수 자료</h3>
