@@ -8,6 +8,7 @@ import { BOARD_PAGE_SIZE, boardError, boardPostPath, getBoardPosts, TRAINING_LIN
 import { ProfileTrigger } from "@/components/profile/ProfileTrigger"
 import { relativeTime } from "@/lib/time"
 import { cn } from "@/lib/utils"
+import { avatarTone, AVATAR_PHOTO } from "@/lib/avatarTone"
 
 const KIND_ICON: Record<TrainingLinkKind, LucideIcon> = { slides: Presentation, video: PlayCircle, file: FileText, link: Link2 }
 
@@ -166,7 +167,11 @@ function Card({ post }: { post: BoardPost }) {
       <div className="flex flex-wrap items-center gap-1.5">{post.pinned && <Pin className="size-3.5 text-primary" aria-label="고정" />}<Kinds post={post} />{info && <span className="rounded bg-brand-soft px-2 py-1 text-xs text-primary">{info.badge}</span>}</div>
       <Link to={to} className="mt-2 block font-bold leading-snug break-keep hover:text-primary">{post.title}</Link>
       {info && <p className="mt-2 text-xs text-muted-foreground">{info.summary}</p>}
-      <div className="mt-4 flex items-center gap-2 text-sm"><span aria-hidden className="flex size-7 items-center justify-center rounded-full bg-brand-soft text-xs text-primary">{author[0]}</span><ProfileTrigger userId={post.author_id}>{author}</ProfileTrigger></div>
+      <div className="mt-4 text-sm"><ProfileTrigger userId={post.author_id} className="gap-2">
+        <span aria-hidden className={cn("flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-full border text-xs", post.author?.avatar_url ? AVATAR_PHOTO : avatarTone(author))}>
+          {post.author?.avatar_url ? <img src={post.author.avatar_url} alt="" loading="lazy" className="size-full object-cover" /> : author[0]}
+        </span>{author}
+      </ProfileTrigger></div>
       <div className="mt-auto pt-4"><Link to={to} className="flex items-center justify-between rounded-md border px-3 py-2.5 text-sm font-semibold text-primary hover:bg-brand-soft">연수 보기<ArrowRight className="size-4" aria-hidden /></Link></div>
     </div>
   </li>
