@@ -1,10 +1,7 @@
 /**
- * 열린연수방(/training) — 왼쪽 사이드바 메뉴·연수 목록·안내 문구의 단일 소스.
- * 구조: 연수 영역(courses, 1·2·3 순서로 이어짐) 안에 세부 연수(pages). 스터디 활동은 연수 흐름 밖에 따로(study).
- * 주소: /training = 열린연수방이란?(누구나), /training/<영역 slug>/<세부 연수 slug> = 세부 연수 한 쪽(인증 교사만, everyone 쪽은 누구나).
- * 세부 연수를 늘릴 때는 pages 에 추가하고, 동작하는 쪽은 App.tsx 에 라우트를 붙인다.
- * status: "active" = 동작 / "soon" = 공개예정(누르지 못함, 라우트가 있어도 운영진까지 모두 막는다). 열린 쪽이 없는 영역은 번호 동그라미가 빈 동그라미.
- * 공개하려면 그 쪽의 status 를 "active" 로 바꾼다(release 는 지워도 되고 그대로 둬도 된다).
+ * 열린연수방의 단계 패널·고정 연수·안내 문구.
+ * /training = 단계별 카드 목록, /training/guide = 소개, /training/share/:id = 회원 연수.
+ * 기존 고정 연수는 active/soon 상태와 교사인증 정책을 유지한다.
  */
 
 export type TrainingPage = {
@@ -22,10 +19,14 @@ export type TrainingPage = {
   release?: string
 }
 
+export type TrainingStage = "vibecoding" | "agent" | "field"
+
 export type TrainingCourse = {
   /** 주소 가운데: /training/<slug> */
-  slug: string
+  slug: TrainingStage
   title: string
+  eyebrow: string
+  description: string
   pages: TrainingPage[]
 }
 
@@ -40,6 +41,8 @@ export const training = {
     {
       slug: "vibecoding",
       title: "특수교육 바이브코딩 기초",
+      eyebrow: "시작하기",
+      description: "처음 만나는 AI와 수업 만들기",
       // 2026-11-03 사용자 요청: 열린연수방이란? 말고 모두 공개예정으로 잠금(운영진 포함). why·basics 는 11월 8일 공개 예정
       pages: [
         { slug: "why", label: "왜 바이브코딩인가?", status: "soon", release: "11월 8일", everyone: true },
@@ -50,7 +53,9 @@ export const training = {
     },
     {
       slug: "agent",
-      title: "에이전트 코딩의 환경구축",
+      title: "에이전트코딩 환경구축",
+      eyebrow: "준비하기",
+      description: "GitHub · Supabase · Vercel · 하네스",
       pages: [
         { slug: "setup", label: "환경구축", status: "soon" },
         { slug: "survey", label: "연수 돌아보기", status: "soon" },
@@ -59,6 +64,8 @@ export const training = {
     {
       slug: "field",
       title: "현장 활용",
+      eyebrow: "활용하기",
+      description: "문제 해결 · 학습 게임 · 수업 HTML",
       // 세 갈래로 나뉜다
       pages: [
         { slug: "problems", label: "현장의 문제 해결하기", status: "soon", branch: "A" },
@@ -75,12 +82,12 @@ export const training = {
   ] satisfies TrainingCourse[] as TrainingCourse[],
   /** 연수 흐름 밖의 함께하는 활동 — 사이드바 구분선 아래·연수 단계 그림 아래에 따로. 지금은 준비중 */
   study: { title: "스터디 활동" },
-  /** 함께 여는 연수(/training/share) — 회원이 연수자료를 올리는 게시판(49). 누구나 보고, 인증 교사가 올린다 */
+  /** 회원 연수 게시판(49·62). 누구나 보고, 인증 교사가 단계를 골라 올린다. */
   share: {
     title: "함께 여는 연수",
     path: "/training/share",
     /** "soon" 이면 목록·글·쓰기 모두 공개예정으로 막는다(이미 올린 글도, 운영진도). 화면에서만 막음 — 글 자체는 DB 에 그대로 */
-    status: "soon" as "active" | "soon",
+    status: "active" as "active" | "soon",
     description: "선생님이 알려 주고 싶은 것을 연수로 열어 주세요. 누구나 보고 배울 수 있어요.",
     notice: "누구나 볼 수 있고, 교사인증 회원은 연수를 올리고 댓글을 남길 수 있어요. 학생 얼굴·이름이 나오는 자료는 올리지 않아요.",
     ctaLabel: "연수 올리기",
@@ -139,3 +146,8 @@ export const soonLabel = (release?: string) =>
 
 /** 영역 안 갈래 수('· 3갈래' 표시용, 갈래가 없으면 0) */
 export const branchCount = (course: TrainingCourse) => course.pages.filter((p) => p.branch).length
+
+/** 주소와 글쓰기에서 사용하는 단계 값은 같은 목록으로 검증한다. */
+export function isTrainingStage(value: unknown): value is TrainingStage {
+  return training.courses.some((course) => course.slug === value)
+}

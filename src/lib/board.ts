@@ -1,3 +1,4 @@
+import { isTrainingStage, type TrainingStage } from "@/config/training"
 import DOMPurify from "dompurify"
 import { supabase } from "@/lib/supabase"
 import { getMyBlocks } from "@/lib/blocks"
@@ -28,6 +29,7 @@ export type BoardPost = {
   /** 함께 여는 연수(49)만 — 카드 대표 사진과 연수 자료 링크 */
   cover_url?: string | null
   links?: TrainingLink[]
+  training_stage?: TrainingStage | null
 }
 export type TrainingLinkKind = "slides" | "video" | "file" | "link"
 export type TrainingLink = { kind: TrainingLinkKind; label: string; url: string }
@@ -50,12 +52,14 @@ export function boardError(error: unknown): string {
   return "요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요."
 }
 
-export async function getBoardPosts(search: string, page: number, slug: BoardSlug = "free") {
+export async function getBoardPosts(search: string, page: number, slug: BoardSlug = "free", filters?: { stage?: TrainingStage; kind?: TrainingLinkKind }) {
   const blocks = await getMyBlocks()
   // 함께 여는 연수 카드에는 대표 사진·링크가 필요하다(컬럼은 49 에만 있다)
-  let query = supabase.from("posts").select(slug === "training" ? `${POST_SELECT}, cover_url, links` : POST_SELECT, { count: "exact" })
+  let query = supabase.from("posts").select(slug === "training" ? `${POST_SELECT}, cover_url, links, training_stage` : POST_SELECT, { count: "exact" })
     .eq("boards.slug", slug).is("deleted_at", null)
     .order("pinned", { ascending: false }).order("created_at", { ascending: false }).order("id", { ascending: false })
+  if (slug === "training" && filters?.stage) query = query.eq("training_stage", filters.stage)
+  if (slug === "training" && filters?.kind) query = query.contains("links", [{ kind: filters.kind }])
   if (search.trim()) query = query.ilike("title", `%${search.trim().replace(/[\\%_]/g, "\\$&")}%`)
   if (blocks.length) query = query.not("author_id", "in", `(${blocks.map((b) => b.id).join(",")})`)
   const { data, count, error } = await query.range((page - 1) * BOARD_PAGE_SIZE, page * BOARD_PAGE_SIZE - 1)
@@ -74,7 +78,7 @@ export async function getBoardPost(id: string): Promise<BoardPost | null> {
   if (blocks.some((b) => b.id === post.author_id)) return null
   // 대표 사진·링크 컬럼은 49 에만 있어, 다른 게시판 글은 따로 묻지 않는다
   if (post.boards.slug === "training") {
-    const { data: extra, error: extraError } = await supabase.from("posts").select("cover_url, links").eq("id", id).single()
+    const { data: extra, error: extraError } = await supabase.from("posts").select("cover_url, links, training_stage").eq("id", id).single()
     if (extraError) throw extraError
     Object.assign(post, extra)
   }
@@ -94,15 +98,16 @@ export async function saveBoardPost(title: string, body: string, id?: string, sl
   return data as string
 }
 /** 함께 여는 연수 저장 — 제목·본문 검사는 게시판과 같고, 대표 사진·링크를 함께 넘긴다(49) */
-export async function saveTrainingPost(title: string, body: string, coverUrl: string | null, links: TrainingLink[], id?: string): Promise<string> {
+export async function saveTrainingPost(title: string, body: string, coverUrl: string | null, links: TrainingLink[], stage: TrainingStage, id?: string): Promise<string> {
   const clean = DOMPurify.sanitize(body)
   const text = new DOMParser().parseFromString(clean, "text/html").body.textContent?.trim()
   if (!title.trim() || [...title.trim()].length > POST_TITLE_MAX) throw new Error("제목은 1~100자로 입력하세요.")
   if (!text) throw new Error("본문 내용을 입력하세요.")
   if (clean.length > POST_BODY_MAX) throw new Error("본문이 너무 깁니다. 내용을 조금 줄여 주세요.")
+  if (!isTrainingStage(stage)) throw new Error("연수 단계를 선택해 주세요.")
   const filled = links.map((l) => ({ ...l, label: l.label.trim(), url: l.url.trim() })).filter((l) => l.url)
   if (filled.some((l) => !/^https:\/\/\S+$/.test(l.url))) throw new Error("연수 자료 링크는 https:// 로 시작하는 주소로 넣어 주세요.")
-  const { data, error } = await supabase.rpc("save_training_post", { p_title: title.trim(), p_body: clean, p_cover_url: coverUrl, p_links: filled, p_id: id ?? null })
+  const { data, error } = await supabase.rpc("save_training_post_with_stage", { p_title: title.trim(), p_body: clean, p_cover_url: coverUrl, p_links: filled, p_stage: stage, p_id: id ?? null })
   if (error) throw error
   return data as string
 }

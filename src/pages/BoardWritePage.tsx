@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState, type FormEvent } from "react"
-import { Link, useNavigate, useParams } from "react-router-dom"
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { useAuth } from "@/lib/auth"
 import { usePageTitle } from "@/lib/usePageTitle"
 import { boardError, boardListPath, boardPostPath, getBoardPost, POST_TITLE_MAX, saveBoardPost, saveTrainingPost, type BoardPost, type BoardSlug, type TrainingLink, boardName } from "@/lib/board"
 import { uploadThumbnail } from "@/lib/apps"
-import { training } from "@/config/training"
+import { isTrainingStage, training, type TrainingStage } from "@/config/training"
 import { CoverField, type CoverValue } from "@/components/practice/CoverField"
 import { TrainingLinkField } from "@/components/training/TrainingLinkField"
 import { BoardNotice } from "@/components/board/BoardNotice"
@@ -55,6 +55,9 @@ function LoadForm({ id, userId, slug }: { id?: string; userId: string; slug: Boa
 }
 function PostForm({ post, slug }: { post: BoardPost | null; slug: BoardSlug }) {
   const navigate = useNavigate()
+  const [params] = useSearchParams()
+  const requestedStage = params.get("stage")
+  const [stage, setStage] = useState<TrainingStage | "">(post?.training_stage ?? (isTrainingStage(requestedStage) ? requestedStage : ""))
   const [title, setTitle] = useState(post?.title ?? "")
   const [body, setBody] = useState(post?.body ?? "")
   // 함께 여는 연수만 — 카드 대표 사진(선택)과 연수 자료 링크
@@ -64,7 +67,7 @@ function PostForm({ post, slug }: { post: BoardPost | null; slug: BoardSlug }) {
   const [imageBusy, setImageBusy] = useState(false)
   const submitting = useRef(false)
   const [error, setError] = useState("")
-  const dirty = title !== (post?.title ?? "") || body !== (post?.body ?? "")
+  const dirty = (slug === "training" && stage !== (post?.training_stage ?? (isTrainingStage(requestedStage) ? requestedStage : ""))) || title !== (post?.title ?? "") || body !== (post?.body ?? "")
     || !!cover.file || cover.url !== (post?.cover_url ?? "") || JSON.stringify(links) !== JSON.stringify(post?.links ?? [])
   useEffect(() => {
     if (!dirty) return
@@ -79,9 +82,10 @@ function PostForm({ post, slug }: { post: BoardPost | null; slug: BoardSlug }) {
     try {
       let id: string
       if (slug === "training") {
+        if (!isTrainingStage(stage)) throw new Error("연수 단계를 선택해 주세요.")
         const coverUrl = cover.file ? await uploadThumbnail(cover.file) : cover.url || null
         if (cover.file && coverUrl) setCover({ file: null, url: coverUrl }) // 다시 눌러도 재업로드 안 하게
-        id = await saveTrainingPost(title, body, coverUrl, links, post?.id)
+        id = await saveTrainingPost(title, body, coverUrl, links, stage, post?.id)
       } else id = await saveBoardPost(title, body, post?.id, slug)
       navigate(boardPostPath(slug, id), { replace: true })
     } catch (e) { setError(boardError(e)) }
@@ -94,8 +98,9 @@ function PostForm({ post, slug }: { post: BoardPost | null; slug: BoardSlug }) {
     <fieldset disabled={busy} className="space-y-6 disabled:opacity-60">
       <div><label htmlFor="post-title" className="mb-2 block text-sm font-medium">제목 <span className="text-muted-foreground">(필수)</span></label><input id="post-title" required maxLength={POST_TITLE_MAX} value={title} onChange={(e) => setTitle(e.target.value)} placeholder={slug === "training" ? "어떤 연수인지 한 줄로 알려 주세요" : "어떤 이야기를 나누고 싶으신가요?"} className="w-full rounded-md border border-input bg-background px-3 py-2.5" /><p className="mt-1 text-right text-xs text-muted-foreground">{title.length} / {POST_TITLE_MAX}</p></div>
       {slug === "training" && <>
+        <div><label htmlFor="training-stage" className="mb-2 block text-sm font-medium">연수 단계 (필수)</label><select id="training-stage" required value={stage} onChange={(e) => setStage(isTrainingStage(e.target.value) ? e.target.value : "")} className="w-full rounded-md border border-input bg-background px-3 py-2.5"><option value="">단계를 선택해 주세요</option>{training.courses.map((course, i) => <option key={course.slug} value={course.slug}>{i + 1}. {course.title}</option>)}</select></div>
         <div><p className="mb-2 text-sm font-medium">대표 사진 <span className="text-muted-foreground">(선택 · 카드에 보여요)</span></p><CoverField value={cover} onChange={setCover} disabled={busy} /></div>
-        <div><p className="mb-2 text-sm font-medium">연수 자료 링크 <span className="text-muted-foreground">(선택 · 새 탭으로 열려요)</span></p><TrainingLinkField value={links} onChange={setLinks} disabled={busy} /></div>
+        <div><p className="mb-2 text-sm font-medium">연수 자료 링크 <span className="text-muted-foreground">(선택 · 유튜브는 본문에서, 다른 자료는 새 탭에서 열려요)</span></p><TrainingLinkField value={links} onChange={setLinks} disabled={busy} /></div>
       </>}
       <div><p id="post-body-label" className="mb-2 text-sm font-medium">본문 <span className="text-muted-foreground">(필수)</span></p><div role="group" aria-labelledby="post-body-label"><RichTextEditor imageStore={slug === "research" ? "research" : "public"} value={body} onChange={setBody} disabled={busy} onBusyChange={setImageBusy} placeholder={slug === "training" ? "무엇을 알려 주고 싶은지, 어떤 필요에서 만들었는지, 준비물은 무엇인지 적어 주세요." : "나누고 싶은 이야기를 적어 주세요."} /></div></div>
     </fieldset>

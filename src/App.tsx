@@ -69,10 +69,11 @@ function App() {
             <Route path="practices/write" element={<PracticeWritePage />} />
             <Route path="practices/:id" element={<PracticeDetail />} />
             <Route path="practices/:id/edit" element={<PracticeWritePage />} />
-            {/* 열린연수방: 왼쪽 사이드바 + 하위 페이지. /training 은 열린연수방이란?, 연수 주소만 치면 그 연수 첫 쪽으로.
+            {/* 열린연수방: 단계 패널 + 연수 카드. 소개는 /training/guide, 기존 연수 주소는 유지.
                 연수 쪽은 인증 교사만, 공개예정(status soon) 쪽은 라우트가 있어도 누구나 막힘(TrainingPage). 내용이 없는 쪽은 라우트 없음 */}
             <Route path="training" element={<TrainingPage />}>
-              <Route index element={<TrainingGuide />} />
+              <Route index element={<TrainingShareList />} />
+              <Route path="guide" element={<TrainingGuide />} />
               {/* 1. 특수교육 바이브코딩 기초 */}
               <Route path="vibecoding">
                 <Route index element={<Navigate to="why" replace />} />
