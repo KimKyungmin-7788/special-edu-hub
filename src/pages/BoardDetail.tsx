@@ -99,7 +99,7 @@ function BoardDetailContent({ id }: { id: string }) {
           <h1 className="break-words text-2xl font-bold">{post.title}</h1>
           <div className="mt-4 flex flex-wrap items-center gap-3 border-b pb-6 text-sm text-muted-foreground"><ProfileTrigger userId={post.author_id} className="font-medium text-foreground">{post.author?.nickname || "사용자"}</ProfileTrigger><time dateTime={post.created_at}>{new Date(post.created_at).toLocaleString("ko-KR")}</time>{post.updated_at !== post.created_at && <span>(수정됨)</span>}<span className="inline-flex items-center gap-1"><Eye className="size-4" aria-hidden />조회 {post.view_count.toLocaleString()}</span></div>
           {training && !!post.links?.length && <TrainingLinks links={post.links} />}
-          <div className="py-8"><RichTextViewer html={post.body} /></div>
+          <div className={training ? "max-w-3xl py-8" : "py-8"}><RichTextViewer html={post.body} /></div>
           <div className="flex justify-center pb-8">
             <button type="button" onClick={() => void toggleLike()} disabled={likeBusy} aria-pressed={liked} title={user ? undefined : "로그인하면 좋아요를 누를 수 있어요"}
               className={"inline-flex items-center gap-2 rounded-full border px-5 py-2.5 text-sm font-medium transition-colors disabled:opacity-60 " + (liked ? "border-primary bg-primary text-primary-foreground" : "hover:bg-accent")}>
@@ -125,19 +125,39 @@ function BoardDetailContent({ id }: { id: string }) {
   </div>
 }
 
-/** 함께 여는 연수의 연수 자료 링크 — 본문 위 상자에 모으고, 유튜브는 선택 후 내장 재생, 다른 자료는 새 탭으로 연다 */
+/** 첫 슬라이드·영상을 시작 버튼으로 안내하고, 나머지 자료와 영상 재생은 유지한다. */
 function TrainingLinks({ links }: { links: TrainingLink[] }) {
-  return <section aria-label="연수 자료" className="mt-6 rounded-xl border border-brand-line bg-brand-soft p-4">
-    <h2 className="text-sm font-bold text-brand-muted-foreground">연수 자료</h2>
-    <ul className="mt-2 space-y-2">
-      {links.map((l, i) => {
-        const kind = TRAINING_LINK_KINDS.find((k) => k.kind === l.kind)?.label ?? "링크"
-        const videoId = l.kind === "video" ? youtubeVideoId(l.url) : null
-        return <li key={`${i}:${l.url}`}><a href={l.url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between gap-3 rounded-lg border bg-card px-3 py-2.5 hover:border-primary">
-          <span className="min-w-0 break-keep"><span className="font-semibold">{l.label || kind}</span>{l.label && <span className="ml-2 text-xs text-muted-foreground">{kind}</span>}</span>
-          <span className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-primary">새 탭에서 열기<ExternalLink className="size-3.5" aria-hidden /></span>
-        </a>{videoId && <TrainingVideo videoId={videoId} title={l.label || "연수 영상"} />}</li>
-      })}
-    </ul>
+  const primaryIndex = Math.max(0, links.findIndex((link) => link.kind === "slides" || link.kind === "video"))
+  const primary = links[primaryIndex]
+  const primaryKind = TRAINING_LINK_KINDS.find((kind) => kind.kind === primary.kind)?.label ?? "링크"
+  const primaryVideoId = primary.kind === "video" ? youtubeVideoId(primary.url) : null
+  const startLabel = primary.kind === "slides" || primary.kind === "video" ? "연수 시작하기" : "연수 자료 열기"
+  return <section aria-label="연수 시작 안내" className="mt-6 rounded-xl border border-brand-line bg-brand-soft p-5 sm:p-6">
+    <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0">
+        <h2 className="text-xl font-bold text-brand-muted-foreground">여기서 연수를 시작하세요</h2>
+        <p className="mt-2 text-sm leading-relaxed text-foreground">‘{startLabel}’ 버튼을 누르면 연수 자료가 새 탭에서 열립니다.</p>
+        <p className="mt-3 text-sm text-muted-foreground">{primaryKind}{primary.label && <> · {primary.label}</>}</p>
+      </div>
+      <div className="flex shrink-0 flex-col gap-2 sm:min-w-48">
+        <a href={primary.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center rounded-lg bg-cta px-6 py-4 text-lg font-bold text-cta-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">{startLabel}</a>
+        <span className="text-center text-xs text-muted-foreground">새 탭에서 열립니다</span>
+      </div>
+    </div>
+    {primaryVideoId && <TrainingVideo videoId={primaryVideoId} title={primary.label || "연수 영상"} />}
+    {links.length > 1 && <div className="mt-6 border-t border-brand-line pt-4">
+      <h3 className="text-sm font-semibold text-brand-muted-foreground">함께 볼 연수 자료</h3>
+      <ul className="mt-2 space-y-2">
+        {links.map((l, i) => {
+          if (i === primaryIndex) return null
+          const kind = TRAINING_LINK_KINDS.find((k) => k.kind === l.kind)?.label ?? "링크"
+          const videoId = l.kind === "video" ? youtubeVideoId(l.url) : null
+          return <li key={`${i}:${l.url}`}><a href={l.url} target="_blank" rel="noopener noreferrer" className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card px-3 py-3 hover:border-primary">
+            <span className="min-w-0 break-keep"><span className="font-semibold">{l.label || kind}</span>{l.label && <span className="ml-2 text-xs text-muted-foreground">{kind}</span>}</span>
+            <span className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-primary">새 탭에서 열기<ExternalLink className="size-3.5" aria-hidden /></span>
+          </a>{videoId && <TrainingVideo videoId={videoId} title={l.label || "연수 영상"} />}</li>
+        })}
+      </ul>
+    </div>}
   </section>
 }
