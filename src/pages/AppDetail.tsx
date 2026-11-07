@@ -270,7 +270,7 @@ export function AppDetail() {
             >
               <AuthorAvatar
                 name={app.authorName || owner?.nickname || "개발자"}
-                avatarUrl={owner?.avatarUrl ?? null}
+                avatarUrl={owner ? owner.avatarUrl : app.ownerAvatarUrl}
               />
               {app.authorName || owner?.nickname || "개발자"}
             </ProfileTrigger>
