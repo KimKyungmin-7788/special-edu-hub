@@ -19,7 +19,7 @@ function postKinds(post: BoardPost) {
 
 /** 단계·형식·검색·페이지를 URL에 남겨 새로고침과 뒤로 가기에서도 목록을 복원한다. */
 export function TrainingShareList() {
-  const { user, profile } = useAuth()
+  const { user } = useAuth()
   usePageTitle(training.title)
   const [params, setParams] = useSearchParams()
   const rawStage = params.get("stage")
@@ -64,7 +64,10 @@ export function TrainingShareList() {
   return <div>
     <header className="mb-7 flex flex-wrap items-center justify-between gap-4">
       <div><h1 className="text-3xl font-bold tracking-tight">{training.title}</h1><p className="mt-2 text-sm text-muted-foreground">배우는 선생님에서, 나누는 선생님으로.</p></div>
+      <div className="flex flex-wrap items-center gap-3 sm:gap-5">
+      <Link to={`${training.basePath}/guide`} className="py-3 text-sm font-semibold text-primary underline-offset-4 hover:underline">{training.guideLabel}</Link>
       <Link to={writeTo} className="inline-flex items-center gap-2 rounded-lg bg-cta px-5 py-3 text-sm font-semibold text-cta-foreground"><PenLine className="size-4" aria-hidden />{training.share.ctaLabel}</Link>
+      </div>
     </header>
     <div className="grid gap-6 xl:grid-cols-[3fr_1fr]">
       <ol aria-label="연수 단계" className="grid gap-7 sm:grid-cols-3 sm:gap-8">
@@ -83,11 +86,10 @@ export function TrainingShareList() {
         className={cn("flex h-full flex-col items-start gap-4 rounded-xl border-2 border-dashed p-5 text-left transition-colors", stage === "study" ? "border-primary bg-brand-soft" : "border-border bg-card hover:border-brand-line")}>
         <span className="text-sm font-semibold text-primary">함께 배우기</span>
         <span className="text-xl font-bold">{training.study.title}</span>
-        <span className="text-sm text-muted-foreground">서로 묻고 함께 만들어요</span>
+        <span className="text-sm leading-relaxed break-keep text-muted-foreground">{training.study.description}</span>
         <span className="mt-auto pt-2 text-sm text-muted-foreground">준비 중</span>
       </button>
     </div>
-    <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground"><p>누구나 볼 수 있고, 교사인증 회원은 연수를 올릴 수 있어요.{!profile?.isTeacherVerified && <Link to={user ? "/verify" : "/login"} className="ml-2 text-primary underline underline-offset-4">{user ? "교사인증하기" : "로그인하기"}</Link>}</p><Link to={`${training.basePath}/guide`} className="hover:text-primary">{training.guideLabel} →</Link></div>
     <section id="training-catalogue" aria-label="선택한 단계의 연수" className="mt-8">
       <div className="mb-5 flex items-start justify-between gap-4"><div><p className="mb-1 text-xs text-muted-foreground">{course ? `${String(training.courses.indexOf(course) + 1).padStart(2, "0")} · ${course.title}` : stage === "study" ? "함께 배우기" : "모든 단계"}</p><h2 className="text-xl font-bold">{stage === "study" ? training.study.title : "지금 볼 수 있는 연수"}{stage !== "study" && result && <span className="ml-2 text-sm font-normal text-primary">{result.count + activeFixed.length}개</span>}</h2></div><button type="button" onClick={() => change({ stage: "all", kind: null, q: null })} className="shrink-0 py-1 text-sm text-primary underline underline-offset-4">전체 연수 보기</button></div>
       {stage === "study" ? <div className="rounded-xl bg-brand-soft px-5 py-16 text-center"><Users className="mx-auto size-8 text-primary" aria-hidden /><p className="mt-4 font-semibold">준비 중</p></div> : <>

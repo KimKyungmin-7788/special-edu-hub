@@ -30,9 +30,6 @@ export type TrainingCourse = {
   pages: TrainingPage[]
 }
 
-/** 열린연수방이란? 아이콘 이름(그림은 TrainingGuide 에서 lucide 아이콘으로 바꾼다) */
-export type GuideIcon = "gift" | "clock" | "shield" | "monitor" | "card" | "slides" | "video" | "live" | "people"
-
 export const training = {
   title: "열린연수방",
   basePath: "/training",
@@ -40,7 +37,7 @@ export const training = {
   courses: [
     {
       slug: "vibecoding",
-      title: "특수교육 바이브코딩 기초",
+      title: "특수교육 바이브코딩 시작하기",
       eyebrow: "시작하기",
       description: "처음 만나는 AI와 수업 만들기",
       // 2026-11-03 사용자 요청: 열린연수방이란? 말고 모두 공개예정으로 잠금(운영진 포함). why·basics 는 11월 8일 공개 예정
@@ -54,7 +51,7 @@ export const training = {
     {
       slug: "agent",
       title: "에이전트코딩 환경구축",
-      eyebrow: "준비하기",
+      eyebrow: "최소한의 환경 구축",
       description: "GitHub · Supabase · Vercel · 하네스",
       pages: [
         { slug: "setup", label: "환경구축", status: "soon" },
@@ -81,7 +78,7 @@ export const training = {
     },
   ] satisfies TrainingCourse[] as TrainingCourse[],
   /** 연수 흐름 밖의 함께하는 활동 — 사이드바 구분선 아래·연수 단계 그림 아래에 따로. 지금은 준비중 */
-  study: { title: "스터디 활동" },
+  study: { title: "협업·스터디 활동", description: "공통 관심사를 탐구하며 협업 작품을 만들어요." },
   /** 회원 연수 게시판(49·62). 누구나 보고, 인증 교사가 단계를 골라 올린다. */
   share: {
     title: "함께 여는 연수",
@@ -100,32 +97,30 @@ export const training = {
     label: "공개예정",
     backLabel: "열린연수방이란? 보기",
   },
-  /** 열린연수방이란?(/training) 문구 — 소개 띠 → 연수 단계(영역 칸을 세로 화살표로, 칸 안에 세부 연수) → 앞으로의 비전(가로). 글은 짧게, 그림이 먼저 */
+  /** 소개 화면: 참여 목적 → 자료의 출발점 → 공유 방식. 단계 목록은 메인에서만 표시한다. */
   guide: {
-    heading: "특수교사라면 누구나 언제든지 AI를 배울 수 있는 열린 배움공간",
-    lead: "기초부터 차근차근, 특수교육에 맞는 바이브코딩",
-    access: "누구나 볼 수 있고, 교사인증 회원만 연수를 올릴 수 있어요.",
-    facts: [
-      { icon: "gift", label: "연수비 무료" },
-      { icon: "clock", label: "언제든" },
-      // 2. 환경구축부터 필요한 것 — 들어가 보고서야 알게 되지 않도록 첫 화면에 적는다
-      { icon: "monitor", label: "Windows 기준" },
-      { icon: "card", label: "AI 도구 유료 구독 필요" },
-    ] satisfies { icon: GuideIcon; label: string }[],
-    /** 첫 번째로 열린 연수의 첫 쪽으로 가는 노란 버튼 */
-    ctaLabel: "첫 연수 시작하기",
-    coursesHeading: "연수 단계",
-    future: {
-      heading: "열린연수방 앞으로의 비전",
-      stages: [
-        { icon: "slides", label: "HTML 인터랙티브 연수자료", now: true },
-        { icon: "video", label: "영상 연수" },
-        { icon: "live", label: "라이브 연수" },
-        { icon: "people", label: "누구나 연수 열기" },
-      ] satisfies { icon: GuideIcon; label: string; now?: boolean }[] as { icon: GuideIcon; label: string; now?: boolean }[],
-      note: "소통방도 준비 중",
-      link: { label: "연수 제안하기", to: "/contact" },
+    heading: "나도 시작할 수 있는, 특수교사의 AI 배움공간",
+    lead: "처음 만나는 AI도, 내일의 수업 준비도. 언제든 가볍게 시작해요.",
+    purposes: [
+      { title: "가볍게 경험하고 싶어요", description: "AI로 무엇을 할 수 있는지, 부담 없이 만나 봐요." },
+      { title: "나도 시작하고 싶어요", description: "바이브코딩을 처음 접하는 특수교사도 하나씩 직접 만들어 봐요." },
+      { title: "내일 수업에 쓰고 싶어요", description: "우리 학생에게 필요한 수업보조자료를 만들어 수업에 활용해요." },
+    ],
+    origin: {
+      label: "열린연수방의 시작",
+      heading: "교내 연구회에서 시작해, 더 많은 선생님과 함께",
+      description: "교내 연구회 선생님들을 위해 만든 연수자료에서 출발했습니다. 함께 배우며 만든 자료와 경험을 나누고, 각자의 교실에 맞게 이어 갑니다.",
     },
+    sharing: {
+      heading: "배운 경험이 다음 선생님의 연수로",
+      steps: ["배우기", "만들기", "나누기"],
+      description: "나만의 수업자료와 작은 시도도 연수가 됩니다. 선생님 누구나 연수자료를 제작하고, 교사인증 후 직접 연수를 열 수 있어요.",
+      access: [
+        { title: "연수 보기", detail: "로그인 없이 누구나" },
+        { title: "자료 공유·연수 개설", detail: "교사인증 회원" },
+      ],
+    },
+    ctaLabel: "연수 둘러보기",
     footnote: "공식 연수 시간(학점)으로 인정되지 않아요. 이곳은 자발적 교사들이 모이는 실천 공동체입니다.",
   },
 }
