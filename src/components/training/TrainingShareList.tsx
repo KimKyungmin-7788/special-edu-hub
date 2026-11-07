@@ -67,26 +67,32 @@ export function TrainingShareList() {
       <div><h1 className="text-3xl font-bold tracking-tight">{training.title}</h1><p className="mt-2 text-sm text-muted-foreground">배우는 선생님에서, 나누는 선생님으로.</p></div>
       <Link to={writeTo} className="inline-flex items-center gap-2 rounded-lg bg-cta px-5 py-3 text-sm font-semibold text-cta-foreground"><PenLine className="size-4" aria-hidden />{training.share.ctaLabel}</Link>
     </header>
-    <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-      <p className="text-sm text-muted-foreground">추천 학습 순서 · 필요한 단계부터 자유롭게</p>
-      <button type="button" aria-pressed={stage === "study"} onClick={() => change({ stage: "study", kind: null, q: null })} className="inline-flex items-center gap-2 rounded-md px-2 py-2 text-xs text-muted-foreground hover:bg-accent"><Users className="size-4" aria-hidden />{training.study.title}<span className="rounded border px-1.5 py-0.5">준비 중</span></button>
+    <div className="grid gap-6 xl:grid-cols-[3fr_1fr]">
+      <ol aria-label="연수 단계" className="grid gap-7 sm:grid-cols-3 sm:gap-8">
+        {training.courses.map((c, i) => <li key={c.slug} className="relative min-w-0">
+          <button type="button" aria-pressed={stage === c.slug} aria-controls="training-catalogue" onClick={() => change({ stage: c.slug, kind: null, q: null })}
+            className={cn("flex h-full w-full flex-col items-start gap-4 rounded-xl border-2 p-5 text-left transition-colors", stage === c.slug ? "border-primary bg-brand-soft" : "border-border bg-card hover:border-brand-line")}>
+            <span className="flex items-center gap-3 text-primary"><span className="text-4xl leading-none font-bold tracking-tighter">{String(i + 1).padStart(2, "0")}</span><span className="text-sm font-semibold">{c.eyebrow}</span></span>
+            <span className="text-xl leading-snug font-bold break-keep">{c.title}</span>
+            <span className="text-sm leading-relaxed break-keep text-muted-foreground">{c.description}</span>
+            <span aria-hidden className="mt-auto hidden items-center gap-2 text-primary sm:flex">{STAGE_ICONS[c.slug].map((Icon, n) => <span key={n} className="inline-flex items-center gap-2">{n > 0 && <ArrowRight className="size-3 text-muted-foreground" />}<span className="flex size-9 items-center justify-center rounded-md border bg-card"><Icon className="size-5" /></span></span>)}</span>
+            <span className="mt-auto inline-flex items-center gap-2 pt-2 text-sm font-semibold text-primary">연수 둘러보기<ArrowRight className="size-4" aria-hidden /></span>
+          </button>
+          {i < training.courses.length - 1 && <><ArrowRight aria-hidden className="absolute top-1/2 -right-6 hidden size-4 -translate-y-1/2 text-muted-foreground sm:block" /><ArrowDown aria-hidden className="absolute -bottom-5 left-8 size-4 text-muted-foreground sm:hidden" /></>}
+        </li>)}
+      </ol>
+      <button type="button" aria-pressed={stage === "study"} aria-controls="training-catalogue" onClick={() => change({ stage: "study", kind: null, q: null })}
+        className={cn("flex h-full flex-col items-start gap-4 rounded-xl border-2 border-dashed p-5 text-left transition-colors", stage === "study" ? "border-primary bg-brand-soft" : "border-border bg-card hover:border-brand-line")}>
+        <span className="text-sm font-semibold text-primary">함께 배우기</span>
+        <span className="text-xl font-bold">{training.study.title}</span>
+        <span className="text-sm text-muted-foreground">서로 묻고 함께 만들어요</span>
+        <Users className="hidden size-7 text-primary sm:block" aria-hidden />
+        <span className="mt-auto pt-2 text-sm text-muted-foreground">준비 중</span>
+      </button>
     </div>
-    <ol aria-label="연수 단계" className="grid gap-7 sm:grid-cols-3 sm:gap-8">
-      {training.courses.map((c, i) => <li key={c.slug} className="relative min-w-0">
-        <button type="button" aria-pressed={stage === c.slug} aria-controls="training-catalogue" onClick={() => change({ stage: c.slug, kind: null, q: null })}
-          className={cn("grid h-full w-full grid-cols-[3rem_1fr] items-center gap-x-3 gap-y-1 rounded-xl border-2 p-4 text-left transition-colors sm:flex sm:flex-col sm:items-start sm:gap-3 sm:p-5", stage === c.slug ? "border-primary bg-brand-soft" : "border-border bg-card hover:border-brand-line")}>
-          <span className="row-span-2 flex w-full items-center justify-between gap-2 text-primary"><span className="text-4xl leading-none font-bold tracking-tighter">{String(i + 1).padStart(2, "0")}</span><span className={cn("hidden rounded-full border border-primary px-2 py-1 text-xs lg:block", stage !== c.slug && "invisible")}>선택한 단계</span></span>
-          <span className="text-xl leading-snug font-bold break-keep lg:text-2xl">{c.panelTitle}</span>
-          <span className="text-sm break-keep text-muted-foreground">{c.goal}</span>
-          <span aria-hidden className="mt-1 hidden items-center gap-2 text-primary sm:flex">{STAGE_ICONS[c.slug].map((Icon, n) => <span key={n} className="inline-flex items-center gap-2">{n > 0 && <ArrowRight className="size-3 text-muted-foreground" />}<span className="flex size-9 items-center justify-center rounded-md border bg-card"><Icon className="size-5" /></span></span>)}</span>
-          <span className="col-start-2 text-xs leading-relaxed break-keep text-muted-foreground sm:mt-auto">{c.description}</span>
-        </button>
-        {i < training.courses.length - 1 && <><ArrowRight aria-hidden className="absolute top-1/2 -right-6 hidden size-4 -translate-y-1/2 text-muted-foreground sm:block" /><ArrowDown aria-hidden className="absolute -bottom-5 left-8 size-4 text-muted-foreground sm:hidden" /></>}
-      </li>)}
-    </ol>
     <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground"><p>누구나 볼 수 있고, 교사인증 회원은 연수를 올릴 수 있어요.{!profile?.isTeacherVerified && <Link to={user ? "/verify" : "/login"} className="ml-2 text-primary underline underline-offset-4">{user ? "교사인증하기" : "로그인하기"}</Link>}</p><Link to={`${training.basePath}/guide`} className="hover:text-primary">{training.guideLabel} →</Link></div>
     <section id="training-catalogue" aria-label="선택한 단계의 연수" className="mt-8">
-      <div className="mb-5 flex items-start justify-between gap-4"><div><p className="mb-1 text-xs text-muted-foreground">{course ? `${String(training.courses.indexOf(course) + 1).padStart(2, "0")} · ${course.panelTitle}` : stage === "study" ? "함께 배우기" : "모든 단계"}</p><h2 className="text-xl font-bold">{stage === "study" ? training.study.title : "지금 볼 수 있는 연수"}{stage !== "study" && result && <span className="ml-2 text-sm font-normal text-primary">{result.count + activeFixed.length}개</span>}</h2></div><button type="button" onClick={() => change({ stage: "all", kind: null, q: null })} className="shrink-0 py-1 text-sm text-primary underline underline-offset-4">전체 연수 보기</button></div>
+      <div className="mb-5 flex items-start justify-between gap-4"><div><p className="mb-1 text-xs text-muted-foreground">{course ? `${String(training.courses.indexOf(course) + 1).padStart(2, "0")} · ${course.title}` : stage === "study" ? "함께 배우기" : "모든 단계"}</p><h2 className="text-xl font-bold">{stage === "study" ? training.study.title : "지금 볼 수 있는 연수"}{stage !== "study" && result && <span className="ml-2 text-sm font-normal text-primary">{result.count + activeFixed.length}개</span>}</h2></div><button type="button" onClick={() => change({ stage: "all", kind: null, q: null })} className="shrink-0 py-1 text-sm text-primary underline underline-offset-4">전체 연수 보기</button></div>
       {stage === "study" ? <div className="rounded-xl bg-brand-soft px-5 py-16 text-center"><Users className="mx-auto size-8 text-primary" aria-hidden /><p className="mt-4 font-semibold">스터디 활동을 준비하고 있어요</p><p className="mt-2 text-sm text-muted-foreground">모임이 열리면 이곳에서 안내할게요.</p></div> : <>
         <div role="group" aria-label="자료 형식" className="mb-4 flex flex-wrap gap-2">
           {[{ kind: undefined, label: "전체" }, ...TRAINING_LINK_KINDS].map((k) => <button key={k.kind ?? "all"} type="button" aria-pressed={kind === k.kind} onClick={() => change({ kind: k.kind ?? null })} className={cn("rounded-full border px-3 py-1.5 text-sm", kind === k.kind ? "border-primary bg-primary text-primary-foreground" : "bg-card hover:bg-accent")}>{k.label}</button>)}
