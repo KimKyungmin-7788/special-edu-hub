@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { Link, useSearchParams } from "react-router-dom"
-import { ArrowDown, ArrowRight, BookOpen, CloudUpload, Database, FolderGit2, Gamepad2, LayoutTemplate, MessageCircle, MousePointerClick, School, Sparkles, FileText, Heart, LayoutGrid, Link2, List, MessageSquare, PenLine, Pin, PlayCircle, Presentation, Search, Users, type LucideIcon } from "lucide-react"
+import { ArrowDown, ArrowRight, BookOpen, FileText, Heart, LayoutGrid, Link2, List, MessageSquare, PenLine, Pin, PlayCircle, Presentation, Search, Users, type LucideIcon } from "lucide-react"
 import { isTrainingStage, setupMaterial, soonLabel, training, trainingPath, type TrainingCourse, type TrainingPage } from "@/config/training"
 import { useAuth } from "@/lib/auth"
 import { usePageTitle } from "@/lib/usePageTitle"
@@ -8,8 +8,6 @@ import { BOARD_PAGE_SIZE, boardError, boardPostPath, getBoardPosts, TRAINING_LIN
 import { ProfileTrigger } from "@/components/profile/ProfileTrigger"
 import { relativeTime } from "@/lib/time"
 import { cn } from "@/lib/utils"
-
-const STAGE_ICONS = { vibecoding: [MessageCircle, Sparkles, LayoutTemplate], agent: [FolderGit2, Database, CloudUpload], field: [School, Gamepad2, MousePointerClick] }
 
 const KIND_ICON: Record<TrainingLinkKind, LucideIcon> = { slides: Presentation, video: PlayCircle, file: FileText, link: Link2 }
 
@@ -75,7 +73,6 @@ export function TrainingShareList() {
             <span className="flex items-center gap-3 text-primary"><span className="text-4xl leading-none font-bold tracking-tighter">{String(i + 1).padStart(2, "0")}</span><span className="text-sm font-semibold">{c.eyebrow}</span></span>
             <span className="text-xl leading-snug font-bold break-keep">{c.title}</span>
             <span className="text-sm leading-relaxed break-keep text-muted-foreground">{c.description}</span>
-            <span aria-hidden className="mt-auto hidden items-center gap-2 text-primary sm:flex">{STAGE_ICONS[c.slug].map((Icon, n) => <span key={n} className="inline-flex items-center gap-2">{n > 0 && <ArrowRight className="size-3 text-muted-foreground" />}<span className="flex size-9 items-center justify-center rounded-md border bg-card"><Icon className="size-5" /></span></span>)}</span>
             <span className="mt-auto inline-flex items-center gap-2 pt-2 text-sm font-semibold text-primary">연수 둘러보기<ArrowRight className="size-4" aria-hidden /></span>
           </button>
           {i < training.courses.length - 1 && <><ArrowRight aria-hidden className="absolute top-1/2 -right-6 hidden size-4 -translate-y-1/2 text-muted-foreground sm:block" /><ArrowDown aria-hidden className="absolute -bottom-5 left-8 size-4 text-muted-foreground sm:hidden" /></>}
@@ -86,7 +83,6 @@ export function TrainingShareList() {
         <span className="text-sm font-semibold text-primary">함께 배우기</span>
         <span className="text-xl font-bold">{training.study.title}</span>
         <span className="text-sm text-muted-foreground">서로 묻고 함께 만들어요</span>
-        <Users className="hidden size-7 text-primary sm:block" aria-hidden />
         <span className="mt-auto pt-2 text-sm text-muted-foreground">준비 중</span>
       </button>
     </div>
