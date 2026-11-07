@@ -26,6 +26,8 @@ export type TrainingCourse = {
   slug: TrainingStage
   title: string
   eyebrow: string
+  panelTitle: string
+  goal: string
   description: string
   pages: TrainingPage[]
 }
@@ -42,6 +44,8 @@ export const training = {
       slug: "vibecoding",
       title: "특수교육 바이브코딩 기초",
       eyebrow: "시작하기",
+      panelTitle: "기초 익히기",
+      goal: "AI로 수업을 만드는 첫걸음",
       description: "처음 만나는 AI와 수업 만들기",
       // 2026-11-03 사용자 요청: 열린연수방이란? 말고 모두 공개예정으로 잠금(운영진 포함). why·basics 는 11월 8일 공개 예정
       pages: [
@@ -55,6 +59,8 @@ export const training = {
       slug: "agent",
       title: "에이전트코딩 환경구축",
       eyebrow: "준비하기",
+      panelTitle: "환경 갖추기",
+      goal: "내 컴퓨터에서 만들 준비",
       description: "GitHub · Supabase · Vercel · 하네스",
       pages: [
         { slug: "setup", label: "환경구축", status: "soon" },
@@ -65,6 +71,8 @@ export const training = {
       slug: "field",
       title: "현장 활용",
       eyebrow: "활용하기",
+      panelTitle: "교실에 적용하기",
+      goal: "우리 반의 문제를 직접 해결",
       description: "문제 해결 · 학습 게임 · 수업 HTML",
       // 세 갈래로 나뉜다
       pages: [
@@ -150,4 +158,13 @@ export const branchCount = (course: TrainingCourse) => course.pages.filter((p) =
 /** 주소와 글쓰기에서 사용하는 단계 값은 같은 목록으로 검증한다. */
 export function isTrainingStage(value: unknown): value is TrainingStage {
   return training.courses.some((course) => course.slug === value)
+}
+
+/** 기존 환경구축 자료의 확인된 표지 정보. 같은 단계의 다른 글에는 적용하지 않는다. */
+export const setupMaterial = {
+  url: "https://vibecoding-setting.vercel.app/",
+  heading: "준비하기 → 연결하기 → 만들기",
+  topics: ["GitHub", "Supabase", "Vercel"],
+  badge: "Windows",
+  summary: "3장 · 8단계로 차근차근 따라 해요.",
 }
