@@ -40,9 +40,8 @@ export const training = {
       title: "특수교육 바이브코딩 시작하기",
       eyebrow: "시작하기",
       description: "처음 만나는 AI와 수업 만들기",
-      // 2026-11-03 사용자 요청: 열린연수방이란? 말고 모두 공개예정으로 잠금(운영진 포함). why·basics 는 11월 8일 공개 예정
+      // 2026-11-03 사용자 요청: 열린연수방이란? 말고 모두 공개예정으로 잠금(운영진 포함). basics 는 11월 8일 공개 예정. why는 63에서 비공개 회원 연수로 이전
       pages: [
-        { slug: "why", label: "왜 바이브코딩인가?", status: "soon", release: "11월 8일", everyone: true },
         { slug: "basics", label: "기초 익히기", status: "soon", release: "11월 8일" },
         { slug: "methods", label: "다양한 방법 익히기", status: "soon" },
         { slug: "subjects", label: "교과별 활용", status: "soon" },

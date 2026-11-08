@@ -58,6 +58,7 @@ function PostForm({ post, slug }: { post: BoardPost | null; slug: BoardSlug }) {
   const [params] = useSearchParams()
   const requestedStage = params.get("stage")
   const [stage, setStage] = useState<TrainingStage | "">(post?.training_stage ?? (isTrainingStage(requestedStage) ? requestedStage : ""))
+  const [visibility, setVisibility] = useState<"public" | "private">(post?.visibility ?? "public")
   const [title, setTitle] = useState(post?.title ?? "")
   const [body, setBody] = useState(post?.body ?? "")
   // 함께 여는 연수만 — 카드 대표 사진(선택)과 연수 자료 링크
@@ -67,7 +68,7 @@ function PostForm({ post, slug }: { post: BoardPost | null; slug: BoardSlug }) {
   const [imageBusy, setImageBusy] = useState(false)
   const submitting = useRef(false)
   const [error, setError] = useState("")
-  const dirty = (slug === "training" && stage !== (post?.training_stage ?? (isTrainingStage(requestedStage) ? requestedStage : ""))) || title !== (post?.title ?? "") || body !== (post?.body ?? "")
+  const dirty = (slug === "training" && visibility !== (post?.visibility ?? "public")) || (slug === "training" && stage !== (post?.training_stage ?? (isTrainingStage(requestedStage) ? requestedStage : ""))) || title !== (post?.title ?? "") || body !== (post?.body ?? "")
     || !!cover.file || cover.url !== (post?.cover_url ?? "") || JSON.stringify(links) !== JSON.stringify(post?.links ?? [])
   useEffect(() => {
     if (!dirty) return
@@ -85,7 +86,7 @@ function PostForm({ post, slug }: { post: BoardPost | null; slug: BoardSlug }) {
         if (!isTrainingStage(stage)) throw new Error("연수 단계를 선택해 주세요.")
         const coverUrl = cover.file ? await uploadThumbnail(cover.file) : cover.url || null
         if (cover.file && coverUrl) setCover({ file: null, url: coverUrl }) // 다시 눌러도 재업로드 안 하게
-        id = await saveTrainingPost(title, body, coverUrl, links, stage, post?.id)
+        id = await saveTrainingPost(title, body, coverUrl, links, stage, visibility, post?.id)
       } else id = await saveBoardPost(title, body, post?.id, slug)
       navigate(boardPostPath(slug, id), { replace: true })
     } catch (e) { setError(boardError(e)) }
@@ -98,6 +99,10 @@ function PostForm({ post, slug }: { post: BoardPost | null; slug: BoardSlug }) {
     <fieldset disabled={busy} className="space-y-6 disabled:opacity-60">
       <div><label htmlFor="post-title" className="mb-2 block text-sm font-medium">제목 <span className="text-muted-foreground">(필수)</span></label><input id="post-title" required maxLength={POST_TITLE_MAX} value={title} onChange={(e) => setTitle(e.target.value)} placeholder={slug === "training" ? "어떤 연수인지 한 줄로 알려 주세요" : "어떤 이야기를 나누고 싶으신가요?"} className="w-full rounded-md border border-input bg-background px-3 py-2.5" /><p className="mt-1 text-right text-xs text-muted-foreground">{title.length} / {POST_TITLE_MAX}</p></div>
       {slug === "training" && <>
+        <fieldset><legend className="mb-2 text-sm font-medium">공개 범위</legend><div className="flex flex-wrap gap-5">
+          <label className="flex items-center gap-2 text-sm"><input type="radio" name="visibility" value="public" checked={visibility === "public"} onChange={() => setVisibility("public")} />공개</label>
+          <label className="flex items-center gap-2 text-sm"><input type="radio" name="visibility" value="private" checked={visibility === "private"} onChange={() => setVisibility("private")} />비공개 · 나만 보기</label>
+        </div>{visibility === "private" && <p className="mt-2 text-xs text-muted-foreground">외부 링크와 업로드한 이미지의 공개 여부는 별도로 관리됩니다.</p>}</fieldset>
         <div><label htmlFor="training-stage" className="mb-2 block text-sm font-medium">연수 단계 (필수)</label><select id="training-stage" required value={stage} onChange={(e) => setStage(isTrainingStage(e.target.value) ? e.target.value : "")} className="w-full rounded-md border border-input bg-background px-3 py-2.5"><option value="">단계를 선택해 주세요</option>{training.courses.map((course, i) => <option key={course.slug} value={course.slug}>{i + 1}. {course.title}</option>)}</select></div>
         <div><p className="mb-2 text-sm font-medium">대표 사진 <span className="text-muted-foreground">(선택 · 카드에 보여요)</span></p><CoverField value={cover} onChange={setCover} disabled={busy} /></div>
         <div><p className="mb-2 text-sm font-medium">연수 자료 링크 <span className="text-muted-foreground">(선택 · 유튜브는 본문에서, 다른 자료는 새 탭에서 열려요)</span></p><TrainingLinkField value={links} onChange={setLinks} disabled={busy} /></div>

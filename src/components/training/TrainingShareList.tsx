@@ -155,6 +155,7 @@ function Cover({ post, compact = false }: { post: BoardPost; compact?: boolean }
 function Kinds({ post }: { post: BoardPost }) {
   const kinds = postKinds(post)
   return <span className="inline-flex flex-wrap gap-1">
+    {post.visibility === "private" && <span className="rounded bg-muted px-2 py-1 text-xs text-muted-foreground">비공개</span>}
     {(kinds.length ? kinds.map((k) => k.short) : ["글"]).map((label) => <span key={label} className="rounded bg-brand-soft px-2 py-1 text-xs text-primary">{label}</span>)}
   </span>
 }

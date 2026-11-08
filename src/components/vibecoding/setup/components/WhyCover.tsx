@@ -6,19 +6,20 @@ import {
   Lightbulb,
   type LucideIcon,
 } from "lucide-react"
-import { WHY, WHY_COVER, WHY_TITLE } from "../steps"
+import { WHY_COVER, WHY_TITLE, type WhySlide } from "../steps"
 
 /** 슬라이드 순서대로 쓰는 아이콘(목차와 같아요) */
 const ICONS: LucideIcon[] = [Lightbulb, Laptop, HeartHandshake]
 
 interface Props {
+  slides: WhySlide[]
   /** 없으면 이전 버튼을 숨겨요(허브에서 첫 화면일 때) */
   onPrev?: () => void
   onStart: () => void
 }
 
 /** 왜 바이브코딩인가? 표지 슬라이드 */
-export function WhyCover({ onPrev, onStart }: Props) {
+export function WhyCover({ slides, onPrev, onStart }: Props) {
   return (
     <div className="flex h-full flex-col justify-center bg-hero px-6 py-10 lg:px-24">
       <p className="text-lg font-semibold text-hero-accent">
@@ -32,7 +33,7 @@ export function WhyCover({ onPrev, onStart }: Props) {
       </p>
 
       <ol className="mt-10 flex flex-wrap gap-3">
-        {WHY.map((w, i) => {
+        {slides.map((w, i) => {
           const Icon = ICONS[i] ?? Lightbulb
           return (
             <li

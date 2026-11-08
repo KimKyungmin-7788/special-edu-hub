@@ -1,30 +1,51 @@
-import { useEffect } from "react"
-import { useNavigate, useSearchParams } from "react-router-dom"
+import { useEffect, useState } from "react"
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { ArrowLeft, ArrowRight } from "lucide-react"
-import { vibecoding } from "@/config/vibecoding"
-import { WHY, WHY_TITLE } from "@/components/vibecoding/setup/steps"
+import { useAuth } from "@/lib/auth"
+import { boardError, getBoardPost, type BoardPost } from "@/lib/board"
+import { WHY_TITLE, type WhySlide } from "@/components/vibecoding/setup/steps"
 import { SlideFrame } from "@/components/vibecoding/setup/components/SlideFrame"
 import { WhyView } from "@/components/vibecoding/setup/components/WhyView"
 import { WhyCover } from "@/components/vibecoding/setup/components/WhyCover"
 
-/**
- * 왜 바이브코딩인가?(/training/vibecoding/why) — 열린연수방 1(특수교육 바이브코딩 기초)의 첫 세부 연수.
- * 내용은 환경구축과 같은 steps.ts(WHY)에서 읽고, 화면도 같은 16:9 슬라이드(SlideFrame·WhyView)를 쓴다.
- * 표지 + 3장. 몇 번째 장인지는 ?p= 로만 관리(표지는 p 없음). 마지막 장에서 2의 환경구축으로 넘어간다.
- */
+/** 분리한 슬라이드 본문도 게시글 RLS를 통과한 뒤에만 내려받는다. */
 export function VibeWhy() {
+  const { id = "62dc3495-9d6e-49ba-a7ef-126e0f0c273a" } = useParams()
+  const { user, loading } = useAuth()
+  if (loading) return <p role="status">연수를 불러오는 중…</p>
+  return <LoadSlides key={`${id}:${user?.id ?? "anon"}`} id={id} />
+}
+
+function LoadSlides({ id }: { id: string }) {
+  const [post, setPost] = useState<BoardPost | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+  useEffect(() => {
+    let active = true
+    getBoardPost(id).then((data) => { if (active) setPost(data) })
+      .catch((e) => { if (active) setError(boardError(e)) })
+      .finally(() => { if (active) setLoading(false) })
+    return () => { active = false }
+  }, [id])
+  if (loading) return <p role="status">연수를 불러오는 중…</p>
+  if (error) return <p role="alert">{error}</p>
+  if (post?.boards.slug !== "training" || !post.training_slides?.length) return <div className="rounded-xl border bg-card p-6"><p>연수를 찾을 수 없거나 열람 권한이 없습니다.</p><Link to="/training" className="mt-4 inline-block text-sm text-primary">연수 목록</Link></div>
+  return <><Link to={`/training/share/${id}`} className="mb-5 inline-block text-sm text-muted-foreground hover:text-primary">← 연수 소개</Link><WhySlides slides={post.training_slides} postId={id} /></>
+}
+
+function WhySlides({ slides, postId }: { slides: WhySlide[]; postId: string }) {
   const [params, setParams] = useSearchParams()
   const navigate = useNavigate()
   const n = Number(params.get("p"))
   /** 표지(0) + 슬라이드(1~) */
-  const count = WHY.length + 1
+  const count = slides.length + 1
   const index = Number.isInteger(n) && n >= 1 && n <= count ? n - 1 : 0
   const last = index === count - 1
-  const slide = index > 0 ? WHY[index - 1] : null
+  const slide = index > 0 ? slides[index - 1] : null
 
   const go = (i: number) => {
     if (i < 0) return
-    if (i >= count) navigate(vibecoding.setupPath)
+    if (i >= count) navigate(`/training/share/${postId}`)
     else setParams(i === 0 ? {} : { p: String(i + 1) })
   }
 
@@ -45,15 +66,13 @@ export function VibeWhy() {
     <WhyView
       slide={slide}
       number={index}
-      total={WHY.length}
-      nextLabel={last ? "환경구축 시작하기" : "다음"}
-      // 1의 다른 세부 연수(기초 익히기 등)가 열리면 넘어가는 곳(go)과 이 안내를 함께 고친다
-      nextNote={last ? "1의 다른 세부 연수는 준비 중이라, 2. 에이전트 코딩의 환경구축으로 바로 이어져요." : undefined}
+      total={slides.length}
+      nextLabel={last ? "연수 마치기" : "다음"}
       onPrev={() => go(index - 1)}
       onNext={() => go(index + 1)}
     />
   ) : (
-    <WhyCover onStart={() => go(1)} />
+    <WhyCover slides={slides} onStart={() => go(1)} />
   )
 
   return (

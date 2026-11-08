@@ -91,6 +91,7 @@ function App() {
                 <Route path="write" element={<BoardWritePage slug="training" />} />
                 <Route path=":id" element={<BoardDetail />} />
                 <Route path=":id/edit" element={<BoardWritePage slug="training" />} />
+                <Route path=":id/slides" element={<VibeWhy />} />
               </Route>
             </Route>
             {/* 옛 주소(바이브코딩 메뉴 때·단독 튜토리얼을 넘겨주던 때) → 열린연수방의 같은 쪽으로 */}

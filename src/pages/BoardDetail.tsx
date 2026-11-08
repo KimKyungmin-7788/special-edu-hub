@@ -18,8 +18,9 @@ import { ReportDialog } from "@/components/report/ReportDialog"
 
 export function BoardDetail() {
   const { id = "" } = useParams()
-  // 다른 글로 바로 이동할 때 이전 글의 상태와 댓글을 남기지 않는다.
-  return <BoardDetailContent key={id} id={id} />
+  const { user } = useAuth()
+  // 계정이 바뀌거나 로그아웃하면 이전 비공개 글과 댓글을 즉시 비운다.
+  return <BoardDetailContent key={`${id}:${user?.id ?? "anon"}`} id={id} />
 }
 function BoardDetailContent({ id }: { id: string }) {
   const { user, profile, isStaff, loading: authLoading } = useAuth()
@@ -36,9 +37,9 @@ function BoardDetailContent({ id }: { id: string }) {
   const [sharing, setSharing] = useState(false)
   const [liked, setLiked] = useState(false)
   const [likeBusy, setLikeBusy] = useState(false)
-  const slug = post?.boards.slug ?? "free"
+  const slug = post?.boards.slug ?? (pathname.startsWith(trainingConfig.share.path) ? "training" : "free")
   const canWrite = slug === "research" ? !!profile?.isResearchMember : !!profile?.isTeacherVerified
-  const canRead = slug !== "research" || !!profile?.isResearchMember
+  const canRead = (slug !== "research" || !!profile?.isResearchMember) && (post?.visibility !== "private" || post.author_id === user?.id)
   usePageTitle(canRead ? post?.title ?? "게시판" : "게시판")
   useEffect(() => {
     let active = true
@@ -92,11 +93,12 @@ function BoardDetailContent({ id }: { id: string }) {
     <Link to={listPath} className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary"><ArrowLeft className="size-4" aria-hidden />{training ? "연수 목록" : boardName(slug)}</Link>
     {loading || authLoading ? <p role="status" className="py-16 text-center text-sm text-muted-foreground">게시글을 불러오는 중…</p>
       : loadError ? <div role="alert"><BoardNotice title={loadError} /><button onClick={() => setRetry((n) => n + 1)} className="mt-3 text-sm text-primary underline">다시 시도</button></div>
-      : !post || !canRead ? <BoardAccessNotice research={post?.boards.slug === "research" || params.get("board") === "research"} />
+      : !post || !canRead ? training ? <BoardNotice title="연수를 찾을 수 없거나 열람 권한이 없습니다" to={!user ? "/login" : undefined} label={!user ? "로그인하기" : undefined} /> : <BoardAccessNotice research={post?.boards.slug === "research" || params.get("board") === "research"} />
       : <>
         <article>
           {post.pinned && <span className="mb-3 inline-flex items-center gap-1 rounded bg-brand-muted px-2 py-1 text-xs text-brand-muted-foreground"><Pin className="size-3" aria-hidden />상단 고정</span>}
           <h1 className="break-words text-2xl font-bold">{post.title}</h1>
+          {training && post.visibility === "private" && <p className="mt-2 text-sm text-muted-foreground">비공개 · 나만 보기</p>}
           <div className="mt-4 flex flex-wrap items-center gap-3 border-b pb-6 text-sm text-muted-foreground"><ProfileTrigger userId={post.author_id} className="font-medium text-foreground">{post.author?.nickname || "사용자"}</ProfileTrigger><time dateTime={post.created_at}>{new Date(post.created_at).toLocaleString("ko-KR")}</time>{post.updated_at !== post.created_at && <span>(수정됨)</span>}<span className="inline-flex items-center gap-1"><Eye className="size-4" aria-hidden />조회 {post.view_count.toLocaleString()}</span></div>
           {training && !!post.links?.length && <TrainingLinks links={post.links} />}
           <div className={training ? "max-w-3xl py-8" : "py-8"}><RichTextViewer html={post.body} /></div>
