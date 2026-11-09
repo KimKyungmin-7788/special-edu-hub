@@ -358,7 +358,7 @@ export function WriteForm({
           label="자료 파일"
           htmlFor="app-file"
           optional
-          hint="PDF·한글·파워포인트·워드·엑셀·zip·TTF, 파일마다 5MB 이하, 3개까지. 학생 얼굴·이름이 나오는 파일은 올리지 말아 주세요."
+          hint="PDF·한글·파워포인트·워드·엑셀·zip·TTF, 파일마다 10MB 이하, 3개까지. 학생 얼굴·이름이 나오는 파일은 올리지 말아 주세요."
         >
           <AppFileField
             value={files}

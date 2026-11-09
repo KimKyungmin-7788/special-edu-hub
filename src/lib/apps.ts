@@ -327,7 +327,7 @@ export type AppInput = {
 export type AppFile = { path: string; name: string; size: number }
 
 const APP_FILE_BUCKET = "app-files"
-export const APP_FILE_MAX_BYTES = 5 * 1024 * 1024 // 5MB (버킷 정책과 동일)
+export const APP_FILE_MAX_BYTES = 10 * 1024 * 1024 // 10MB (버킷·DB 검사와 동일)
 export const APP_FILE_LIMIT = 3 // 자료 하나에 올릴 수 있는 파일 수(51 검사와 동일)
 /** 올릴 수 있는 확장자 → 저장할 형식. 한글 파일은 브라우저가 형식을 비워 주는 일이 많아 확장자로 정한다 */
 export const APP_FILE_TYPES: Record<string, string> = {
@@ -351,7 +351,7 @@ export async function uploadAppFile(file: File): Promise<AppFile> {
   const ext = file.name.split(".").pop()?.toLowerCase() ?? ""
   const contentType = APP_FILE_TYPES[ext]
   if (!contentType) throw new Error("PDF·한글·파워포인트·워드·엑셀·zip·TTF 파일만 올릴 수 있습니다.")
-  if (file.size > APP_FILE_MAX_BYTES) throw new Error("파일은 5MB 이하만 올릴 수 있습니다.")
+  if (file.size > APP_FILE_MAX_BYTES) throw new Error("파일은 10MB 이하만 올릴 수 있습니다.")
 
   const path = `${uid}/${crypto.randomUUID()}.${ext}`
   const { error } = await supabase.storage
