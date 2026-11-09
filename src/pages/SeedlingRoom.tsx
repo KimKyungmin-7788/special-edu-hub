@@ -139,7 +139,7 @@ export function SeedlingRoom() {
                   <tr key={app.id} className="border-t border-border">
                     <td className="min-w-64 px-4 py-3">
                       <Link to={`/app/${app.id}`} className="group flex items-center gap-3">
-                        <div className="relative aspect-[16/10] w-16 shrink-0 overflow-hidden rounded-md bg-surface"><AppThumbnail app={app} /></div>
+                        <div className="relative aspect-video w-16 shrink-0 overflow-hidden rounded-md bg-surface"><AppThumbnail app={app} /></div>
                         <div>
                           <span className="font-semibold group-hover:text-primary group-hover:underline">{displayTitle(app)}</span>
                           <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">{cardSummary(app)}</p>

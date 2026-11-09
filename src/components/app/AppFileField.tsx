@@ -36,7 +36,7 @@ export function AppFileField({
     let message = ""
     for (const file of picked) {
       const ext = file.name.split(".").pop()?.toLowerCase() ?? ""
-      if (!APP_FILE_TYPES[ext]) message = `‘${file.name}’ — PDF·한글·파워포인트·워드·엑셀·zip 파일만 올릴 수 있습니다.`
+      if (!APP_FILE_TYPES[ext]) message = `‘${file.name}’ — PDF·한글·파워포인트·워드·엑셀·zip·TTF 파일만 올릴 수 있습니다.`
       else if (file.size > APP_FILE_MAX_BYTES) message = `‘${file.name}’ — ${fileSizeLabel(file.size)}예요. 5MB 이하만 올릴 수 있습니다.`
       else ok.push(file)
     }

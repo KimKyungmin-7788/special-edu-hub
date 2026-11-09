@@ -341,6 +341,7 @@ export const APP_FILE_TYPES: Record<string, string> = {
   xls: "application/vnd.ms-excel",
   xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   zip: "application/zip",
+  ttf: "font/ttf",
 }
 
 /** 파일 올리기 → 경로 app-files/<uid>/<uuid>.<ext>. 자료 저장 전에 부른다 */
@@ -349,7 +350,7 @@ export async function uploadAppFile(file: File): Promise<AppFile> {
   if (!uid) throw new Error("로그인이 필요합니다.")
   const ext = file.name.split(".").pop()?.toLowerCase() ?? ""
   const contentType = APP_FILE_TYPES[ext]
-  if (!contentType) throw new Error("PDF·한글·파워포인트·워드·엑셀·zip 파일만 올릴 수 있습니다.")
+  if (!contentType) throw new Error("PDF·한글·파워포인트·워드·엑셀·zip·TTF 파일만 올릴 수 있습니다.")
   if (file.size > APP_FILE_MAX_BYTES) throw new Error("파일은 5MB 이하만 올릴 수 있습니다.")
 
   const path = `${uid}/${crypto.randomUUID()}.${ext}`
