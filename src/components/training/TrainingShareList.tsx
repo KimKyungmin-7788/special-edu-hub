@@ -53,7 +53,6 @@ export function TrainingShareList() {
     }
     setParams(next)
   }
-  const course = training.courses.find((c) => c.slug === stage)
   const fixed = training.courses.filter((c) => stage === "all" || c.slug === stage)
     .flatMap((c) => c.pages.map((p) => ({ course: c, page: p })))
     .filter(({ page: p }) => (!kind || kind === (p.slug === "survey" ? "link" : "slides")) && p.label.includes(search.trim()))
@@ -63,7 +62,7 @@ export function TrainingShareList() {
   const writeTo = `${training.share.path}/write${isTrainingStage(stage) ? `?stage=${stage}` : ""}`
   return <div>
     <header className="mb-7 flex flex-wrap items-center justify-between gap-4">
-      <div><h1 className="text-3xl font-bold tracking-tight">{training.title}</h1><p className="mt-2 text-sm text-muted-foreground">배우는 선생님에서, 나누는 선생님으로.</p></div>
+      <div><h1 className="text-3xl font-bold tracking-tight">{training.title}</h1><p className="mt-2 text-sm text-muted-foreground">{training.description}</p></div>
       <div className="flex flex-wrap items-center gap-3 sm:gap-5">
       <Link to={`${training.basePath}/guide`} className="py-3 text-sm font-semibold text-primary underline-offset-4 hover:underline">{training.guideLabel}</Link>
       <Link to={writeTo} className="inline-flex items-center gap-2 rounded-lg bg-cta px-5 py-3 text-sm font-semibold text-cta-foreground"><PenLine className="size-4" aria-hidden />{training.share.ctaLabel}</Link>
@@ -91,7 +90,7 @@ export function TrainingShareList() {
       </button>
     </div>
     <section id="training-catalogue" aria-label="선택한 단계의 연수" className="mt-8">
-      <div className="mb-5 flex items-start justify-between gap-4"><div><p className="mb-1 text-xs text-muted-foreground">{course ? `${String(training.courses.indexOf(course) + 1).padStart(2, "0")} · ${course.title}` : stage === "study" ? "함께 배우기" : "모든 단계"}</p><h2 className="text-xl font-bold">{stage === "study" ? training.study.title : "지금 볼 수 있는 연수"}{stage !== "study" && result && <span className="ml-2 text-sm font-normal text-primary">{result.count + activeFixed.length}개</span>}</h2></div><button type="button" onClick={() => change({ stage: "all", kind: null, q: null })} className="shrink-0 py-1 text-sm text-primary underline underline-offset-4">전체 연수 보기</button></div>
+      <div className="mb-5 flex items-start justify-between gap-4">{stage === "study" && <h2 className="text-xl font-bold">{training.study.title}</h2>}<button type="button" onClick={() => change({ stage: "all", kind: null, q: null })} className="ml-auto shrink-0 py-1 text-sm text-primary underline underline-offset-4">전체 연수 보기</button></div>
       {stage === "study" ? <div className="rounded-xl bg-brand-soft px-5 py-16 text-center"><Users className="mx-auto size-8 text-primary" aria-hidden /><p className="mt-4 font-semibold">준비 중</p></div> : <>
         <div role="group" aria-label="자료 형식" className="mb-4 flex flex-wrap gap-2">
           {[{ kind: undefined, label: "전체" }, ...TRAINING_LINK_KINDS].map((k) => <button key={k.kind ?? "all"} type="button" aria-pressed={kind === k.kind} onClick={() => change({ kind: k.kind ?? null })} className={cn("rounded-full border px-3 py-1.5 text-sm", kind === k.kind ? "border-primary bg-primary text-primary-foreground" : "bg-card hover:bg-accent")}>{k.label}</button>)}

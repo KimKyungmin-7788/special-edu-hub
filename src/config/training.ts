@@ -31,9 +31,10 @@ export type TrainingCourse = {
 }
 
 export const training = {
-  title: "열린연수방",
+  title: "바이브코딩",
+  description: "연구회 연수자료를 아카이빙합니다",
   basePath: "/training",
-  guideLabel: "열린연수방이란?",
+  guideLabel: "바이브코딩이란?",
   courses: [
     {
       slug: "vibecoding",
@@ -94,7 +95,7 @@ export const training = {
   /** 공개예정 쪽 표시와, 그 주소로 바로 왔을 때의 안내 */
   soon: {
     label: "공개예정",
-    backLabel: "열린연수방이란? 보기",
+    backLabel: "바이브코딩이란? 보기",
   },
   /** 소개 화면: 참여 목적 → 자료의 출발점 → 공유 방식. 단계 목록은 메인에서만 표시한다. */
   guide: {
@@ -106,7 +107,7 @@ export const training = {
       { title: "내일 수업에 쓰고 싶어요", description: "우리 학생에게 필요한 수업보조자료를 만들어 수업에 활용해요." },
     ],
     origin: {
-      label: "열린연수방의 시작",
+      label: "바이브코딩의 시작",
       heading: "교내 연구회에서 시작해, 더 많은 선생님과 함께",
       description: "교내 연구회 선생님들을 위해 만든 연수자료에서 출발했습니다. 함께 배우며 만든 자료와 경험을 나누고, 각자의 교실에 맞게 이어 갑니다.",
     },

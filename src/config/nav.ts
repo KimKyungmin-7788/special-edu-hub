@@ -34,7 +34,7 @@ export const navItems: NavItem[] = [
   { label: seedling.title, to: seedling.path, status: "active" },
   { label: "수업실천사례", to: "/practices", status: "active" },
   {
-    label: "열린연수방",
+    label: training.title,
     to: "/training",
     status: "active",
     // 함께 여는 연수가 공개예정이면 하부 섹션 없이 열린연수방이란?으로만 간다

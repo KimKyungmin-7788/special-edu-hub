@@ -76,9 +76,9 @@ export const site = {
     {
       type: "text",
       keyword: "시작",
-      title: "처음 시작하는 선생님을 위한\n열린연수방",
+      title: "처음 시작하는 선생님을 위한\n바이브코딩",
       subtitle: "왜 바이브코딩인지부터 첫 앱 공개까지, 한 단계씩 따라 배워요.",
-      ctaLabel: "열린연수방 가기",
+      ctaLabel: "바이브코딩 가기",
       ctaHref: "/training",
       image: { src: "/hero/first-app-start.png", position: "right center" },
     },
