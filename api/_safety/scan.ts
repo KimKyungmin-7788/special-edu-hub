@@ -16,7 +16,7 @@ import { isIP } from "node:net"
  * 서버가 남이 준 주소를 여는 일이므로(SSRF) https·공인 주소만 열고, 이동 횟수·크기·시간을 제한한다.
  */
 
-export const SCANNER_VERSION = "2026-11-10.1"
+export const SCANNER_VERSION = "2026-11-11.1"
 
 export type FindingLevel = "block" | "warn"
 export type Finding = { rule: string; level: FindingLevel; evidence: string }
@@ -47,8 +47,11 @@ const MAX_FILES = 30
 const FETCH_TIMEOUT_MS = 8000
 const TOTAL_TIMEOUT_MS = 40000
 
-/** 파일을 받아 볼 수 없는 공유 앱(대화형 AI 서비스 안에서 실행되는 것) */
-const SHARED_APP_HOSTS = ["gemini.google.com", "gemini.google", "g.co", "ai.studio", "aistudio.google.com", "claude.ai", "chatgpt.com"]
+/** 파일을 받아 볼 수 없는 공유 앱(다른 서비스 안에서 실행되는 것) — 확인 불가로 둔다 */
+const SHARED_APP_HOSTS = [
+  "gemini.google.com", "gemini.google", "g.co", "ai.studio", "aistudio.google.com", "claude.ai", "chatgpt.com",
+  "play.unity.com", // 유니티 플레이 — 다른 도메인의 실행 화면으로 넘긴다
+]
 
 /** 데이터를 서버에 보내거나 저장하는 대표 서비스 — "저장하지 않음" 입력과 대조할 때 쓴다 */
 const BACKEND_HOST_PATTERNS: [string, RegExp][] = [
