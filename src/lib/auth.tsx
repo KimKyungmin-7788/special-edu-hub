@@ -14,6 +14,7 @@ import { NicknameOnboardingDialog } from "@/components/auth/NicknameOnboardingDi
 import { SchoolOnboardingDialog } from "@/components/auth/SchoolOnboardingDialog"
 import { needsSchool } from "@/lib/account"
 import { ConsentDialog } from "@/components/auth/ConsentDialog"
+import { CONSENT_DIALOG_ENABLED } from "@/config/consents"
 import { getPendingConsents, recordConsents, shownConsentVersions, type ConsentItem } from "@/lib/consents"
 
 /**
@@ -92,7 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           () => pending,
         )
       }
-      if (pending.length > 0) {
+      if (CONSENT_DIALOG_ENABLED && pending.length > 0) {
         setConsentAsk({ uid, profile, pending })
         return // 동의(또는 닫기) 뒤 닉네임·학교·축하를 이어서
       }

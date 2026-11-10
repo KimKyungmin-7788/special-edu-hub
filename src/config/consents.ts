@@ -9,6 +9,13 @@ export type ConsentKind = "terms" | "privacy" | "upload_pledge"
 
 export const CONSENT_KINDS: ConsentKind[] = ["terms", "privacy", "upload_pledge"]
 
+/**
+ * 로그인 뒤 동의 창(편지)을 띄울지. 문구를 더 다듬는 동안 꺼 둔다(2026-11-11).
+ * 꺼 둔 동안에도 가입 화면에서 체크한 동의는 첫 로그인 때 그대로 기록된다.
+ * 다시 켤 때는 69_pledge_gate_off.sql 로 풀어 둔 등록 조건도 함께 되돌린다.
+ */
+export const CONSENT_DIALOG_ENABLED = false
+
 type ConsentDoc = {
   version: string
   /** 체크박스 옆 문구 */
