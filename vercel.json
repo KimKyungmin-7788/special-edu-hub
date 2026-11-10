@@ -4,7 +4,8 @@
     { "source": "/((?!api/|assets/).*)", "destination": "/index.html" }
   ],
   "functions": {
-    "api/practice-draft.ts": { "maxDuration": 120 }
+    "api/practice-draft.ts": { "maxDuration": 120 },
+    "api/safety-check.ts": { "maxDuration": 60 }
   },
   "headers": [
     {

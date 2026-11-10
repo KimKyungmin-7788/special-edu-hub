@@ -8,6 +8,8 @@ import { AdminReportQueue } from "@/components/admin/AdminReportQueue"
 import { AdminInquiryQueue } from "@/components/admin/AdminInquiryQueue"
 import { AdminNoticeForm } from "@/components/admin/AdminNoticeForm"
 import { AdminUpdateManager } from "@/components/admin/AdminUpdateManager"
+import { AdminSafetyQueue, needsSafetyReview } from "@/components/admin/AdminSafetyQueue"
+import { getAllApps } from "@/lib/apps"
 import { usePageTitle } from "@/lib/usePageTitle"
 import { listPendingRequests } from "@/lib/verification"
 import { listPendingReports } from "@/lib/reports"
@@ -23,7 +25,7 @@ import { listOpenInquiries } from "@/lib/inquiries"
  * 권한 체크의 진짜 강제는 DB RLS(is_admin)다. 여기 가드는 화면 접근 차단일 뿐.
  */
 
-const ADMIN_TABS = ["apps", "verify", "members", "reports", "inquiries", "notice", "updates"] as const
+const ADMIN_TABS = ["apps", "safety", "verify", "members", "reports", "inquiries", "notice", "updates"] as const
 type AdminTab = (typeof ADMIN_TABS)[number]
 
 export function AdminPage() {
@@ -68,12 +70,15 @@ export function AdminPage() {
     <div className="mx-auto max-w-6xl px-4 py-10">
       <h1 className="mb-1 text-2xl font-bold">관리</h1>
       <p className="mb-6 text-sm text-muted-foreground">
-        앱 공개 상태·교사인증 신청·회원·신고·문의를 관리하고 공지 알림과 새 소식을 올립니다.
+        앱 공개 상태·안전 점검·교사인증 신청·회원·신고·문의를 관리하고 공지 알림과 새 소식을 올립니다.
       </p>
 
       <div className="mb-6 flex gap-1 overflow-x-auto overflow-y-hidden border-b border-border">
         <TabButton active={tab === "apps"} onClick={() => setTab("apps")}>
           앱 관리
+        </TabButton>
+        <TabButton active={tab === "safety"} onClick={() => setTab("safety")} count={pending.safety}>
+          안전 점검
         </TabButton>
         <TabButton active={tab === "verify"} onClick={() => setTab("verify")} count={pending.verify}>
           교사인증 큐
@@ -101,6 +106,7 @@ export function AdminPage() {
       ) : (
         <div className="max-w-3xl">
           {tab === "apps" && <AdminAppList />}
+          {tab === "safety" && <AdminSafetyQueue />}
           {tab === "verify" && <AdminVerifyQueue />}
           {tab === "reports" && <AdminReportQueue />}
           {tab === "inquiries" && <AdminInquiryQueue />}
@@ -112,14 +118,14 @@ export function AdminPage() {
   )
 }
 
-/** 처리 대기 건수(교사인증·신고·문의). 탭을 옮길 때마다 다시 센다(처리한 뒤 줄어들게). */
+/** 처리 대기 건수(안전 점검·교사인증·신고·문의). 탭을 옮길 때마다 다시 센다(처리한 뒤 줄어들게). */
 function usePendingCounts(isStaff: boolean, tab: AdminTab) {
-  const [counts, setCounts] = useState({ verify: 0, reports: 0, inquiries: 0 })
+  const [counts, setCounts] = useState({ verify: 0, reports: 0, inquiries: 0, safety: 0 })
   useEffect(() => {
     if (!isStaff) return
     let active = true
-    Promise.all([listPendingRequests(), listPendingReports(), listOpenInquiries()]).then(([v, r, i]) => {
-      if (active) setCounts({ verify: v.length, reports: r.length, inquiries: i.length })
+    Promise.all([listPendingRequests(), listPendingReports(), listOpenInquiries(), getAllApps()]).then(([v, r, i, a]) => {
+      if (active) setCounts({ verify: v.length, reports: r.length, inquiries: i.length, safety: a.filter(needsSafetyReview).length })
     })
     return () => {
       active = false

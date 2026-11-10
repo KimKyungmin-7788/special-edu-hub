@@ -60,7 +60,7 @@ export async function POST(request: Request): Promise<Response> {
   const kind = body.kind as EmailKind
   if (!emailKinds.includes(kind)) return json(400, { error: "unknown kind" })
 
-  const to = kind === "staff_new_request" ? ADMIN_TO : String(body.to ?? "")
+  const to = kind === "staff_new_request" || kind === "staff_app_held" ? ADMIN_TO : String(body.to ?? "")
   if (!EMAIL_RE.test(to)) return json(400, { error: "bad recipient" })
 
   const { subject, text } = buildEmail(kind, {

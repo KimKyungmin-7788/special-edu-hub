@@ -121,3 +121,55 @@ export function sameSafety(a: Safety, b: Safety): boolean {
   }
   return key(a) === key(b)
 }
+
+// ── 자동 점검 · 운영진 검토 (68_app_review.sql, api/safety-check.ts) ─────────
+
+export type CheckTrigger = "register" | "edit" | "manual" | "staff"
+export type CheckFinding = { rule: string; level: "block" | "warn"; evidence: string }
+export type AppCheck = {
+  status: "pass" | "blocked" | "unverifiable"
+  reason: string
+  findings: CheckFinding[]
+  createdAt: string
+}
+export type ReviewAction = "approve" | "request_changes" | "suspend"
+
+/** 자동 점검 요청. 서버가 주소를 점검하고 결과에 따라 공개·보류를 정한다. 실패하면 안내 문구를 담아 throw */
+export async function requestSafetyCheck(appId: string, trigger: CheckTrigger): Promise<void> {
+  const { data } = await supabase.auth.getSession()
+  const token = data.session?.access_token
+  if (!token) throw new Error("로그인이 필요합니다.")
+  const res = await fetch("/api/safety-check", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ appId, trigger }),
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => null)
+    throw new Error(body?.error ?? "자동 점검을 하지 못했습니다.")
+  }
+}
+
+/** 자료의 최근 점검 기록들(작성자·운영진만 읽힌다). 68 미적용 DB 면 빈 배열 */
+export async function getAppChecks(appId: string, limit = 1): Promise<AppCheck[]> {
+  const { data, error } = await supabase
+    .from("app_checks")
+    .select("status, reason, findings, created_at")
+    .eq("app_id", appId)
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false })
+    .limit(limit)
+  if (error || !data) return []
+  return data.map((r) => ({
+    status: r.status,
+    reason: r.reason,
+    findings: (r.findings ?? []) as CheckFinding[],
+    createdAt: r.created_at,
+  }))
+}
+
+/** 운영진 검토: 승인 · 보완 요청 · 게시 중단 (RPC 가 운영진인지 확인한다) */
+export async function reviewApp(appId: string, action: ReviewAction, note: string): Promise<void> {
+  const { error } = await supabase.rpc("review_app", { p_app_id: appId, p_action: action, p_note: note })
+  if (error) throw error
+}

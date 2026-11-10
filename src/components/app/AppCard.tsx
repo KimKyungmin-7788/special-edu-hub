@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils"
 import { avatarTone, AVATAR_PHOTO } from "@/lib/avatarTone"
 import { ProfileTrigger } from "@/components/profile/ProfileTrigger"
 import { relativeTime } from "@/lib/time"
+import { VerifyMark } from "@/components/app/VerifyMark"
 
 /** 아래줄 아이콘 버튼(바로가기·공유). */
 const iconButtonClass =
@@ -150,6 +151,8 @@ export function AppCard({
                 교사 전용
               </span>
             )}
+            {/* 검증 마크(68) — 앱 링크가 있는 자료만 */}
+            {!app.locked && app.appUrl && <VerifyMark status={app.verificationStatus} />}
             {move && (
               <span className="ml-auto flex shrink-0 items-center gap-1">
                 <MoveButton dir="up" disabled={!move.canUp} onClick={move.onUp} />

@@ -74,7 +74,7 @@ export function WritePage() {
       <p className="mb-8 text-base text-muted-foreground">
         {isSeedling
           ? seedling.writingHint
-          : "인증교사가 만든 교육 웹앱을 누리집에 공개합니다. 등록하면 바로 목록에 나타납니다."}
+          : "인증교사가 만든 교육 웹앱을 누리집에 공개합니다. 등록하면 자동 점검을 거쳐 목록에 나타납니다."}
       </p>
 
       {state.kind === "loading" && (

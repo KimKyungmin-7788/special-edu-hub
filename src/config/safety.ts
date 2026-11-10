@@ -39,3 +39,23 @@ export const safetyText = {
 }
 
 export const DATA_ITEM_ORDER: DataItem[] = ["non_identifying", "identifying", "other"]
+
+/** 검증 마크와 게시 상태 문구(68). 마크는 '확인한 범위'를 말할 뿐 안전을 보증하지 않는다. */
+export const verifyText = {
+  marks: {
+    verified: { label: "자동 점검 확인", detail: "누리집이 앱 주소의 파일을 받아 읽어 본 결과, 확인이 필요한 항목이 없었습니다." },
+    reviewing: { label: "검토 중", detail: "자동 점검에서 확인이 필요한 항목이 나와 운영진이 확인하고 있습니다." },
+    reverify: { label: "재검증 필요", detail: "마지막 점검 뒤 확인이 필요한 항목이 나와 다시 확인하고 있습니다." },
+    unverified: { label: "점검 미확인", detail: "누리집이 이 자료의 파일을 받아 볼 수 없었거나 아직 점검하지 않았습니다." },
+  },
+  minimalNotice: "누리집은 자체 검증 시스템으로 확인할 수 있는 범위 안에서 최소한으로 점검합니다.",
+  review: {
+    pending: { label: "점검 대기", notice: "자동 점검을 기다리고 있어 아직 공개되지 않았습니다." },
+    held: { label: "보류", notice: "운영진 확인 중이라 아직 공개되지 않았습니다." },
+    changes_requested: { label: "보완 요청", notice: "운영진이 보완을 요청해 아직 공개되지 않았습니다." },
+    approved: { label: "공개", notice: "" },
+    suspended: { label: "게시 중단", notice: "운영진이 게시를 중단한 자료입니다." },
+  },
+  recheck: "다시 점검",
+  rechecking: "점검 중…",
+}

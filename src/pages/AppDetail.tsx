@@ -26,6 +26,8 @@ import { RichTextViewer } from "@/components/app/RichTextViewer"
 import { StandardsInfoBlock } from "@/components/app/StandardsInfoBlock"
 import { DetailSection } from "@/components/app/DetailSection"
 import { SafetyCard } from "@/components/app/SafetyCard"
+import { VerifyMarkDetail } from "@/components/app/VerifyMark"
+import { ReviewNotice } from "@/components/app/ReviewNotice"
 import { getSafety, isEmptySafety, type Safety } from "@/lib/safety"
 import { CommentSection } from "@/components/comment/CommentSection"
 import { PracticeRow } from "@/components/practice/PracticeCard"
@@ -266,6 +268,12 @@ export function AppDetail() {
             <p className="mt-2 leading-relaxed text-muted-foreground">{seedling.distinction}</p>
           </div>
         )}
+        {/* 공개되지 않은 자료 안내(68) — 작성자·운영진에게만 이 화면이 열린다 */}
+        {app.reviewStatus !== "approved" && (
+          <div className="mb-4">
+            <ReviewNotice app={app} onChecked={() => getApp(app.id).then((data) => data && setApp(data))} />
+          </div>
+        )}
         <h1 className="text-3xl font-semibold tracking-tight">{displayTitle(app)}</h1>
         {app.summary && (
           <p className="mt-2 text-base text-muted-foreground">{app.summary}</p>
@@ -296,6 +304,13 @@ export function AppDetail() {
             조회 {app.viewCount}
           </span>
         </div>
+
+        {/* 검증 마크(68) — 앱 링크가 있는 자료만 */}
+        {!app.locked && app.appUrl && (
+          <div className="mt-3">
+            <VerifyMarkDetail status={app.verificationStatus} />
+          </div>
+        )}
 
         {/* 개발자 홍보 링크 — 등록자가 입력한 것만(블로그·인스타·유튜브·사이트) */}
         {owner && <PromoLinks profile={owner} className="mt-3" />}

@@ -51,7 +51,14 @@ export type App = {
   useCase: string // 활용사례 본문(35). 잠긴 자료는 ''
   achievementCodes: string[] // 관련 성취기준 코드, 순서 있음(36). 잠긴 자료는 []
   previewUrl: string | null // 카드 미리보기 영상 공개 주소(선택, 53). 잠긴 자료·없으면 null
+  reviewStatus: ReviewStatus // 게시 상태(68). approved 만 공개 목록에 보인다
+  verificationStatus: VerificationStatus // 검증 마크(68)
 }
+
+/** 게시 상태(68): 점검 대기 · 자동 보류 · 보완 요청 · 공개 · 게시 중단 */
+export type ReviewStatus = "pending" | "held" | "changes_requested" | "approved" | "suspended"
+/** 검증 마크(68): 점검 미확인 · 자동 점검 확인 · 검토 중 · 재검증 필요 */
+export type VerificationStatus = "unverified" | "verified" | "reviewing" | "reverify"
 
 /** DB row(snake_case) → App(camelCase) 변환. */
 export type AppRow = {
@@ -81,6 +88,8 @@ export type AppRow = {
   use_case?: string
   achievement_codes?: string[] // 36 미적용 DB 대비 optional
   preview_url?: string | null // 53 미적용 DB 대비 optional
+  review_status?: ReviewStatus // 68 미적용 DB 대비 optional
+  verification_status?: VerificationStatus
 }
 
 export function mapRow(row: AppRow): App {
@@ -111,6 +120,8 @@ export function mapRow(row: AppRow): App {
     useCase: row.use_case ?? "",
     achievementCodes: row.achievement_codes ?? [],
     previewUrl: row.preview_url ?? null,
+    reviewStatus: row.review_status ?? "approved",
+    verificationStatus: row.verification_status ?? "unverified",
   }
 }
 

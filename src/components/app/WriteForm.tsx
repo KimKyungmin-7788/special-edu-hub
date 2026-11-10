@@ -39,7 +39,7 @@ import { StandardsFinderModal } from "@/components/app/StandardsFinderModal"
 import { SelectedStandards } from "@/components/app/SelectedStandards"
 import { StandardsManualModal } from "@/components/app/StandardsManualModal"
 import { SafetyFields } from "@/components/app/SafetyFields"
-import { EMPTY_SAFETY, getSafety, isEmptySafety, sameSafety, saveSafety, type Safety } from "@/lib/safety"
+import { EMPTY_SAFETY, getSafety, isEmptySafety, requestSafetyCheck, sameSafety, saveSafety, type Safety } from "@/lib/safety"
 import {
   CharCounter,
   FormField,
@@ -325,6 +325,10 @@ export function WriteForm({
       // 안전 확인 정보는 선택 입력 — 저장에 실패해도 자료 등록은 끝난 것으로 둔다
       if (appUrl.trim() && !sameSafety(safety, savedSafety) && !(isEmptySafety(safety) && isEmptySafety(savedSafety)))
         await saveSafety(saved.id, safety).catch((e) => console.error("[safety] 저장 실패:", e))
+      // 자동 점검(68): 새로 등록했거나 앱 주소를 바꿨으면 점검을 요청한다 — 걸린 것이 없으면 바로 공개된다.
+      // 요청에 실패해도 등록은 끝난 것이고, 상세 화면의 "다시 점검"으로 다시 할 수 있다.
+      if (appUrl.trim() && (!app || appUrl.trim() !== app.appUrl.trim()))
+        await requestSafetyCheck(saved.id, app ? "edit" : "register").catch((e) => console.error("[safety] 점검 요청 실패:", e))
       // replace: 폼 페이지를 히스토리에서 치워, 상세에서 "목록으로"가 폼으로 되돌아가지 않게.
       navigate(`/app/${saved.id}`, { replace: true })
     } catch (err) {

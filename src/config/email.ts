@@ -13,6 +13,8 @@ export type EmailKind =
   | "verify_approved"
   | "verify_rejected"
   | "staff_new_request"
+  | "staff_app_held"
+  | "app_review"
 
 export type EmailInput = {
   nickname: string
@@ -137,6 +139,41 @@ const templates: Record<EmailKind, (i: EmailInput) => EmailContent> = {
       `서류: ${i.data.hasDocument ? "인증센터에 올림 — 운영진 페이지의 '서류 보기'" : "이메일로 받기 — 메일함 확인"}`,
       "",
       `심사하기: ${link("/admin?tab=verify")}`,
+    ].join("\n"),
+  }),
+
+  // 자동 점검에서 확인이 필요한 항목이 나온 자료(68) — 운영자에게
+  staff_app_held: (i) => ({
+    subject: `[${site.name} 운영] 자동 점검 확인 필요 — ${i.data.title ?? ""}`,
+    text: [
+      i.data.held
+        ? "자동 점검에서 확인이 필요한 항목이 나와 자료 공개를 보류했습니다."
+        : "공개 중인 자료를 다시 점검했더니 확인이 필요한 항목이 나왔습니다. 공개는 유지 중입니다.",
+      "",
+      `자료: ${i.data.title ?? ""}`,
+      `등록 교사: ${i.nickname.trim() || "(닉네임 없음)"}`,
+      `발견한 내용: ${i.data.reason ?? ""}`,
+      "",
+      `확인하기: ${link("/admin?tab=safety")}`,
+    ].join("\n"),
+  }),
+
+  // 운영진이 자료를 승인·보완 요청·게시 중단했을 때(68) — 작성자에게
+  app_review: (i) => ({
+    subject: `[${site.name}] 등록한 자료 안내 — ${i.data.title ?? ""}`,
+    text: [
+      hello(i.nickname),
+      "",
+      i.data.action === "approve"
+        ? `등록하신 자료 「${i.data.title ?? ""}」가 공개되었습니다.`
+        : i.data.action === "request_changes"
+          ? `등록하신 자료 「${i.data.title ?? ""}」에 보완을 부탁드립니다. 보완하기 전까지는 목록에 보이지 않습니다.`
+          : `등록하신 자료 「${i.data.title ?? ""}」의 게시를 중단했습니다.`,
+      ...(i.data.note?.trim() ? ["", `운영진 안내: ${i.data.note.trim()}`] : []),
+      "",
+      `자료 보기: ${link(`/app/${i.data.appId ?? ""}`)}`,
+      "",
+      devNote(i.replyTo),
     ].join("\n"),
   }),
 }
