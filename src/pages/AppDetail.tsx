@@ -407,9 +407,9 @@ export function AppDetail() {
       {!app.locked && files.length > 0 && (
         <section className="mt-6" aria-labelledby="app-files-heading">
           <h2 id="app-files-heading" className="mb-3 text-sm font-semibold">첨부파일</h2>
-          <ul className="grid gap-3 sm:grid-cols-2">
+          <ul className="flex flex-wrap gap-2">
             {files.map((file) => (
-              <li key={file.path} className="min-w-0">
+              <li key={file.path} className="w-full min-w-0 max-w-xs">
                 <button
                   type="button"
                   disabled={downloadingFile !== null}
@@ -427,20 +427,20 @@ export function AppDetail() {
                       setDownloadingFile(null)
                     }
                   }}
-                  className="group flex h-full w-full flex-col gap-3 rounded-lg border border-border bg-card p-4 text-left transition-colors hover:border-primary hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-wait disabled:opacity-60"
+                  className="group flex h-full w-full items-center gap-2 rounded-lg border border-border bg-card p-3 text-left transition-colors hover:border-primary hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-wait disabled:opacity-60"
                 >
-                  <span className="flex w-full items-start gap-3">
-                    <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-brand-soft text-primary">
-                      <FileText className="size-5" aria-hidden />
+                  <span className="flex min-w-0 flex-1 items-center gap-2">
+                    <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-brand-soft text-primary">
+                      <FileText className="size-4" aria-hidden />
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="line-clamp-2 break-all text-sm font-semibold">{file.name}</span>
+                      <span className="line-clamp-2 break-all text-xs font-semibold">{file.name}</span>
                       <span className="mt-1 block text-xs text-muted-foreground">
                         {file.name.includes(".") ? file.name.split(".").pop()?.toUpperCase() : "파일"} · {fileSizeLabel(file.size)}
                       </span>
                     </span>
                   </span>
-                  <span className="mt-auto inline-flex items-center gap-1.5 self-end text-sm font-semibold text-primary">
+                  <span className="inline-flex shrink-0 flex-col items-center gap-1 text-xs font-medium text-primary">
                     {downloadingFile === file.path ? <LoaderCircle className="size-4 motion-safe:animate-spin" aria-hidden /> : <Download className="size-4" aria-hidden />}
                     {downloadingFile === file.path ? "준비 중" : "다운로드"}
                   </span>
