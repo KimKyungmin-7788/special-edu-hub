@@ -62,3 +62,43 @@ export const consents: Record<ConsentKind, ConsentDoc> = {
     recommend: "배포하기 전에 자체 점검용 스킬이나 프롬프트로 먼저 점검하기를 권장합니다.",
   },
 }
+
+/**
+ * 로그인 뒤 동의 창의 편지(ConsentDialog). 정식 문서(위 consents)를 쉬운 말로 풀어 쓴 안내이고,
+ * 동의를 받는 문서는 위 consents 그대로다. **낱말** 은 강조 표시.
+ */
+export const consentLetter = {
+  greeting: "선생님께",
+  lead: "이곳은 특수교사가 만든 디지털교육 자료를 **서로 나누는 공간**입니다. **보안과 개인정보**가 무엇보다 중요하기에 시작하기 전에 **{count} 약속**을 부탁드립니다.",
+  sectionLabel: "{count} 약속",
+  promises: {
+    terms: {
+      title: "서로 존중하며 이용합니다",
+      body: "다른 선생님의 자료와 글을 아끼고, 누리집의 **이용 규칙**을 지킵니다.",
+      more: "",
+    },
+    privacy: {
+      title: "선생님 정보는 꼭 필요한 만큼만 받습니다",
+      body: "**이메일, 별명, 소속 학교**를 로그인과 교사 인증에만 쓰고, **탈퇴하시면 바로 지웁니다.**",
+      more: "수집·이용 내용 자세히 보기",
+    },
+    upload_pledge: {
+      title: "자료를 올릴 때는 학생을 먼저 생각합니다",
+      body: "**학생을 알아볼 수 있는 정보**는 담지 않고, **직접 만들었거나 허락받은 자료**만 올립니다. 앱이 개인정보나 AI를 쓰면 **사실대로** 적습니다.",
+      more: "서약 내용 자세히 보기",
+    },
+  } satisfies Record<ConsentKind, { title: string; body: string; more: string }>,
+  noteTitle: "누리집의 점검은 최소한입니다",
+  noteMore: "점검 방식 자세히 보기",
+  signature: "운영진 드림",
+  agree: "{count} 약속에 모두 동의합니다",
+  submit: "함께할게요",
+  /** 끝까지 내려 읽기 전 버튼 아래 안내 */
+  readHint: "끝까지 읽으면 누를 수 있어요.",
+  /** 편지 맨 아래 전문 링크(새 탭) */
+  fullLinks: [
+    { label: "이용약관 전문 보기", href: "/terms" },
+    { label: "개인정보처리방침 전문 보기", href: "/privacy" },
+  ],
+  counts: ["", "한 가지", "두 가지", "세 가지"],
+}
