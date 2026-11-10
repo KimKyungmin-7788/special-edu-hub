@@ -10,11 +10,11 @@ export type ConsentKind = "terms" | "privacy" | "upload_pledge"
 export const CONSENT_KINDS: ConsentKind[] = ["terms", "privacy", "upload_pledge"]
 
 /**
- * 로그인 뒤 동의 창(편지)을 띄울지. 문구를 더 다듬는 동안 꺼 둔다(2026-11-11).
- * 꺼 둔 동안에도 가입 화면에서 체크한 동의는 첫 로그인 때 그대로 기록된다.
- * 다시 켤 때는 69_pledge_gate_off.sql 로 풀어 둔 등록 조건도 함께 되돌린다.
+ * 로그인 뒤 동의 창(편지)을 띄울지. 끄면 기존 회원에게 묻지 않는다
+ * (그동안에도 가입 화면에서 체크한 동의는 첫 로그인 때 그대로 기록된다).
+ * 끌 때는 69_pledge_gate_off.sql 로 등록 조건을 풀고, 켤 때는 그 파일 주석의 정책을 되살린다.
  */
-export const CONSENT_DIALOG_ENABLED = false
+export const CONSENT_DIALOG_ENABLED = true
 
 type ConsentDoc = {
   version: string
@@ -80,8 +80,8 @@ export const consentLetter = {
   sectionLabel: "{count} 약속",
   promises: {
     terms: {
-      title: "서로 존중하며 이용합니다",
-      body: "다른 선생님의 자료와 글을 아끼고, 누리집의 **이용 규칙**을 지킵니다.",
+      title: "서로의 아이디어와 노력을 존중합니다",
+      body: "다른 선생님의 자료와 글을 아끼고, 다른 곳에 쓰거나 공유할 때는 **출처를 밝힙니다.**",
       more: "",
     },
     privacy: {
@@ -91,7 +91,7 @@ export const consentLetter = {
     },
     upload_pledge: {
       title: "자료를 올릴 때는 학생을 먼저 생각합니다",
-      body: "**학생을 알아볼 수 있는 정보**는 담지 않고, **직접 만들었거나 허락받은 자료**만 올립니다. 앱이 개인정보나 AI를 쓰면 **사실대로** 적습니다.",
+      body: "**학생을 알아볼 수 있는 정보**는 담지 않고, **직접 만들었거나 허락받은 자료**만 올립니다. 앱이 개인정보나 AI를 쓰면 **있는 그대로** 알려 줍니다.",
       more: "서약 내용 자세히 보기",
     },
   } satisfies Record<ConsentKind, { title: string; body: string; more: string }>,
