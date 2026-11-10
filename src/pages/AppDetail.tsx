@@ -3,6 +3,8 @@ import { Link, useNavigate, useLocation, useParams } from "react-router-dom"
 import {
   ArrowLeft,
   Download,
+  FileText,
+  LoaderCircle,
   ExternalLink,
   Eye,
   Heart,
@@ -56,6 +58,7 @@ export function AppDetail() {
   const [app, setApp] = useState<App | undefined>()
   const [files, setFiles] = useState<AppFile[]>([]) // 자료 파일(51). 잠긴 자료면 빈 배열
   const [fileError, setFileError] = useState("")
+  const [downloadingFile, setDownloadingFile] = useState<string | null>(null)
   usePageTitle(app ? displayTitle(app) : undefined)
   const [owner, setOwner] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
@@ -328,33 +331,6 @@ export function AppDetail() {
           </a>
         )}
 
-        {/* 자료 파일 — 누를 때 1분짜리 서명 주소를 받아 원래 이름으로 내려받는다. 웹앱 주소가 없으면 첫 파일이 주 버튼 */}
-        {files.map((file, i) => (
-          <button
-            key={file.path}
-            type="button"
-            onClick={async () => {
-              setFileError("")
-              try {
-                window.location.href = await appFileDownloadUrl(file)
-              } catch {
-                setFileError("파일을 받지 못했어요. 잠시 뒤 다시 시도해 주세요.")
-              }
-            }}
-            title={`${file.name} 받기`}
-            className={
-              app.appUrl || i > 0
-                ? "inline-flex max-w-full items-center gap-2 rounded-md border bg-card px-4 py-2 text-sm font-medium hover:bg-accent"
-                : "inline-flex max-w-full items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
-            }
-          >
-            <Download className="size-4 shrink-0" aria-hidden />
-            <span className="max-w-56 truncate">{files.length > 1 ? file.name : "자료 받기"}</span>
-            <span className="shrink-0 text-xs font-normal opacity-80">{fileSizeLabel(file.size)}</span>
-          </button>
-        ))}
-        {fileError && <p role="alert" className="order-last basis-full text-sm text-destructive">{fileError}</p>}
-
         {/* 수정 — 작성자 본인·관리자만 */}
         {canEdit && (
           <Link
@@ -426,6 +402,55 @@ export function AppDetail() {
           {shareCopied ? "링크 복사됨" : "공유"}
         </button>
       </div>
+
+      {/* 자료 파일 — 카드 전체를 누르면 1분짜리 서명 주소로 내려받는다. */}
+      {!app.locked && files.length > 0 && (
+        <section className="mt-6" aria-labelledby="app-files-heading">
+          <h2 id="app-files-heading" className="mb-3 text-sm font-semibold">첨부파일</h2>
+          <ul className="grid gap-3 sm:grid-cols-2">
+            {files.map((file) => (
+              <li key={file.path} className="min-w-0">
+                <button
+                  type="button"
+                  disabled={downloadingFile !== null}
+                  aria-label={`${file.name} 다운로드`}
+                  aria-busy={downloadingFile === file.path}
+                  title={file.name}
+                  onClick={async () => {
+                    setFileError("")
+                    setDownloadingFile(file.path)
+                    try {
+                      window.location.href = await appFileDownloadUrl(file)
+                    } catch {
+                      setFileError("파일을 받지 못했어요. 잠시 뒤 다시 시도해 주세요.")
+                    } finally {
+                      setDownloadingFile(null)
+                    }
+                  }}
+                  className="group flex h-full w-full flex-col gap-3 rounded-lg border border-border bg-card p-4 text-left transition-colors hover:border-primary hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-wait disabled:opacity-60"
+                >
+                  <span className="flex w-full items-start gap-3">
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-brand-soft text-primary">
+                      <FileText className="size-5" aria-hidden />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="line-clamp-2 break-all text-sm font-semibold">{file.name}</span>
+                      <span className="mt-1 block text-xs text-muted-foreground">
+                        {file.name.includes(".") ? file.name.split(".").pop()?.toUpperCase() : "파일"} · {fileSizeLabel(file.size)}
+                      </span>
+                    </span>
+                  </span>
+                  <span className="mt-auto inline-flex items-center gap-1.5 self-end text-sm font-semibold text-primary">
+                    {downloadingFile === file.path ? <LoaderCircle className="size-4 motion-safe:animate-spin" aria-hidden /> : <Download className="size-4" aria-hidden />}
+                    {downloadingFile === file.path ? "준비 중" : "다운로드"}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          {fileError && <p role="alert" className="mt-2 text-sm text-destructive">{fileError}</p>}
+        </section>
+      )}
 
       {/* 잠금 안내 — 교사 전용인데 볼 권한 없음 (본문·댓글 대신) */}
       {app.locked ? (
