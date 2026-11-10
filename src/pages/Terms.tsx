@@ -1,8 +1,10 @@
 import { site } from "@/config/site"
+import { consents } from "@/config/consents"
 import { LegalPage, type LegalSection } from "@/components/legal/LegalPage"
 
 /**
- * 이용약관(/terms). 운영 주체·성격·시행일은 config(site.org)에서.
+ * 이용약관(/terms). 운영 주체·성격은 config(site.org), 시행일은 동의받는 문서 버전(config/consents)에서.
+ * 본문을 고치면 consents.terms.version 을 올리고 새 SQL 로 DB 에 사본을 넣는다(66_consents.sql).
  * ⚠️ 운영자 확인용 표준 초안 — 운영 형태가 바뀌면 본문도 함께 갱신할 것.
  */
 export function Terms() {
@@ -84,6 +86,6 @@ export function Terms() {
   ]
 
   return (
-    <LegalPage title="이용약관" effectiveDate={org.effectiveDate} sections={sections} />
+    <LegalPage title="이용약관" effectiveDate={consents.terms.version} sections={sections} />
   )
 }

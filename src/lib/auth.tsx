@@ -13,6 +13,8 @@ import { VerifiedCelebrationDialog } from "@/components/verify/VerifiedCelebrati
 import { NicknameOnboardingDialog } from "@/components/auth/NicknameOnboardingDialog"
 import { SchoolOnboardingDialog } from "@/components/auth/SchoolOnboardingDialog"
 import { needsSchool } from "@/lib/account"
+import { ConsentDialog } from "@/components/auth/ConsentDialog"
+import { getPendingConsents, recordConsents, shownConsentVersions, type ConsentItem } from "@/lib/consents"
 
 /**
  * 로그인 세션 토대 (2단계 묶음 A-1).
@@ -52,6 +54,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     initial: string
   } | null>(null)
 
+  // 아직 동의하지 않은 약관·서약이 있는 사용자에게 띄울 창(66). 닉네임 창보다 먼저.
+  const [consentAsk, setConsentAsk] = useState<{
+    uid: string
+    profile: Profile
+    pending: ConsentItem[]
+  } | null>(null)
+
   // 소속 학교가 없는 사용자에게 띄울 창(52). 닉네임 창 다음 차례.
   const [schoolAsk, setSchoolAsk] = useState<string | null>(null)
 
@@ -64,22 +73,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   /**
-   * 로그인 직후 처리: 닉네임 미확정이면 온보딩 먼저(이름 있어도 항상),
-   * 그다음 소속 학교가 없으면 묻고, 끝나면 교사인증 축하 체크.
+   * 로그인 직후 처리: 동의하지 않은 약관·서약이 있으면 먼저 묻고(66),
+   * 닉네임 미확정이면 온보딩(이름 있어도 항상), 그다음 소속 학교가 없으면 묻고, 끝나면 교사인증 축하 체크.
    */
   const runPostLogin = useCallback(
-    async (uid: string) => {
+    async (user: User) => {
+      const uid = user.id
       const profile = await getProfile(uid)
       setProfile(profile ?? null) // 헤더·/admin 게이트가 공유(role 포함)
       if (!profile) return
-      if (profile.nicknameSet === false) {
-        setOnboarding({ userId: uid, initial: profile.nickname ?? "" })
-        return // 닉네임 확정 후 학교·축하는 onComplete 에서 이어서
+
+      let pending = await getPendingConsents()
+      // 가입 화면에서 이미 같은 버전에 동의했으면(계정에 담아 둔 값) 묻지 않고 기록한다
+      const agreed = (user.user_metadata?.consents ?? {}) as Record<string, string>
+      if (pending.length > 0 && pending.every((p) => agreed[p.kind] === p.version)) {
+        pending = await recordConsents(pending, "signup").then(
+          () => [],
+          () => pending,
+        )
       }
-      askSchoolOrCelebrate(uid)
+      if (pending.length > 0) {
+        setConsentAsk({ uid, profile, pending })
+        return // 동의(또는 닫기) 뒤 닉네임·학교·축하를 이어서
+      }
+      askNicknameOrNext(uid, profile)
     },
     [maybeCelebrate],
   )
+
+  /** 닉네임 미확정이면 닉네임 창, 아니면 학교·축하로 */
+  function askNicknameOrNext(uid: string, profile: Profile) {
+    if (profile.nicknameSet === false) {
+      setOnboarding({ userId: uid, initial: profile.nickname ?? "" })
+      return // 닉네임 확정 후 학교·축하는 onComplete 에서 이어서
+    }
+    askSchoolOrCelebrate(uid)
+  }
 
   /** 학교가 없으면 학교 창, 있으면 교사인증 축하 체크 */
   async function askSchoolOrCelebrate(uid: string) {
@@ -122,7 +151,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(data.session)
       setLoading(false)
       if (data.session?.user.id) {
-        runPostLogin(data.session.user.id)
+        runPostLogin(data.session.user)
       } else {
         setProfile(null)
       }
@@ -134,7 +163,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession)
       if (nextSession?.user.id) {
-        runPostLogin(nextSession.user.id)
+        runPostLogin(nextSession.user)
       } else {
         setProfile(null)
       }
@@ -156,7 +185,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const signUpWithPassword = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({ email, password })
+    // 가입 화면에서 동의한 문서 버전을 계정에 담아 둔다 → 첫 로그인 때 동의 기록으로 옮긴다(66)
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { consents: shownConsentVersions() } },
+    })
     if (error) throw error
   }
 
@@ -195,6 +229,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         open={showCelebration}
         onClose={handleCloseCelebration}
       />
+      {consentAsk && (
+        <ConsentDialog
+          pending={consentAsk.pending}
+          onComplete={() => {
+            setConsentAsk(null)
+            askNicknameOrNext(consentAsk.uid, consentAsk.profile)
+          }}
+          onClose={() => {
+            // 동의 없이 닫음 → 다음 로그인에 다시 묻는다
+            setConsentAsk(null)
+            askNicknameOrNext(consentAsk.uid, consentAsk.profile)
+          }}
+        />
+      )}
       {onboarding && (
         <NicknameOnboardingDialog
           userId={onboarding.userId}

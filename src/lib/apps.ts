@@ -625,6 +625,9 @@ export async function createApp(input: AppInput): Promise<App> {
     .select()
     .single()
 
+  // 42501 = 등록 권한 없음(RLS): 교사 인증이 없거나 자료 등록 준수 서약에 동의하지 않음(66)
+  if (error?.code === "42501")
+    throw new Error("자료를 등록할 권한이 없습니다. 교사 인증과 자료 등록 준수 서약 동의를 확인해 주세요.")
   if (error) throw error
   return mapRow(data as AppRow)
 }

@@ -2,6 +2,8 @@ import { useState, type FormEvent } from "react"
 import { Link, useNavigate, useLocation } from "react-router-dom"
 import { Eye, EyeOff } from "lucide-react"
 import { useAuth } from "@/lib/auth"
+import { ConsentChecks } from "@/components/auth/ConsentChecks"
+import { CONSENT_KINDS, type ConsentKind } from "@/config/consents"
 
 /**
  * 로그인 / 가입 공용 폼 (2단계 묶음 A-2).
@@ -120,6 +122,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
+  const [agreed, setAgreed] = useState<ConsentKind[]>([])
 
   const isLogin = mode === "login"
   const title = isLogin ? "로그인" : "회원가입"
@@ -134,6 +137,10 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
     if (!isLogin && password !== passwordConfirm) {
       setError("비밀번호가 일치하지 않습니다.")
+      return
+    }
+    if (!isLogin && agreed.length < CONSENT_KINDS.length) {
+      setError("필수 항목에 모두 동의해 주세요.")
       return
     }
 
@@ -239,6 +246,12 @@ export function AuthForm({ mode }: { mode: Mode }) {
             onChange={setPasswordConfirm}
             autoComplete="new-password"
           />
+        )}
+
+        {!isLogin && (
+          <div className="border-t border-border pt-4">
+            <ConsentChecks kinds={CONSENT_KINDS} checked={agreed} onChange={setAgreed} disabled={submitting} />
+          </div>
         )}
 
         {error && (
