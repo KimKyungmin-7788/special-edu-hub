@@ -354,9 +354,11 @@ export async function uploadAppFile(file: File): Promise<AppFile> {
   if (file.size > APP_FILE_MAX_BYTES) throw new Error("파일은 10MB 이하만 올릴 수 있습니다.")
 
   const path = `${uid}/${crypto.randomUUID()}.${ext}`
+  // SDK는 File 업로드 시 옵션보다 파일 자체의 MIME을 사용하므로 함께 맞춘다.
+  const uploadFile = new File([file], file.name, { type: contentType })
   const { error } = await supabase.storage
     .from(APP_FILE_BUCKET)
-    .upload(path, file, { contentType, upsert: false })
+    .upload(path, uploadFile, { contentType, upsert: false })
   if (error) throw error
   return { path, name: file.name.slice(0, 200), size: file.size }
 }
