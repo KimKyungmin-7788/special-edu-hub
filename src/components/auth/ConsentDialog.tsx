@@ -55,7 +55,7 @@ export function ConsentDialog({
         ref={scrollRef}
         onScroll={checkRead}
         onSubmit={handleSubmit}
-        className="flex max-h-[88vh] flex-col overflow-y-auto p-6 sm:p-8"
+        className="flex max-h-[88vh] flex-col overflow-y-auto break-keep p-6 sm:p-8"
       >
         <h2 id="consent-title" className="text-2xl font-bold tracking-tight">
           {letter.greeting}
@@ -100,7 +100,7 @@ export function ConsentDialog({
               {letter.noteTitle}
             </p>
             <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-              {pledge.notice} {pledge.recommend}
+              <Emphasis text={letter.noteBody} /> {pledge.recommend}
             </p>
             {pledge.details && (
               <More label={letter.noteMore}>

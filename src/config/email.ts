@@ -15,6 +15,7 @@ export type EmailKind =
   | "staff_new_request"
   | "staff_app_held"
   | "app_review"
+  | "app_held"
 
 export type EmailInput = {
   nickname: string
@@ -155,6 +156,25 @@ const templates: Record<EmailKind, (i: EmailInput) => EmailContent> = {
       `발견한 내용: ${i.data.reason ?? ""}`,
       "",
       `확인하기: ${link("/admin?tab=safety")}`,
+    ].join("\n"),
+  }),
+
+  // 자동 점검에서 걸려 공개가 보류됐을 때(70) — 작성자에게
+  app_held: (i) => ({
+    subject: `[${site.name}] 등록한 자료를 확인해 주세요 — ${i.data.title ?? ""}`,
+    text: [
+      hello(i.nickname),
+      "",
+      `등록하신 자료 「${i.data.title ?? ""}」를 누리집이 자동으로 점검했는데, 확인이 필요한 항목이 있어 공개를 잠시 멈췄습니다.`,
+      "",
+      `발견한 내용: ${i.data.reason ?? ""}`,
+      "",
+      "앱을 고친 뒤 자료 화면의 ‘다시 점검’을 누르면 바로 다시 확인합니다. 문제가 없으면 곧바로 공개됩니다.",
+      "잘못 걸린 것 같다면 이 메일에 답장해 주세요. 운영자가 직접 확인하겠습니다.",
+      "",
+      `자료 보기: ${link(`/app/${i.data.appId ?? ""}`)}`,
+      "",
+      devNote(i.replyTo),
     ].join("\n"),
   }),
 

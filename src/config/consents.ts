@@ -81,7 +81,7 @@ export const consentLetter = {
   promises: {
     terms: {
       title: "서로의 아이디어와 노력을 존중합니다",
-      body: "다른 선생님의 자료와 글을 아끼고, 다른 곳에 쓰거나 공유할 때는 **출처를 밝힙니다.**",
+      body: "다른 선생님의 자료와 글을 아끼고, 다른 곳에 쓰거나 공유할 때는 **출처와 제작자를 밝힙니다.**",
       more: "",
     },
     privacy: {
@@ -96,8 +96,10 @@ export const consentLetter = {
     },
   } satisfies Record<ConsentKind, { title: string; body: string; more: string }>,
   noteTitle: "누리집의 점검은 최소한입니다",
+  noteBody:
+    "누리집 자체 검증 시스템으로 선생님들의 자료를 **최소한으로 확인**합니다. 여기에서 치명적인 문제가 발견되면 **공개가 중지**되고, 등록한 선생님께 **조치를 위한 메시지**를 보내 드립니다.",
   noteMore: "점검 방식 자세히 보기",
-  signature: "운영진 드림",
+  signature: "누리집 운영자 드림",
   agree: "{count} 약속에 모두 동의합니다",
   submit: "함께할게요",
   /** 끝까지 내려 읽기 전 버튼 아래 안내 */
