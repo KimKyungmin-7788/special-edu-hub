@@ -38,6 +38,8 @@ import { ThumbnailCropper } from "@/components/app/ThumbnailCropper"
 import { StandardsFinderModal } from "@/components/app/StandardsFinderModal"
 import { SelectedStandards } from "@/components/app/SelectedStandards"
 import { StandardsManualModal } from "@/components/app/StandardsManualModal"
+import { SafetyFields } from "@/components/app/SafetyFields"
+import { EMPTY_SAFETY, getSafety, isEmptySafety, sameSafety, saveSafety, type Safety } from "@/lib/safety"
 import {
   CharCounter,
   FormField,
@@ -148,6 +150,17 @@ export function WriteForm({
       getAppFiles(app.id).then((list) => {
         setSavedFiles(list)
         setFiles((cur) => [...list, ...cur.filter((f) => f instanceof File)]) // 불러오기 전에 고른 파일은 살린다
+      })
+  }, [app])
+  // 안전 확인 정보(67, 선택): savedSafety = 이미 저장된 것, safety = 칸에 보이는 값. 바뀐 경우에만 새 줄로 저장한다.
+  const [savedSafety, setSavedSafety] = useState<Safety>(EMPTY_SAFETY)
+  const [safety, setSafety] = useState<Safety>(EMPTY_SAFETY)
+  useEffect(() => {
+    if (app)
+      getSafety(app.id).then((v) => {
+        if (!v) return
+        setSavedSafety(v)
+        setSafety(v)
       })
   }, [app])
   const [summary, setSummary] = useState(app?.summary ?? "")
@@ -309,6 +322,9 @@ export function WriteForm({
           .filter((f) => !nextFiles.some((n) => n.path === f.path))
           .forEach((f) => removeAppFile(f.path).catch(() => {}))
       if (previewChanged && oldPreview) removePreview(oldPreview).catch(() => {})
+      // 안전 확인 정보는 선택 입력 — 저장에 실패해도 자료 등록은 끝난 것으로 둔다
+      if (appUrl.trim() && !sameSafety(safety, savedSafety) && !(isEmptySafety(safety) && isEmptySafety(savedSafety)))
+        await saveSafety(saved.id, safety).catch((e) => console.error("[safety] 저장 실패:", e))
       // replace: 폼 페이지를 히스토리에서 치워, 상세에서 "목록으로"가 폼으로 되돌아가지 않게.
       navigate(`/app/${saved.id}`, { replace: true })
     } catch (err) {
@@ -628,6 +644,9 @@ export function WriteForm({
         <AppPreviewField value={preview} onChange={setPreview} disabled={submitting} />
       </FormPanel>
       )}
+
+      {/* ── 안전 확인 정보(선택) — 앱 링크가 있을 때만 ── */}
+      {appUrl.trim() !== "" && <SafetyFields value={safety} onChange={setSafety} disabled={submitting} />}
 
       {/* ── 6. 공개 범위 ── */}
       <FormPanel

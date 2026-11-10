@@ -25,6 +25,8 @@ import { AppThumbnail } from "@/components/app/AppThumbnail"
 import { RichTextViewer } from "@/components/app/RichTextViewer"
 import { StandardsInfoBlock } from "@/components/app/StandardsInfoBlock"
 import { DetailSection } from "@/components/app/DetailSection"
+import { SafetyCard } from "@/components/app/SafetyCard"
+import { getSafety, isEmptySafety, type Safety } from "@/lib/safety"
 import { CommentSection } from "@/components/comment/CommentSection"
 import { PracticeRow } from "@/components/practice/PracticeCard"
 import { getPracticesByApp, type Practice } from "@/lib/practices"
@@ -57,6 +59,7 @@ export function AppDetail() {
   const { user, isAdmin } = useAuth()
   const [app, setApp] = useState<App | undefined>()
   const [files, setFiles] = useState<AppFile[]>([]) // 자료 파일(51). 잠긴 자료면 빈 배열
+  const [safety, setSafety] = useState<Safety | null>(null) // 안전 확인 정보(67). 없으면 null
   const [fileError, setFileError] = useState("")
   const [downloadingFile, setDownloadingFile] = useState<string | null>(null)
   usePageTitle(app ? displayTitle(app) : undefined)
@@ -87,6 +90,10 @@ export function AppDetail() {
     setOwner(null)
     setPractices([])
     setFiles([])
+    setSafety(null)
+    getSafety(id ?? "").then((v) => {
+      if (active) setSafety(v)
+    })
     getAppFiles(id ?? "").then((list) => {
       if (active) setFiles(list)
     })
@@ -402,6 +409,13 @@ export function AppDetail() {
           {shareCopied ? "링크 복사됨" : "공유"}
         </button>
       </div>
+
+      {/* 안전 확인 정보 — 등록 교사가 입력한 자료만 */}
+      {!app.locked && app.appUrl && safety && !isEmptySafety(safety) && (
+        <div className="mt-6">
+          <SafetyCard safety={safety} />
+        </div>
+      )}
 
       {/* 자료 파일 — 카드 전체를 누르면 1분짜리 서명 주소로 내려받는다. */}
       {!app.locked && files.length > 0 && (
