@@ -102,13 +102,17 @@ function CommentBody({ comment, onEdit }: { comment: Comment; onEdit?: () => voi
   )
 }
 
-/** 첨부 사진 썸네일. 누르면 원본을 새 탭으로 연다. */
+/**
+ * 첨부 사진. 자르지 않고 전체 모양 그대로 보여 준다(누르지 않아도 내용이 보이게).
+ * 한 장이면 크게, 여러 장이면 조금 작게. 누르면 원본을 새 탭으로 연다.
+ */
 function CommentImages({ comment }: { comment: Comment }) {
   if (comment.images.length === 0) return null
+  const single = comment.images.length === 1
   return (
-    <ul className="mt-2 flex flex-wrap gap-2">
+    <ul className="mt-2 flex flex-wrap items-start gap-2">
       {comment.images.map((img, i) => (
-        <li key={img.path}>
+        <li key={img.path} className="max-w-full">
           <a
             href={img.url}
             target="_blank"
@@ -119,7 +123,10 @@ function CommentImages({ comment }: { comment: Comment }) {
               src={img.url}
               alt={`첨부 사진 ${i + 1}`}
               loading="lazy"
-              className="size-24 object-cover sm:size-28"
+              className={cn(
+                "block h-auto w-auto max-w-full bg-muted",
+                single ? "max-h-72 sm:max-h-96" : "max-h-48 sm:max-h-60",
+              )}
             />
           </a>
         </li>
