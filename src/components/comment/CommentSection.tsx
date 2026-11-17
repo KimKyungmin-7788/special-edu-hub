@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useState } from "react"
 import { Link } from "react-router-dom"
-import { Flag, Send, ThumbsUp } from "lucide-react"
+import { ChevronLeft, ChevronRight, Flag, Send, ThumbsUp } from "lucide-react"
+import { Modal } from "@/components/ui/Modal"
 import { ProfileTrigger } from "@/components/profile/ProfileTrigger"
 import { ReportDialog } from "@/components/report/ReportDialog"
 import { CommentComposer, type ComposerImages } from "@/components/comment/CommentComposer"
@@ -16,13 +17,14 @@ import {
   deleteComment,
   toggleCommentLike,
   type Comment,
+  type CommentImage,
   type CommentTarget,
 } from "@/lib/comments"
 
 /**
  * 앱·사례 상세 댓글 영역 (PRD 4단계 묶음 C-2, 트랙 E 답글·멘션·좋아요·수정).
  * - 머리줄: 아바타 · @닉네임(프로필) · 쪽지 아이콘(프로필 창의 쪽지 보내기) · 시각 · (수정됨).
- * - 본문: 멘션은 프로필로 연결. 본인 글이면 끝에 '수정'. 첨부 사진은 본문 아래 썸네일(누르면 새 탭).
+ * - 본문: 멘션은 프로필로 연결. 본인 글이면 끝에 '수정'. 첨부 사진은 본문 아래(누르면 크게 보기 창).
  * - 사진 첨부는 인증교사만(46_comment_images.sql).
  * - 아래줄: 좋아요(토글) · 답글 · [본인/운영진] 삭제 · [남의 글] 오른쪽 끝 신고 깃발.
  * - 답글: 1단계. 답글의 '답글' → 같은 묶음에 '@닉네임' 을 붙여 단다. 왼쪽 세로줄로 묶는다.
@@ -104,20 +106,26 @@ function CommentBody({ comment, onEdit }: { comment: Comment; onEdit?: () => voi
 
 /**
  * 첨부 사진. 자르지 않고 전체 모양 그대로 보여 준다(누르지 않아도 내용이 보이게).
- * 한 장이면 크게, 여러 장이면 조금 작게. 누르면 원본을 새 탭으로 연다.
+ * 한 장이면 크게, 여러 장이면 조금 작게. 누르면 크게 보기 창(ImageViewer)이 열린다.
  */
-function CommentImages({ comment }: { comment: Comment }) {
+function CommentImages({
+  comment,
+  onOpen,
+}: {
+  comment: Comment
+  onOpen: (images: CommentImage[], index: number) => void
+}) {
   if (comment.images.length === 0) return null
   const single = comment.images.length === 1
   return (
     <ul className="mt-2 flex flex-wrap items-start gap-2">
       {comment.images.map((img, i) => (
         <li key={img.path} className="max-w-full">
-          <a
-            href={img.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block overflow-hidden rounded-md border border-border hover:opacity-90"
+          <button
+            type="button"
+            onClick={() => onOpen(comment.images, i)}
+            aria-label={`첨부 사진 ${i + 1} 크게 보기`}
+            className="block max-w-full cursor-zoom-in overflow-hidden rounded-md border border-border hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <img
               src={img.url}
@@ -128,10 +136,72 @@ function CommentImages({ comment }: { comment: Comment }) {
                 single ? "max-h-72 sm:max-h-96" : "max-h-48 sm:max-h-60",
               )}
             />
-          </a>
+          </button>
         </li>
       ))}
     </ul>
+  )
+}
+
+/** 사진 크게 보기 창. 여러 장이면 이전·다음(←·→ 키도 됨). ESC·바깥 누르기로 닫는다. */
+function ImageViewer({
+  viewer,
+  onChange,
+  onClose,
+}: {
+  viewer: { images: CommentImage[]; index: number } | null
+  onChange: (index: number) => void
+  onClose: () => void
+}) {
+  const count = viewer?.images.length ?? 0
+  const index = viewer?.index ?? 0
+
+  useEffect(() => {
+    if (!viewer || count < 2) return
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "ArrowLeft") onChange((index - 1 + count) % count)
+      else if (e.key === "ArrowRight") onChange((index + 1) % count)
+    }
+    document.addEventListener("keydown", onKey)
+    return () => document.removeEventListener("keydown", onKey)
+  }, [viewer, count, index, onChange])
+
+  const img = viewer?.images[index]
+  return (
+    <Modal open={!!img} onClose={onClose} className="max-w-5xl p-3 pt-12">
+      {img && (
+        <div className="flex flex-col items-center gap-3">
+          <img
+            src={img.url}
+            alt={`첨부 사진 ${index + 1}`}
+            className="block h-auto max-h-[78vh] w-auto max-w-full rounded-md object-contain"
+          />
+          {count > 1 && (
+            <div className="flex items-center gap-3 text-sm">
+              <button
+                type="button"
+                onClick={() => onChange((index - 1 + count) % count)}
+                aria-label="이전 사진"
+                className="inline-flex size-9 items-center justify-center rounded-md border border-border hover:bg-accent"
+              >
+                <ChevronLeft className="size-4" aria-hidden />
+              </button>
+              <span className="tabular-nums text-muted-foreground">
+                {index + 1} / {count}
+              </span>
+              <button
+                type="button"
+                onClick={() => onChange((index + 1) % count)}
+                aria-label="다음 사진"
+                className="inline-flex size-9 items-center justify-center rounded-md border border-border hover:bg-accent"
+              >
+                <ChevronRight className="size-4" aria-hidden />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </Modal>
   )
 }
 
@@ -152,6 +222,7 @@ export function CommentSection({ target, boardCanWrite }: { target: CommentTarge
   const [editingId, setEditingId] = useState<string | null>(null)
   const [likingId, setLikingId] = useState<string | null>(null)
   const [visible, setVisible] = useState(PAGE_SIZE)
+  const [viewer, setViewer] = useState<{ images: CommentImage[]; index: number } | null>(null)
 
   useEffect(() => {
     let active = true
@@ -330,7 +401,7 @@ export function CommentSection({ target, boardCanWrite }: { target: CommentTarge
                     : undefined
                 }
               />
-              <CommentImages comment={c} />
+              <CommentImages comment={c} onOpen={(images, index) => setViewer({ images, index })} />
             </>
           )}
 
@@ -492,6 +563,12 @@ export function CommentSection({ target, boardCanWrite }: { target: CommentTarge
           </>
         )}
       </div>
+
+      <ImageViewer
+        viewer={viewer}
+        onChange={(index) => setViewer((v) => (v ? { ...v, index } : v))}
+        onClose={() => setViewer(null)}
+      />
 
       {/* 댓글 신고 — ReportDialog 재사용(범용). 제출은 reportComment RPC. */}
       <ReportDialog
