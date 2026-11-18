@@ -22,6 +22,16 @@ const MIN_INTERVAL_MS = 15_000
 
 const TRIGGERS = ["register", "edit", "manual", "staff"]
 
+/** 점검 규칙 → KERIS 「공교육 에듀테크 개인정보보호 가이드」(2026) 필수기준 번호 (src/config/criteria.ts 와 같은 번호) */
+const RULE_CRITERIA: Record<string, string> = {
+  secret: "2-1 안전조치",
+  google_api_key: "2-1 안전조치",
+  insecure: "2-1 안전조치",
+  no_csp: "2-1 안전조치",
+  device_permission: "1-1 최소 수집",
+  declared_storage_mismatch: "1-1 최소 수집",
+}
+
 const BACKEND_NAMES: Record<string, string> = {
   supabase: "Supabase",
   firebase: "Firebase",
@@ -100,6 +110,12 @@ export async function POST(request: Request): Promise<Response> {
         `저장한다면 안전 확인 정보를 '서버에 저장'으로 고치고, 저장하지 않는다면 그 부분을 빼 주세요.`,
     })
     result.status = "blocked"
+  }
+
+  // KERIS 필수기준 번호를 앞에 붙인다 — 상세 안내·운영진 탭·보류 메일이 이 문장을 그대로 쓴다
+  for (const f of result.findings) {
+    const tag = RULE_CRITERIA[f.rule] ?? (f.rule.startsWith("secret_") ? RULE_CRITERIA.secret : undefined)
+    if (tag) f.evidence = `[${tag}] ${f.evidence}`
   }
 
   const { data: recorded, error } = await supabase.rpc("record_app_check", {

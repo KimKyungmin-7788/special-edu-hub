@@ -28,6 +28,7 @@ import { DetailSection } from "@/components/app/DetailSection"
 import { SafetyCard } from "@/components/app/SafetyCard"
 import { VerifyMarkDetail } from "@/components/app/VerifyMark"
 import { ReviewNotice } from "@/components/app/ReviewNotice"
+import { CheckReport } from "@/components/app/CheckReport"
 import { getSafety, isEmptySafety, type Safety } from "@/lib/safety"
 import { CommentSection } from "@/components/comment/CommentSection"
 import { PracticeRow } from "@/components/practice/PracticeCard"
@@ -429,6 +430,13 @@ export function AppDetail() {
       {!app.locked && app.appUrl && safety && !isEmptySafety(safety) && (
         <div className="mt-6">
           <SafetyCard safety={safety} />
+        </div>
+      )}
+
+      {/* 자동 점검 결과(KERIS 필수기준별) — 작성자·운영진에게만 */}
+      {canEdit && app.appUrl && (
+        <div className="mt-6">
+          <CheckReport appId={app.id} refreshKey={`${app.reviewStatus}-${app.verificationStatus}`} />
         </div>
       )}
 

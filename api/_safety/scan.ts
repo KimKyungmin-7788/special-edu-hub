@@ -16,7 +16,7 @@ import { isIP } from "node:net"
  * 서버가 남이 준 주소를 여는 일이므로(SSRF) https·공인 주소만 열고, 이동 횟수·크기·시간을 제한한다.
  */
 
-export const SCANNER_VERSION = "2026-11-11.1"
+export const SCANNER_VERSION = "2026-11-18.1"
 
 export type FindingLevel = "block" | "warn"
 export type Finding = { rule: string; level: FindingLevel; evidence: string }
@@ -35,6 +35,8 @@ export type ScanResult = {
     hasCsp: boolean
     hasPrivacyLink: boolean
     backendHosts: string[]
+    /** 외부 AI 서비스 호출 주소 — 제3자 제공(KERIS 필수기준 5-2) 안내용 */
+    aiHosts: string[]
     devicePermissions: string[]
   }
   scannerVersion: string
@@ -58,6 +60,13 @@ const BACKEND_HOST_PATTERNS: [string, RegExp][] = [
   ["supabase", /[a-z0-9]{15,}\.supabase\.co/],
   ["firebase", /firebaseio\.com|firestore\.googleapis\.com|firebasestorage\.googleapis\.com/],
   ["google-apps-script", /script\.google\.com\/macros/],
+]
+
+/** 앱에서 바로 부르는 외부 AI 서비스 — 학생 입력이 넘어가면 제3자 제공에 해당할 수 있다 */
+const AI_HOST_PATTERNS: [string, RegExp][] = [
+  ["openai", /api\.openai\.com/],
+  ["gemini", /generativelanguage\.googleapis\.com/],
+  ["claude", /api\.anthropic\.com/],
 ]
 
 const DEVICE_PATTERNS: [string, RegExp][] = [
@@ -192,7 +201,7 @@ export async function scanApp(rawUrl: string): Promise<ScanResult> {
     finalUrl: rawUrl,
     codeHash: null,
     fileCount: 0,
-    facts: { hasCsp: false, hasPrivacyLink: false, backendHosts: [], devicePermissions: [] },
+    facts: { hasCsp: false, hasPrivacyLink: false, backendHosts: [], aiHosts: [], devicePermissions: [] },
     scannerVersion: SCANNER_VERSION,
   }
   const block = (rule: string, evidence: string): ScanResult => {
@@ -270,6 +279,8 @@ export async function scanApp(rawUrl: string): Promise<ScanResult> {
       }
       for (const [name, re] of BACKEND_HOST_PATTERNS)
         if (re.test(text) && !result.facts.backendHosts.includes(name)) result.facts.backendHosts.push(name)
+      for (const [name, re] of AI_HOST_PATTERNS)
+        if (re.test(text) && !result.facts.aiHosts.includes(name)) result.facts.aiHosts.push(name)
       for (const [name, re] of DEVICE_PATTERNS)
         if (re.test(text) && !result.facts.devicePermissions.includes(name)) result.facts.devicePermissions.push(name)
     }

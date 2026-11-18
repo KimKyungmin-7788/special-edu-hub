@@ -1,4 +1,5 @@
 import { consents, type ConsentKind } from "@/config/consents"
+import { Emphasis } from "@/components/ui/Emphasis"
 
 /**
  * 동의 체크 목록 — 가입 화면과 로그인 뒤 동의 창이 함께 쓴다.
@@ -63,7 +64,10 @@ export function ConsentChecks({
                     <summary className="cursor-pointer underline">자세히 보기</summary>
                     <ul className="mt-1.5 list-disc space-y-1 pl-4">
                       {doc.details.map((d) => (
-                        <li key={d}>{d}</li>
+                        <li key={d}>
+                          {d.includes(": ") && <span className="font-semibold text-foreground">{d.slice(0, d.indexOf(": ") + 1)} </span>}
+                          <Emphasis text={d.includes(": ") ? d.slice(d.indexOf(": ") + 2) : d} />
+                        </li>
                       ))}
                     </ul>
                   </details>

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react"
 import { Check, Info } from "lucide-react"
 import { Modal } from "@/components/ui/Modal"
+import { Emphasis } from "@/components/ui/Emphasis"
 import { recordConsents, type ConsentItem } from "@/lib/consents"
 import { consentLetter as letter, consents } from "@/config/consents"
 
@@ -152,23 +153,6 @@ export function ConsentDialog({
   )
 }
 
-/** **낱말** 로 감싼 부분을 연두 바탕 강조로 그린다 */
-function Emphasis({ text }: { text: string }) {
-  return (
-    <>
-      {text.split("**").map((part, i) =>
-        i % 2 === 1 ? (
-          <strong key={i} className="rounded-sm bg-brand-muted px-0.5 font-semibold text-foreground">
-            {part}
-          </strong>
-        ) : (
-          part
-        ),
-      )}
-    </>
-  )
-}
-
 /**
  * 정식 문서의 항목들을 읽기 쉽게 — "이름: 내용" 꼴은 이름을 굵게 하고 내용을 쉼표마다 한 줄씩,
  * 문장 꼴은 체크 표시와 함께 한 줄씩. 글자는 문서 그대로다.
@@ -182,15 +166,21 @@ function DocItems({ items }: { items: string[] }) {
           return (
             <li key={item} className="flex gap-2">
               <Check className="mt-0.5 size-3.5 shrink-0 text-primary" aria-hidden />
-              <span>{item}</span>
+              <span>
+                <Emphasis text={item} />
+              </span>
             </li>
           )
         return (
           <li key={item}>
-            <p className="font-semibold">{item.slice(0, cut)}</p>
+            <p className="font-semibold">
+              <Emphasis text={item.slice(0, cut)} />
+            </p>
             <ul className="mt-0.5 text-muted-foreground">
               {item.slice(cut + 2).split(", ").map((part) => (
-                <li key={part}>· {part}</li>
+                <li key={part}>
+                  · <Emphasis text={part} />
+                </li>
               ))}
             </ul>
           </li>

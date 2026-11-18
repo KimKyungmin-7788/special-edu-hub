@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import { verifyText } from "@/config/safety"
 import { VerifyMark } from "@/components/app/VerifyMark"
+import { CheckReport } from "@/components/app/CheckReport"
 import { getAllApps, type App } from "@/lib/apps"
 import { getAppChecks, requestSafetyCheck, reviewApp, type AppCheck, type ReviewAction } from "@/lib/safety"
 
@@ -170,6 +171,15 @@ function QueueItem({ app, onChanged }: { app: App; onChanged: () => void }) {
         )}
         <Action onClick={() => setShowHistory((v) => !v)} disabled={false}>점검 이력</Action>
       </div>
+
+      {latest && (
+        <details className="mt-2">
+          <summary className="cursor-pointer text-sm text-muted-foreground underline">기준별 결과</summary>
+          <div className="mt-2 rounded-md bg-surface px-3 py-2">
+            <CheckReport appId={app.id} refreshKey={latest.createdAt} bare />
+          </div>
+        </details>
+      )}
 
       {showHistory && (
         <ul className="mt-2 space-y-1 rounded-md bg-surface px-3 py-2 text-xs text-muted-foreground">

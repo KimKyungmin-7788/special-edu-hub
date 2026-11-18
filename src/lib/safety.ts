@@ -126,10 +126,18 @@ export function sameSafety(a: Safety, b: Safety): boolean {
 
 export type CheckTrigger = "register" | "edit" | "manual" | "staff"
 export type CheckFinding = { rule: string; level: "block" | "warn"; evidence: string }
+export type CheckFacts = {
+  hasCsp?: boolean
+  hasPrivacyLink?: boolean
+  backendHosts?: string[]
+  aiHosts?: string[]
+  devicePermissions?: string[]
+}
 export type AppCheck = {
   status: "pass" | "blocked" | "unverifiable"
   reason: string
   findings: CheckFinding[]
+  facts: CheckFacts
   createdAt: string
 }
 export type ReviewAction = "approve" | "request_changes" | "suspend"
@@ -154,7 +162,7 @@ export async function requestSafetyCheck(appId: string, trigger: CheckTrigger): 
 export async function getAppChecks(appId: string, limit = 1): Promise<AppCheck[]> {
   const { data, error } = await supabase
     .from("app_checks")
-    .select("status, reason, findings, created_at")
+    .select("status, reason, findings, facts, created_at")
     .eq("app_id", appId)
     .order("created_at", { ascending: false })
     .order("id", { ascending: false })
@@ -164,6 +172,7 @@ export async function getAppChecks(appId: string, limit = 1): Promise<AppCheck[]
     status: r.status,
     reason: r.reason,
     findings: (r.findings ?? []) as CheckFinding[],
+    facts: (r.facts ?? {}) as CheckFacts,
     createdAt: r.created_at,
   }))
 }

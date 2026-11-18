@@ -48,7 +48,8 @@ export const verifyText = {
     reverify: { label: "재검증 필요", detail: "마지막 점검 뒤 확인이 필요한 항목이 나와 다시 확인하고 있습니다." },
     unverified: { label: "점검 미확인", detail: "누리집이 이 자료의 파일을 받아 볼 수 없었거나 아직 점검하지 않았습니다." },
   },
-  minimalNotice: "누리집은 자체 검증 시스템으로 확인할 수 있는 범위 안에서 최소한으로 점검합니다.",
+  minimalNotice:
+    "누리집은 KERIS 「공교육 에듀테크 개인정보보호 가이드」(2026)의 필수기준을 바탕으로, 자체 검증 시스템으로 확인할 수 있는 범위 안에서 최소한으로 점검합니다.",
   review: {
     pending: { label: "점검 대기", notice: "자동 점검을 기다리고 있어 아직 공개되지 않았습니다." },
     held: { label: "보류", notice: "운영진 확인 중이라 아직 공개되지 않았습니다." },
