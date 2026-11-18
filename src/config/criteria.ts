@@ -17,12 +17,16 @@ export const criteriaSource = {
 
 export type CriterionState = "ok" | "attention" | "self" | "na" | "recommend"
 
+/**
+ * 상태 이름 — 괜찮은 것은 괜찮다고, 누리집이 확인하지 못한 것은 확인 못 했다고 말한다(해요체).
+ * self = 처리방침 내용처럼 누리집이 읽을 수 없어 작성자에게 맡기는 것.
+ */
 export const criterionStateText: Record<CriterionState, string> = {
-  ok: "충족 신호",
-  attention: "확인 필요",
-  self: "작성자 확인",
-  na: "해당 없음",
-  recommend: "권장",
+  ok: "잘 되어 있어요",
+  na: "걱정 없어요",
+  attention: "고쳐 주세요",
+  self: "확인 못 했어요",
+  recommend: "있으면 좋아요",
 }
 
 export type CriterionResult = { id: string; title: string; state: CriterionState; note: string }
@@ -39,7 +43,7 @@ const AI = { openai: "OpenAI", gemini: "Gemini", claude: "Claude" } as Record<st
 const DEVICE = { "camera-microphone": "카메라·마이크", location: "위치" } as Record<string, string>
 const names = (list: string[], map: Record<string, string>) => list.map((x) => map[x] ?? x).join("·")
 
-const NA = "학생 정보를 서버로 보내는 흔적이 없습니다."
+const NA = "학생 정보를 서버로 보내는 흔적을 찾지 못해 챙길 필요가 없어요."
 
 /** 처리방침에 적을 내용(기준 번호 → 짧은 이름) — 할 일 한 줄로 묶는다 */
 const POLICY: Record<string, { title: string; what: string; obj: string }> = {
@@ -107,13 +111,13 @@ export function evaluateCriteria(
 
   // 1-1 최소 수집
   if (rules.has("declared_storage_mismatch")) {
-    results.push({ id: "1-1", title: "최소 수집", state: "attention", note: "입력한 **저장 방식**과 점검 결과가 다릅니다." })
+    results.push({ id: "1-1", title: "최소 수집", state: "attention", note: "입력한 **저장 방식**과 점검 결과가 달라요." })
     add("fix", "입력한 저장 방식과 달리 **서버 저장** 흔적이 있음 → 확인하고 안전 확인 정보 고치기", ["1-1"], PROMPTS.mismatch)
   } else if (device.length > 0) {
-    results.push({ id: "1-1", title: "최소 수집", state: "attention", note: `**${names(device, DEVICE)}** 기능을 쓰는 코드가 있습니다.` })
+    results.push({ id: "1-1", title: "최소 수집", state: "attention", note: `**${names(device, DEVICE)}** 기능을 쓰는 코드가 있어요.` })
     add("fix", `**${names(device, DEVICE)}** 기능을 쓰는 코드가 있음 → 수업에 꼭 필요한지 확인하기`, ["1-1"], PROMPTS.device(names(device, DEVICE)))
   } else if (processing) {
-    results.push({ id: "1-1", title: "최소 수집", state: "self", note: "수업에 **꼭 필요한 정보만** 모으는지 확인해 주세요." })
+    results.push({ id: "1-1", title: "최소 수집", state: "self", note: "모으는 정보가 **꼭 필요한 것만**인지는 누리집이 알 수 없어요. 직접 확인해 주세요." })
     add("check", "학생 정보는 **꼭 필요한 것만** 모으는지 확인하기", ["1-1"], PROMPTS.minimal)
   } else results.push({ id: "1-1", title: "최소 수집", state: "na", note: NA })
 
@@ -128,29 +132,36 @@ export function evaluateCriteria(
       id,
       title: POLICY[id].title,
       state: !processing ? "na" : f.hasPrivacyLink ? "self" : "attention",
-      note: !processing ? NA : `개인정보처리방침에 **${POLICY[id].what}**${POLICY[id].obj} 적어 주세요.`,
+      note: !processing
+        ? NA
+        : f.hasPrivacyLink
+          ? `처리방침 내용은 누리집이 읽지 못해요. **${POLICY[id].what}**${POLICY[id].obj} 적었는지 직접 확인해 주세요.`
+          : `첫 화면에 처리방침 링크가 없어요. 처리방침에 **${POLICY[id].what}**${POLICY[id].obj} 적어 주세요.`,
     })
   }
 
   // 4-1 만 14세 미만
   if (!processing) results.push({ id: "4-1", title: "만 14세 미만 보호", state: "na", note: NA })
   else if (safety?.targetAge === "over14") {
-    results.push({ id: "4-1", title: "만 14세 미만 보호", state: "self", note: "**만 14세 이상** 대상으로 입력했습니다." })
+    results.push({ id: "4-1", title: "만 14세 미만 보호", state: "self", note: "**만 14세 이상** 대상으로 입력했어요. 실제로 막고 있는지는 누리집이 확인하지 못해요." })
     add("check", "**만 14세 이상**만 쓰도록 실제로 막았는지 확인하기", ["4-1"], PROMPTS.over14)
   } else {
-    const note = safety?.targetAge === "all" ? "전 연령 대상입니다(개인정보 보호법 제22조의2)." : "대상 연령을 입력하지 않았습니다."
+    const note = safety?.targetAge === "all" ? "전 연령 대상이라 **보호자 동의**가 필요해요(개인정보 보호법 제22조의2)." : "**대상 연령**을 입력하지 않았어요."
     results.push({ id: "4-1", title: "만 14세 미만 보호", state: "attention", note })
     add("check", "만 14세 미만 학생은 **보호자 동의** 받기", ["4-1"], PROMPTS.guardian)
   }
 
-  // 5-2 제3자 제공 · 5-3 처리 위탁 — 외부 주소가 보일 때만
+  // 5-2 제3자 제공 · 5-3 처리 위탁 — 외부 주소가 보일 때만. 주소가 있는 것 자체는 문제가 아니고 처리방침에 적을 의무
+  const disclose: CriterionState = f.hasPrivacyLink ? "self" : "attention"
+  const discloseNote = (what: string) =>
+    f.hasPrivacyLink ? `처리방침에 **${what}**을 적었는지 직접 확인해 주세요.` : `처리방침에 **${what}**을 적어 주세요.`
   results.push(
     ai.length > 0
-      ? { id: "5-2", title: "제3자 제공", state: "attention", note: `외부 AI 서비스(**${names(ai, AI)}**) 주소가 있습니다.` }
-      : { id: "5-2", title: "제3자 제공", state: "na", note: "외부로 전달하는 주소를 찾지 못했습니다." },
+      ? { id: "5-2", title: "제3자 제공", state: disclose, note: `외부 AI 서비스(**${names(ai, AI)}**) 주소가 있어요. ${discloseNote("제3자 제공")}` }
+      : { id: "5-2", title: "제3자 제공", state: "na", note: "외부로 전달하는 주소를 찾지 못했어요." },
     backend.length > 0
-      ? { id: "5-3", title: "처리 위탁", state: "attention", note: `**${names(backend, BACKEND)}** 주소가 있습니다.` }
-      : { id: "5-3", title: "처리 위탁", state: "na", note: "외부 저장 서비스 주소를 찾지 못했습니다." },
+      ? { id: "5-3", title: "처리 위탁", state: disclose, note: `**${names(backend, BACKEND)}** 주소가 있어요. ${discloseNote("위탁 사실")}` }
+      : { id: "5-3", title: "처리 위탁", state: "na", note: "외부 저장 서비스 주소를 찾지 못했어요." },
   )
 
   // 처리방침에 적을 것은 한 줄로 묶는다
@@ -172,15 +183,15 @@ export function evaluateCriteria(
 
   // 기준 밖 기본 보안: 보안 헤더(CSP) — 가이드가 직접 요구하지 않으므로 권장
   const baseline: CriterionResult = f.hasCsp
-    ? { id: "기본 보안", title: "보안 헤더(CSP)", state: "ok", note: "**보안 헤더(CSP)**가 있습니다." }
-    : { id: "기본 보안", title: "보안 헤더(CSP)", state: "recommend", note: "**보안 헤더(CSP)**가 없습니다. 가이드 기준은 아니지만 넣기를 권장합니다." }
+    ? { id: "기본 보안", title: "보안 헤더(CSP)", state: "ok", note: "**보안 헤더(CSP)**가 잘 들어가 있어요." }
+    : { id: "기본 보안", title: "보안 헤더(CSP)", state: "recommend", note: "**보안 헤더(CSP)**가 없어요. 가이드 기준은 아니지만 넣어 두면 좋아요." }
   if (!f.hasCsp) todos.push({ text: "배포 설정에 **보안 헤더(CSP)** 넣기", ids: ["기본 보안"], level: "recommend", prompt: PROMPTS.csp })
 
   const order: TodoLevel[] = ["fix", "check", "recommend"]
   todos.sort((a, b) => order.indexOf(a.level) - order.indexOf(b.level))
   results.sort((a, b) => a.id.localeCompare(b.id))
   const summary = processing
-    ? "개인정보 기준: **적용** — 학생 정보를 서버로 보내는 앱입니다."
-    : "개인정보 기준: **해당 없음** — 학생 정보를 서버로 보내지 않습니다."
+    ? "개인정보 기준: **챙길 것이 있어요** — 학생 정보를 서버로 보내는 앱이에요."
+    : "개인정보 기준: **걱정 없어요** — 학생 정보를 서버로 보내는 흔적을 찾지 못했어요."
   return { processing, summary, todos, results, baseline }
 }

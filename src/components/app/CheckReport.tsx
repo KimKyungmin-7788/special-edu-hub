@@ -10,7 +10,7 @@ const TONE: Record<CriterionState, string> = {
   attention: "text-destructive",
   ok: "text-brand-muted-foreground",
   self: "text-foreground",
-  na: "text-muted-foreground",
+  na: "text-brand-muted-foreground",
   recommend: "text-muted-foreground",
 }
 
@@ -38,17 +38,24 @@ export function CheckReport({ appId, refreshKey, bare }: { appId: string; refres
 
   let body
   if (!ev) {
-    body = <p className="text-sm text-muted-foreground">파일을 받아 볼 수 없어 결과를 내지 못했습니다.</p>
+    body = (
+      <div className="text-sm">
+        <p className="font-semibold">확인 못 했어요</p>
+        <p className="mt-1 text-muted-foreground">
+          이 앱은 누리집이 파일을 받아 볼 수 없어 점검하지 못했어요. 안전하다는 뜻은 아니에요.
+        </p>
+      </div>
+    )
   } else {
     const levels: TodoLevel[] = ["fix", "check", "recommend"]
     const counts = levels
       .map((l) => [l, ev.todos.filter((t) => t.level === l).length] as const)
       .filter(([, n]) => n > 0)
       .map(([l, n]) => `${todoLevelText[l]} ${n}개`)
-    const head = counts.length ? counts.join(" · ") : "할 일 없음"
+    const head = counts.length ? counts.join(" · ") : "✓ 점검에서 고칠 것이 없었어요"
     body = (
       <div className="text-sm">
-        <p className="font-semibold">{head}</p>
+        <p className={cn("font-semibold", counts.length === 0 && "text-brand-muted-foreground")}>{head}</p>
         <p className="mt-1 text-muted-foreground">
           <Emphasis text={ev.summary} />
         </p>
@@ -64,7 +71,7 @@ export function CheckReport({ appId, refreshKey, bare }: { appId: string; refres
         <details className="mt-3">
           <summary className="cursor-pointer text-muted-foreground underline">9개 기준 모두 보기</summary>
           <dl className="mt-2 divide-y divide-border">
-            {[...ev.results, ev.baseline].map((r) => (
+            {groupResults([...ev.results, ev.baseline]).map((r) => (
               <ResultRow key={r.id} r={r} />
             ))}
           </dl>
@@ -135,13 +142,39 @@ function TodoRow({ todo, n }: { todo: Todo; n: number }) {
   )
 }
 
+const ORDER: CriterionState[] = ["ok", "na", "attention", "self", "recommend"]
+
+/**
+ * 펼쳐 보기 목록: 좋은 것부터, '걱정 없어요'가 셋 이상(학생 정보를 안 보내는 앱)이면 한 줄로 묶는다
+ * (같은 문장이 줄마다 되풀이되지 않게).
+ */
+function groupResults(list: CriterionResult[]): CriterionResult[] {
+  const na = list.filter((r) => r.state === "na")
+  const rest = list.filter((r) => r.state !== "na")
+  const merged: CriterionResult[] =
+    na.length > 2
+      ? [
+          {
+            id: `${na[0].id}~${na[na.length - 1].id}`,
+            title: `개인정보 기준 ${na.length}개`,
+            state: "na",
+            note: "학생 정보나 외부로 보내는 주소를 찾지 못해 챙길 필요가 없어요.",
+          },
+        ]
+      : na
+  return [...rest, ...merged].sort((a, b) => ORDER.indexOf(a.state) - ORDER.indexOf(b.state))
+}
+
 function ResultRow({ r }: { r: CriterionResult }) {
   return (
-    <div className="grid gap-x-3 gap-y-0.5 py-2 sm:grid-cols-[5.5rem_minmax(0,1fr)]">
-      <dt className={cn("font-medium", TONE[r.state])}>{criterionStateText[r.state]}</dt>
+    <div className="grid gap-x-3 gap-y-0.5 py-2 sm:grid-cols-[7.5rem_minmax(0,1fr)]">
+      <dt className={cn("font-medium", TONE[r.state])}>
+        {(r.state === "ok" || r.state === "na") && "✓ "}
+        {criterionStateText[r.state]}
+      </dt>
       <dd>
         <span className="font-medium">
-          {r.id} {r.title}
+          {r.id} · {r.title}
         </span>
         <span className="block text-muted-foreground">
           <Emphasis text={r.note} />
