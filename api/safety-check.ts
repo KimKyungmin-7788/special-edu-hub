@@ -27,7 +27,7 @@ const RULE_CRITERIA: Record<string, string> = {
   secret: "2-1 안전조치",
   google_api_key: "2-1 안전조치",
   insecure: "2-1 안전조치",
-  no_csp: "2-1 안전조치",
+  no_csp: "기본 보안", // 가이드가 직접 요구하지 않는 권장 항목
   device_permission: "1-1 최소 수집",
   declared_storage_mismatch: "1-1 최소 수집",
 }
