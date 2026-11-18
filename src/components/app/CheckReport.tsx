@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { Check, Copy, ListChecks } from "lucide-react"
 import { DetailSection } from "@/components/app/DetailSection"
 import { Emphasis } from "@/components/ui/Emphasis"
+import { GuideLink } from "@/components/app/GuideLink"
 import { criteriaSource, criterionStateText, evaluateCriteria, type CriterionResult, type CriterionState, type Todo, type TodoLevel, todoLevelText } from "@/config/criteria"
 import { getAppChecks, getSafety, type AppCheck, type Safety } from "@/lib/safety"
 import { cn } from "@/lib/utils"
@@ -59,6 +60,9 @@ export function CheckReport({ appId, refreshKey, bare }: { appId: string; refres
         <p className="mt-1 text-muted-foreground">
           <Emphasis text={ev.summary} />
         </p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          기준: <GuideLink />
+        </p>
 
         {ev.todos.length > 0 && (
           <ol className="mt-3 divide-y divide-border border-y border-border">
@@ -76,7 +80,7 @@ export function CheckReport({ appId, refreshKey, bare }: { appId: string; refres
             ))}
           </dl>
           <p className="mt-2 text-xs text-muted-foreground">
-            {criteriaSource.name} · {data.check.createdAt.slice(0, 10)} 점검. 기본 보안은 가이드 기준 밖의 권장 항목입니다.{" "}
+            <GuideLink /> · {data.check.createdAt.slice(0, 10)} 점검. 기본 보안은 가이드 기준 밖의 권장 항목입니다.{" "}
             {criteriaSource.caveat}
           </p>
         </details>
