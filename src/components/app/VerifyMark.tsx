@@ -1,4 +1,5 @@
-import { Clock, RefreshCw, ShieldCheck, ShieldQuestion } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
+import { ChevronDown, Clock, RefreshCw, ShieldCheck, ShieldQuestion } from "lucide-react"
 import { verifyText } from "@/config/safety"
 import type { VerificationStatus } from "@/lib/apps"
 import { cn } from "@/lib/utils"
@@ -10,30 +11,94 @@ const STYLE: Record<VerificationStatus, { icon: typeof ShieldCheck; className: s
   unverified: { icon: ShieldQuestion, className: "border border-border text-muted-foreground" },
 }
 
-/** 검증 마크(68) — 누리집이 확인한 범위를 알려 줄 뿐, 안전을 보증하는 표시가 아니다. */
-export function VerifyMark({ status, className }: { status: VerificationStatus; className?: string }) {
+/**
+ * 검증 마크(68) — 누리집이 확인한 범위를 알려 줄 뿐, 안전을 보증하는 표시가 아니다.
+ * iconOnly: 자료 카드용 — '자동 점검 확인'은 글자 없이 마크만(글은 화면 낭독기·마우스 올림으로 전한다).
+ */
+export function VerifyMark({
+  status,
+  className,
+  iconOnly,
+}: {
+  status: VerificationStatus
+  className?: string
+  iconOnly?: boolean
+}) {
   const { icon: Icon, className: tone } = STYLE[status]
+  const label = verifyText.marks[status].label
+  if (iconOnly && status === "verified")
+    return (
+      <span
+        title={label}
+        className={cn("inline-flex size-5 shrink-0 items-center justify-center rounded-full", tone, className)}
+      >
+        <Icon className="size-3.5" aria-hidden />
+        <span className="sr-only">{label}</span>
+      </span>
+    )
   return (
     <span
       className={cn("inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium", tone, className)}
     >
       <Icon className="size-3" aria-hidden />
-      {verifyText.marks[status].label}
+      {label}
     </span>
   )
 }
 
-/** 마크 + 눌러서 펼치는 설명(자료 상세용) */
+/**
+ * 자료 상세용 — 마크 자체가 단추다(펼침 표시 ▾ + 올리면 테두리). 누르면 바로 아래에 작은 설명 팝업이 뜨고,
+ * 바깥을 누르거나 ESC 로 닫힌다. 줄 오른쪽 끝에 놓이므로 팝업은 오른쪽에 맞춰 편다.
+ */
 export function VerifyMarkDetail({ status }: { status: VerificationStatus }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLSpanElement>(null)
+  const { icon: Icon, className: tone } = STYLE[status]
+
+  useEffect(() => {
+    if (!open) return
+    const onDoc = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false)
+    document.addEventListener("mousedown", onDoc)
+    document.addEventListener("keydown", onKey)
+    return () => {
+      document.removeEventListener("mousedown", onDoc)
+      document.removeEventListener("keydown", onKey)
+    }
+  }, [open])
+
   return (
-    <details className="text-sm">
-      <summary className="inline-flex cursor-pointer list-none items-center gap-1.5">
-        <VerifyMark status={status} />
-        <span className="text-xs text-muted-foreground underline">설명 보기</span>
-      </summary>
-      <p className="mt-2 rounded-lg bg-surface px-3 py-2 leading-relaxed text-muted-foreground">
-        {verifyText.marks[status].detail} {verifyText.minimalNotice}
-      </p>
-    </details>
+    <span ref={ref} className="relative inline-flex">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-haspopup="dialog"
+        className={cn(
+          "inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ring-current/40 transition hover:ring-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          open && "ring-1",
+          tone,
+        )}
+      >
+        <Icon className="size-3" aria-hidden />
+        {verifyText.marks[status].label}
+        <ChevronDown className={cn("size-3 transition-transform", open && "rotate-180")} aria-hidden />
+      </button>
+      {open && (
+        <span
+          role="dialog"
+          aria-label={verifyText.marks[status].label}
+          className="absolute right-0 top-7 z-20 w-72 max-w-[80vw] rounded-md border border-border bg-popover p-3 text-xs leading-relaxed text-popover-foreground shadow-lg"
+        >
+          <span className="mb-1 flex items-center gap-1 font-semibold">
+            <Icon className="size-3.5" aria-hidden />
+            {verifyText.marks[status].label}
+          </span>
+          {verifyText.marks[status].detail} {verifyText.minimalNotice}
+        </span>
+      )}
+    </span>
   )
 }

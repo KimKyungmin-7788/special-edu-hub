@@ -304,14 +304,13 @@ export function AppDetail() {
             <Eye className="size-4" aria-hidden />
             조회 {app.viewCount}
           </span>
+          {/* 검증 마크(68) — 앱 링크가 있는 자료만. 같은 줄 오른쪽 끝, 누르면 작은 설명 팝업 */}
+          {!app.locked && app.appUrl && (
+            <span className="ml-auto">
+              <VerifyMarkDetail status={app.verificationStatus} />
+            </span>
+          )}
         </div>
-
-        {/* 검증 마크(68) — 앱 링크가 있는 자료만 */}
-        {!app.locked && app.appUrl && (
-          <div className="mt-3">
-            <VerifyMarkDetail status={app.verificationStatus} />
-          </div>
-        )}
 
         {/* 개발자 홍보 링크 — 등록자가 입력한 것만(블로그·인스타·유튜브·사이트) */}
         {owner && <PromoLinks profile={owner} className="mt-3" />}

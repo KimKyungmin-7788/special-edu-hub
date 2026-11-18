@@ -152,7 +152,7 @@ export function AppCard({
               </span>
             )}
             {/* 검증 마크(68) — 앱 링크가 있는 자료만 */}
-            {!app.locked && app.appUrl && <VerifyMark status={app.verificationStatus} />}
+            {!app.locked && app.appUrl && <VerifyMark status={app.verificationStatus} iconOnly />}
             {move && (
               <span className="ml-auto flex shrink-0 items-center gap-1">
                 <MoveButton dir="up" disabled={!move.canUp} onClick={move.onUp} />
