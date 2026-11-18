@@ -22,6 +22,12 @@ const MIN_INTERVAL_MS = 15_000
 
 const TRIGGERS = ["register", "edit", "manual", "staff"]
 
+const BACKEND_NAMES: Record<string, string> = {
+  supabase: "Supabase",
+  firebase: "Firebase",
+  "google-apps-script": "구글 앱스 스크립트",
+}
+
 function json(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -73,6 +79,28 @@ export async function POST(request: Request): Promise<Response> {
     return json(429, { error: "방금 점검했습니다. 잠시 뒤에 다시 해 주세요." })
 
   const result = await scanApp(String(app.app_url).trim())
+
+  // 입력과 다름: 학생 정보를 "저장 안 함·기기에만"이라고 했는데 서버 저장 서비스가 보이면 보류 신호로 본다
+  const { data: declared } = await supabase
+    .from("app_safety_declarations")
+    .select("student_data")
+    .eq("app_id", appId)
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  const saidNoServer = declared?.student_data === "none" || declared?.student_data === "device"
+  if (saidNoServer && result.facts.backendHosts.length > 0) {
+    const names = result.facts.backendHosts.map((h) => BACKEND_NAMES[h] ?? h).join(", ")
+    result.findings.push({
+      rule: "declared_storage_mismatch",
+      level: "block",
+      evidence:
+        `점검에서 서버 저장 서비스(${names}) 주소를 찾았습니다. 학생 정보를 서버에 저장하는지 확인해 주세요. ` +
+        `저장한다면 안전 확인 정보를 '서버에 저장'으로 고치고, 저장하지 않는다면 그 부분을 빼 주세요.`,
+    })
+    result.status = "blocked"
+  }
 
   const { data: recorded, error } = await supabase.rpc("record_app_check", {
     p_secret: SECRET,

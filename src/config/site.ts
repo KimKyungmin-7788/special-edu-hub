@@ -44,7 +44,7 @@ export const site = {
 
   /**
    * 히어로 캐러셀: 문구 슬라이드 + 배너 이미지 슬라이드를 배열로(순서대로 넘김).
-   * 1장이면 넘김 표시 없이 고정. 철학(소개) + 참여 안내 + 수업 나눔 + 열린연수방.
+   * 1장이면 넘김 표시 없이 고정. 철학(소개) + 개인정보(자동 점검) + 참여 안내 + 수업 나눔 + 열린연수방.
    */
   heroSlides: [
     {
@@ -54,6 +54,14 @@ export const site = {
       subtitle: `${SITE_NAME}을 소개합니다.`,
       ctaLabel: "누리집 소개",
       ctaHref: "/about",
+    },
+    {
+      type: "text",
+      keyword: "개인정보",
+      title: "자유롭게 만들고 신중하게 배포합니다\n한 번 더, 함께 확인합니다",
+      subtitle: "올린 자료는 누리집이 먼저 점검하고, 놓친 부분은 서로 봐주며 함께 고쳐 갑니다.",
+      ctaLabel: "내 자료 나누기",
+      ctaAction: "write",
     },
     {
       type: "text",
