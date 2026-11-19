@@ -25,6 +25,46 @@ export type PracticeVisibility = "public" | "teachers"
 
 export type PracticeLink = { title: string; url: string }
 
+/**
+ * 지도안 양식(72). null 이면 자유 본문 글.
+ * 단계의 tool 은 "app:<자료 id>" | "tool:<바깥 도구 이름>" | "" — 등록 자료 연결 자체는 practice_apps 에 둔다.
+ */
+export type PlanStep = { text: string; tool: string }
+export type PlanLesson = { minutes: number; intro: PlanStep; main: PlanStep; wrap: PlanStep }
+export const PLAN_LEVELS = ["가", "나", "다"] as const
+export type PlanLevel = (typeof PLAN_LEVELS)[number]
+export type PlanGroup = { level: PlanLevel; performance: string; content: string; method: string; highTouch: string }
+export type PracticePlan = {
+  unit: string
+  standards: string[]
+  goals: Record<PlanLevel, string>
+  tools: string[]
+  groups: PlanGroup[]
+  lessons: PlanLesson[]
+  evaluation: string
+  reaction: string
+  reflection: string
+}
+
+export const PLAN_LESSONS_MAX = 20
+export const PLAN_TOOLS_MAX = 10
+
+const emptyStep = (): PlanStep => ({ text: "", tool: "" })
+export const emptyLesson = (): PlanLesson => ({ minutes: 40, intro: emptyStep(), main: emptyStep(), wrap: emptyStep() })
+export function emptyPlan(): PracticePlan {
+  return {
+    unit: "",
+    standards: [],
+    goals: { 가: "", 나: "", 다: "" },
+    tools: [],
+    groups: PLAN_LEVELS.map((level) => ({ level, performance: "", content: "", method: "", highTouch: "" })),
+    lessons: [emptyLesson()],
+    evaluation: "",
+    reaction: "",
+    reflection: "",
+  }
+}
+
 export type PracticeFile = {
   name: string // 원래 파일 이름(표시용)
   path: string // 버킷 안 경로 <uid>/<uuid>.<ext> (삭제용)
@@ -57,6 +97,7 @@ export type Practice = {
   locked: boolean
   ownerNickname: string | null
   ownerAvatarUrl: string | null
+  plan: PracticePlan | null // 잠긴 사례는 null
 }
 
 type PracticeRow = {
@@ -83,6 +124,7 @@ type PracticeRow = {
   locked?: boolean // 뷰에만 있음
   owner_nickname?: string | null
   owner_avatar_url?: string | null
+  plan?: PracticePlan | null
 }
 
 function mapRow(row: PracticeRow): Practice {
@@ -111,6 +153,7 @@ function mapRow(row: PracticeRow): Practice {
     locked: row.locked ?? false,
     ownerNickname: row.owner_nickname ?? null,
     ownerAvatarUrl: row.owner_avatar_url ?? null,
+    plan: row.plan ?? null,
   }
 }
 
@@ -264,6 +307,7 @@ export type PracticeInput = {
   files: PracticeFile[]
   visibility: PracticeVisibility
   privacyConfirmed: boolean
+  plan: PracticePlan | null
 }
 
 /** 입력 검사 + DB 모양 변환. 문제가 있으면 사용자에게 보여줄 문장으로 throw. */
@@ -274,7 +318,10 @@ function toRow(input: PracticeInput) {
   if (title === "") throw new Error("제목을 입력하세요.")
   if (charCount(title) > PRACTICE_TITLE_MAX)
     throw new Error(`제목은 ${PRACTICE_TITLE_MAX}자 이하로 써 주세요.`)
-  if (summary === "") throw new Error("한 줄 요약을 입력하세요.")
+  if (input.plan) {
+    for (const l of PLAN_LEVELS)
+      if (input.plan.goals[l].trim() === "") throw new Error(`수업 목표 '${l}'를 입력하세요.`)
+  } else if (summary === "") throw new Error("한 줄 요약을 입력하세요.")
   if (charCount(summary) > PRACTICE_SUMMARY_MAX)
     throw new Error(`한 줄 요약은 ${PRACTICE_SUMMARY_MAX}자 이하로 써 주세요.`)
   if (input.coverUrl === "") throw new Error("대표 사진을 올려 주세요.")
@@ -307,6 +354,7 @@ function toRow(input: PracticeInput) {
     files: input.files,
     visibility: input.visibility,
     privacy_confirmed: input.privacyConfirmed,
+    plan: input.plan,
   }
 }
 
@@ -338,9 +386,18 @@ export async function deletePractice(practice: Practice): Promise<void> {
   if (error) throw error
   if (!data?.length) throw new Error("삭제하지 못했어요. 본인이 쓴 사례인지 확인해 주세요.")
   await Promise.allSettled([
-    removeThumbnail(practice.coverUrl),
+    removeOwnCover(practice.coverUrl),
     ...practice.files.map((f) => removePracticeFile(f.path)),
   ])
+}
+
+/** 표지가 연결 자료의 썸네일이면 그 자료 것이므로 지우지 않는다. */
+async function removeOwnCover(url: string): Promise<void> {
+  const { count } = await supabase
+    .from("apps_catalog")
+    .select("id", { count: "exact", head: true })
+    .eq("thumbnail_url", url)
+  if ((count ?? 0) === 0) await removeThumbnail(url)
 }
 
 /** 숨김/복구(삭제 대신). */
@@ -436,6 +493,15 @@ export type PracticeDraft = {
   flowHtml: string
   links: PracticeLink[]
   personalInfoWarnings: string[] // 학생 실명 등 개인정보가 보인 위치
+  /** 지도안 칸(72). 단계 tool 은 도구 이름 그대로 — 폼이 연결 자료/바깥 도구로 바꾼다. 예전 서버면 없음. */
+  plan?: {
+    unit: string
+    goals: Record<PlanLevel, string>
+    tools: string[]
+    groups: PlanGroup[]
+    lessons: { minutes: number; intro: PlanStep; main: PlanStep; wrap: PlanStep }[]
+    evaluation: string
+  }
 }
 
 /** 초안 기능을 쓸 수 있는지(서버에 AI 키가 등록됐는지). 확인 실패(로컬 개발 등)는 false. */

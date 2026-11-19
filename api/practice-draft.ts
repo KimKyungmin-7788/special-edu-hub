@@ -33,6 +33,13 @@ const subjectGuide = subjectCategories
   })
   .join("\n")
 
+const STEP = {
+  type: "object",
+  additionalProperties: false,
+  required: ["text", "tool"],
+  properties: { text: { type: "string" }, tool: { type: "string" } },
+} as const
+
 const SCHEMA = {
   type: "object",
   additionalProperties: false,
@@ -47,6 +54,7 @@ const SCHEMA = {
     "flowHtml",
     "links",
     "personalInfoWarnings",
+    "plan",
   ],
   properties: {
     title: { type: "string" },
@@ -67,6 +75,46 @@ const SCHEMA = {
       },
     },
     personalInfoWarnings: { type: "array", items: { type: "string" } },
+    plan: {
+      type: "object",
+      additionalProperties: false,
+      required: ["unit", "goals", "tools", "groups", "lessons", "evaluation"],
+      properties: {
+        unit: { type: "string" },
+        goals: {
+          type: "object",
+          additionalProperties: false,
+          required: ["가", "나", "다"],
+          properties: { 가: { type: "string" }, 나: { type: "string" }, 다: { type: "string" } },
+        },
+        tools: { type: "array", items: { type: "string" } },
+        groups: {
+          type: "array",
+          items: {
+            type: "object",
+            additionalProperties: false,
+            required: ["level", "performance", "content", "method", "highTouch"],
+            properties: {
+              level: { type: "string", enum: ["가", "나", "다"] },
+              performance: { type: "string" },
+              content: { type: "string" },
+              method: { type: "string" },
+              highTouch: { type: "string" },
+            },
+          },
+        },
+        lessons: {
+          type: "array",
+          items: {
+            type: "object",
+            additionalProperties: false,
+            required: ["minutes", "intro", "main", "wrap"],
+            properties: { minutes: { type: "integer" }, intro: STEP, main: STEP, wrap: STEP },
+          },
+        },
+        evaluation: { type: "string" },
+      },
+    },
   },
 } as const
 
@@ -96,6 +144,14 @@ const SYSTEM = `당신은 특수교육 교사 연구회 누리집의 편집자�
   단계마다 <h3>도입 (7분) — 활동명</h3> 형식, 그 아래 쓰인 도구와 역할 한 문장, 교사 활동·학생 활동을 목록으로(수준별 활동은 (가·나), (다)처럼 표시).
   마지막에 <h3>평가</h3>: 영역별 평가 요소와 방법을 짧은 목록으로.
 - links: 설계안에 적힌 웹 주소(웹앱·자료)를 모두. title 은 그 주소가 무엇인지 짧게(예: "교사 제작 웹앱"). 없으면 빈 배열.
+- plan: 같은 설계안을 "지도안 표" 칸으로 나눈 것. 글자는 꾸밈 없는 평문(HTML 금지), 줄바꿈은 \n.
+  - unit: 단원명. 없으면 "".
+  - goals: 수준별 수업 목표 가·나·다 각 한 문장("~할 수 있다."). 설계안에 수준별 목표가 하나뿐이면 셋 모두 그 문장.
+  - tools: 수업에 쓴 AI·디지털 도구 이름 목록(웹앱·서비스 이름). 없으면 빈 배열.
+  - groups: 가·나·다 집단마다 performance(수행 수준), content(조정된 내용), method(조정된 방법), highTouch(교사가 직접 하는 정서적·관계적 상호작용).
+    설계안에 적힌 내용만 쓰고, 없는 칸은 "". 특히 highTouch 는 설계안에 그런 지원이 적혀 있을 때만 씁니다.
+  - lessons: 차시마다 minutes(분, 모르면 40)와 도입(intro)·전개(main)·정리(wrap). text 는 교사·학생 활동을 짧은 줄로, tool 은 그 단계에서 쓴 도구 이름 하나(tools 에 있는 이름 그대로, 없으면 "").
+  - evaluation: 평가 방법을 한두 줄로. 없으면 "".
 - HTML 은 <p> <h3> <ul> <ol> <li> <strong> 만 쓰고, 속성·스타일·<h1>·<h2> 는 쓰지 않습니다.
 
 교과 목록 (id: 이름)

@@ -1,0 +1,437 @@
+import { useState, type ReactNode } from "react"
+import { ChevronDown, HeartHandshake, Plus, Trash2, X, type LucideIcon } from "lucide-react"
+import { planText } from "@/config/practice"
+import {
+  emptyLesson,
+  PLAN_LESSONS_MAX,
+  PLAN_LEVELS,
+  PLAN_TOOLS_MAX,
+  type PlanGroup,
+  type PlanLesson,
+  type PlanStep,
+  type PracticePlan,
+} from "@/lib/practices"
+import { cn } from "@/lib/utils"
+
+/**
+ * 지도안 표(72) — 레퍼런스 지도안처럼 왼쪽 회색 칸 이름 + 오른쪽 내용, 묶음마다 연두 머리줄.
+ * 넓은 화면은 표, 휴대폰은 칸 이름을 위로 올려 쌓는다. 쓰기(…Fields)와 읽기(…View)가 같은 틀을 쓴다.
+ */
+
+export function PlanTable({ children }: { children: ReactNode }) {
+  return <div className="overflow-hidden rounded-xl border border-border bg-card text-sm">{children}</div>
+}
+
+export function PlanBar({ icon: Icon, children }: { icon: LucideIcon; children: ReactNode }) {
+  return (
+    <div className="flex items-center justify-center gap-1.5 border-t border-border bg-brand-muted px-3 py-2 font-semibold text-brand-muted-foreground first:border-t-0">
+      <Icon className="size-4" aria-hidden />
+      {children}
+    </div>
+  )
+}
+
+export function PlanRow({ label, required, children }: { label: ReactNode; required?: boolean; children: ReactNode }) {
+  return (
+    <div className="grid border-t border-border first:border-t-0 sm:grid-cols-[9rem_minmax(0,1fr)]">
+      <div className="flex items-center bg-surface px-3 py-2 font-medium sm:justify-center sm:border-r sm:border-border sm:text-center">
+        {label}
+        {required && <span className="ml-0.5 text-destructive">*</span>}
+      </div>
+      <div className="min-w-0">{children}</div>
+    </div>
+  )
+}
+
+/** 표 칸 안 입력 — 칸 테두리가 있으니 자체 테두리는 없이, 누르면 안쪽 강조. */
+export const cellInput =
+  "block w-full bg-transparent px-3 py-2.5 text-sm outline-none placeholder:text-muted-foreground/70 focus:bg-background focus:ring-2 focus:ring-inset focus:ring-ring disabled:opacity-60"
+const cellArea = cellInput + " min-h-[4.5rem] resize-y leading-relaxed"
+
+/** 집단 라벨(가·나·다) 칸 */
+function LevelCell({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex items-center justify-center bg-surface px-2 py-2 font-semibold sm:border-r sm:border-border">
+      {children}
+    </div>
+  )
+}
+
+// ── 수업 목표(가·나·다) ──────────────────────────────
+
+export function PlanGoalsFields({
+  goals,
+  onChange,
+  disabled,
+}: {
+  goals: PracticePlan["goals"]
+  onChange: (g: PracticePlan["goals"]) => void
+  disabled?: boolean
+}) {
+  return (
+    <div className="divide-y divide-border">
+      {PLAN_LEVELS.map((l) => (
+        <div key={l} className="grid grid-cols-[2.75rem_minmax(0,1fr)]">
+          <LevelCell>{l}</LevelCell>
+          <input
+            className={cn(cellInput, "border-l border-border sm:border-l-0")}
+            value={goals[l]}
+            placeholder={planText.goalPlaceholders[l]}
+            onChange={(e) => onChange({ ...goals, [l]: e.target.value })}
+            aria-label={`${planText.goals} ${l}`}
+            disabled={disabled}
+          />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ── 바깥 도구 이름 ────────────────────────────────────
+
+export function PlanToolNames({
+  value,
+  onChange,
+  disabled,
+  max = PLAN_TOOLS_MAX,
+}: {
+  value: string[]
+  onChange: (v: string[]) => void
+  disabled?: boolean
+  max?: number
+}) {
+  const [draft, setDraft] = useState("")
+  function add() {
+    const name = draft.trim().slice(0, 40)
+    if (!name || value.includes(name) || value.length >= max) return
+    onChange([...value, name])
+    setDraft("")
+  }
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {value.map((t) => (
+        <span key={t} className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-0.5 text-xs">
+          {t}
+          <button
+            type="button"
+            onClick={() => onChange(value.filter((x) => x !== t))}
+            aria-label={`${t} 빼기`}
+            disabled={disabled}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <X className="size-3" aria-hidden />
+          </button>
+        </span>
+      ))}
+      {value.length < max && (
+        <span className="inline-flex items-center gap-1">
+          <input
+            className="h-8 w-40 rounded-md border border-input bg-background px-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            value={draft}
+            placeholder={planText.toolsOtherPlaceholder}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+                e.preventDefault()
+                add()
+              }
+            }}
+            disabled={disabled}
+          />
+          <button
+            type="button"
+            onClick={add}
+            disabled={disabled}
+            className="h-8 rounded-md border border-border px-2.5 text-xs hover:bg-accent"
+          >
+            {planText.toolsOtherAdd}
+          </button>
+        </span>
+      )}
+    </div>
+  )
+}
+
+// ── 학생 특성·개별화 지원 ─────────────────────────────
+
+const GROUP_FIELDS = ["performance", "content", "method", "highTouch"] as const
+type GroupField = (typeof GROUP_FIELDS)[number]
+
+function GroupHead() {
+  return (
+    <div className="hidden border-t border-border sm:grid sm:grid-cols-[2.75rem_repeat(4,minmax(0,1fr))]">
+      <div className="bg-surface px-2 py-2 text-center text-xs font-semibold">{planText.group.level}</div>
+      {GROUP_FIELDS.map((f) => (
+        <div
+          key={f}
+          className={cn(
+            "border-l border-border px-2 py-2 text-center text-xs font-semibold",
+            f === "highTouch" ? "bg-brand-muted text-brand-muted-foreground" : "bg-surface",
+          )}
+        >
+          {f === "highTouch" && <HeartHandshake className="mr-1 inline size-3.5 align-[-2px]" aria-hidden />}
+          {planText.group[f]}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/** 휴대폰에서는 칸마다 이름을 위에 붙인다(넓은 화면은 머리줄이 대신). */
+function MobileLabel({ field }: { field: GroupField }) {
+  return (
+    <span
+      className={cn(
+        "block px-3 pt-2 text-xs font-semibold sm:hidden",
+        field === "highTouch" ? "text-brand-muted-foreground" : "text-muted-foreground",
+      )}
+    >
+      {planText.group[field]}
+    </span>
+  )
+}
+
+export function PlanGroupsFields({
+  groups,
+  onChange,
+  disabled,
+}: {
+  groups: PlanGroup[]
+  onChange: (g: PlanGroup[]) => void
+  disabled?: boolean
+}) {
+  const set = (i: number, f: GroupField, v: string) =>
+    onChange(groups.map((g, j) => (j === i ? { ...g, [f]: v } : g)))
+  return (
+    <>
+      <GroupHead />
+      {groups.map((g, i) => (
+        <div key={g.level} className="grid border-t border-border sm:grid-cols-[2.75rem_repeat(4,minmax(0,1fr))]">
+          <LevelCell>{g.level}</LevelCell>
+          {GROUP_FIELDS.map((f) => (
+            <label key={f} className={cn("sm:border-l sm:border-border", f === "highTouch" && "bg-brand-muted/40")}>
+              <MobileLabel field={f} />
+              <textarea
+                className={cellArea}
+                rows={2}
+                value={g[f]}
+                placeholder={planText.groupPlaceholders[f]}
+                onChange={(e) => set(i, f, e.target.value)}
+                aria-label={`${g.level} ${planText.group[f]}`}
+                disabled={disabled}
+              />
+            </label>
+          ))}
+        </div>
+      ))}
+    </>
+  )
+}
+
+// ── 차시별 활동 ──────────────────────────────────────
+
+const STEPS = ["intro", "main", "wrap"] as const
+export type ToolOption = { value: string; label: string }
+
+function LessonHead() {
+  return (
+    <div className="hidden border-t border-border bg-surface text-xs font-semibold sm:grid sm:grid-cols-[6rem_3.5rem_minmax(0,1fr)_11rem]">
+      <div className="px-2 py-2 text-center">{planText.lesson.head}</div>
+      <div className="border-l border-border px-2 py-2 text-center">{planText.lesson.step}</div>
+      <div className="border-l border-border px-2 py-2 text-center">{planText.lesson.text}</div>
+      <div className="border-l border-border px-2 py-2 text-center">{planText.lesson.tool}</div>
+    </div>
+  )
+}
+
+export function PlanLessonsFields({
+  lessons,
+  onChange,
+  toolOptions,
+  disabled,
+}: {
+  lessons: PlanLesson[]
+  onChange: (l: PlanLesson[]) => void
+  toolOptions: ToolOption[]
+  disabled?: boolean
+}) {
+  // 처음엔 1차시만 펼친다. 새로 더한 차시는 펼친 채로.
+  const [open, setOpen] = useState<Set<number>>(() => new Set([0]))
+  const toggle = (i: number) =>
+    setOpen((cur) => {
+      const next = new Set(cur)
+      if (next.has(i)) next.delete(i)
+      else next.add(i)
+      return next
+    })
+  const setLesson = (i: number, l: PlanLesson) => onChange(lessons.map((x, j) => (j === i ? l : x)))
+  const setStep = (i: number, s: (typeof STEPS)[number], v: PlanStep) => setLesson(i, { ...lessons[i], [s]: v })
+
+  function add() {
+    if (lessons.length >= PLAN_LESSONS_MAX) return
+    onChange([...lessons, { ...emptyLesson(), minutes: lessons[lessons.length - 1]?.minutes ?? 40 }])
+    setOpen((cur) => new Set(cur).add(lessons.length))
+  }
+  function remove(i: number) {
+    onChange(lessons.filter((_, j) => j !== i))
+    setOpen((cur) => new Set([...cur].filter((x) => x !== i).map((x) => (x > i ? x - 1 : x))))
+  }
+
+  return (
+    <>
+      <LessonHead />
+      {lessons.map((l, i) => {
+        const isOpen = open.has(i)
+        const n = i + 1
+        return (
+          <div key={i} className="grid border-t border-border sm:grid-cols-[6rem_minmax(0,1fr)]">
+            <div className="flex items-center gap-2 bg-brand-muted/50 px-3 py-2 sm:flex-col sm:justify-center sm:gap-1 sm:border-r sm:border-border">
+              <button
+                type="button"
+                onClick={() => toggle(i)}
+                aria-expanded={isOpen}
+                className="inline-flex items-center gap-0.5 font-semibold text-brand-muted-foreground"
+              >
+                {n}차시
+                <ChevronDown className={cn("size-3.5 transition-transform", !isOpen && "-rotate-90")} aria-hidden />
+              </button>
+              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                <input
+                  type="number"
+                  min={1}
+                  max={300}
+                  value={l.minutes}
+                  onChange={(e) => setLesson(i, { ...l, minutes: Math.max(1, Math.min(300, Number(e.target.value) || 0)) })}
+                  aria-label={`${n}차시 ${planText.lesson.minutes}`}
+                  className="h-7 w-12 rounded border border-input bg-background px-1 text-center text-xs"
+                  disabled={disabled}
+                />
+                {planText.lesson.minutes}
+              </span>
+              {i > 0 && (
+                <button
+                  type="button"
+                  onClick={() => remove(i)}
+                  aria-label={`${n}차시 ${planText.lesson.remove}`}
+                  title={planText.lesson.remove}
+                  disabled={disabled}
+                  className="ml-auto rounded p-1 text-muted-foreground hover:bg-accent hover:text-destructive sm:ml-0"
+                >
+                  <Trash2 className="size-3.5" aria-hidden />
+                </button>
+              )}
+            </div>
+            {isOpen ? (
+              <div>
+                {STEPS.map((s, k) => (
+                  <div
+                    key={s}
+                    className={cn("grid sm:grid-cols-[3.5rem_minmax(0,1fr)_11rem]", k > 0 && "border-t border-border")}
+                  >
+                    <div className="flex items-center bg-surface px-3 py-1.5 text-xs font-semibold sm:justify-center sm:border-r sm:border-border sm:px-1">
+                      {planText.steps[s]}
+                    </div>
+                    <textarea
+                      className={cellArea}
+                      rows={2}
+                      value={l[s].text}
+                      onChange={(e) => setStep(i, s, { ...l[s], text: e.target.value })}
+                      aria-label={`${n}차시 ${planText.steps[s]} ${planText.lesson.text}`}
+                      disabled={disabled}
+                    />
+                    <select
+                      className={cn(cellInput, "border-t border-border sm:border-l sm:border-t-0")}
+                      value={toolOptions.some((o) => o.value === l[s].tool) ? l[s].tool : ""}
+                      onChange={(e) => setStep(i, s, { ...l[s], tool: e.target.value })}
+                      aria-label={`${n}차시 ${planText.steps[s]} ${planText.lesson.tool}`}
+                      disabled={disabled}
+                    >
+                      <option value="">{planText.lesson.noTool}</option>
+                      {toolOptions.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => toggle(i)}
+                className="truncate px-3 py-2.5 text-left text-muted-foreground hover:bg-accent"
+              >
+                {l.main.text || l.intro.text || "…"}
+              </button>
+            )}
+          </div>
+        )
+      })}
+      {lessons.length < PLAN_LESSONS_MAX && (
+        <button
+          type="button"
+          onClick={add}
+          disabled={disabled}
+          className="flex w-full items-center justify-center gap-1 border-t border-border py-2.5 font-semibold text-brand-muted-foreground hover:bg-brand-muted/40"
+        >
+          <Plus className="size-4" aria-hidden />
+          {planText.lesson.add}
+        </button>
+      )}
+    </>
+  )
+}
+
+// ── 읽기 ─────────────────────────────────────────────
+
+export function PlanGroupsView({ groups }: { groups: PlanGroup[] }) {
+  const rows = groups.filter((g) => GROUP_FIELDS.some((f) => g[f].trim()))
+  if (!rows.length) return null
+  return (
+    <>
+      <GroupHead />
+      {rows.map((g) => (
+        <div key={g.level} className="grid border-t border-border sm:grid-cols-[2.75rem_repeat(4,minmax(0,1fr))]">
+          <LevelCell>{g.level}</LevelCell>
+          {GROUP_FIELDS.map((f) => (
+            <div key={f} className={cn("sm:border-l sm:border-border", f === "highTouch" && "bg-brand-muted/40")}>
+              <MobileLabel field={f} />
+              <p className="whitespace-pre-line px-3 py-2.5">{g[f] || "—"}</p>
+            </div>
+          ))}
+        </div>
+      ))}
+    </>
+  )
+}
+
+export function PlanLessonsView({ lessons, toolLabel }: { lessons: PlanLesson[]; toolLabel: (v: string) => ReactNode }) {
+  return (
+    <>
+      <LessonHead />
+      {lessons.map((l, i) => (
+        <div key={i} className="grid border-t border-border sm:grid-cols-[6rem_minmax(0,1fr)]">
+          <div className="flex items-center gap-2 bg-brand-muted/50 px-3 py-2 font-semibold text-brand-muted-foreground sm:flex-col sm:justify-center sm:gap-0 sm:border-r sm:border-border">
+            {i + 1}차시
+            <span className="text-xs font-normal text-muted-foreground">
+              {l.minutes}
+              {planText.lesson.minutes}
+            </span>
+          </div>
+          <div>
+            {STEPS.map((s, k) => (
+              <div key={s} className={cn("grid sm:grid-cols-[3.5rem_minmax(0,1fr)_11rem]", k > 0 && "border-t border-border")}>
+                <div className="flex items-center bg-surface px-3 py-1.5 text-xs font-semibold sm:justify-center sm:border-r sm:border-border sm:px-1">
+                  {planText.steps[s]}
+                </div>
+                <p className="whitespace-pre-line px-3 py-2.5">{l[s].text || "—"}</p>
+                <div className="px-3 pb-2.5 sm:border-l sm:border-border sm:py-2.5">{l[s].tool ? toolLabel(l[s].tool) : null}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </>
+  )
+}

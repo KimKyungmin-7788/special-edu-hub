@@ -37,6 +37,7 @@ import { AppCard } from "@/components/app/AppCard"
 import { ProfileTrigger } from "@/components/profile/ProfileTrigger"
 import { CommentSection } from "@/components/comment/CommentSection"
 import { formatBytes } from "@/components/practice/FileListField"
+import { PlanView } from "@/components/practice/PlanView"
 import { OwnerAvatar, PracticeCover, formatDate } from "@/components/practice/PracticeCard"
 import { usePageTitle } from "@/lib/usePageTitle"
 
@@ -255,7 +256,7 @@ export function PracticeDetail() {
           ))}
         </ul>
         <h1 className="mt-3 text-3xl font-semibold tracking-tight">{practice.title}</h1>
-        <p className="mt-2 text-base text-muted-foreground">{practice.summary}</p>
+        {!practice.plan && <p className="mt-2 text-base text-muted-foreground">{practice.summary}</p>}
 
         <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
           <ProfileTrigger
@@ -363,7 +364,9 @@ export function PracticeDetail() {
       ) : (
         <>
           <section className="mt-8 border-t pt-8">
-            {body ? (
+            {practice.plan ? (
+              <PlanView plan={practice.plan} apps={apps} />
+            ) : body ? (
               <RichTextViewer html={body} />
             ) : (
               <p className="text-sm text-muted-foreground">본문이 없습니다.</p>

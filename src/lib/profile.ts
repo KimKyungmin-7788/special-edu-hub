@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase"
+import { DEV_PREVIEW_ID, devPreviewProfile } from "@/lib/devPreview"
 
 /**
  * 프로필 데이터 접근 일원화 지점 (2단계 묶음 B).
@@ -73,6 +74,7 @@ function mapRow(row: ProfileRow, email: string | null = null): Profile {
 
 /** id(=auth 사용자 id) 로 단일 프로필. */
 export async function getProfile(id: string): Promise<Profile | undefined> {
+  if (import.meta.env.DEV && id === DEV_PREVIEW_ID) return devPreviewProfile
   const { data, error } = await supabase
     .from("profiles")
     .select(PROFILE_COLUMNS)

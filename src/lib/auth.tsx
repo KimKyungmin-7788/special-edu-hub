@@ -1,3 +1,4 @@
+import { devPreviewProfile, devPreviewUser } from "@/lib/devPreview"
 import {
   createContext,
   useContext,
@@ -210,12 +211,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error
   }
 
+  // 개발 서버에서 로그인하지 않았으면 미리보기 사용자로 화면을 연다(배포 빌드에서는 빠짐).
+  const preview = import.meta.env.DEV && !session && !loading
+  const shownProfile = preview ? devPreviewProfile : profile
   const value: AuthContextValue = {
     session,
-    user: session?.user ?? null,
-    profile,
-    isStaff: profile?.role === "manager" || profile?.role === "admin",
-    isAdmin: profile?.role === "admin",
+    user: session?.user ?? (preview ? devPreviewUser : null),
+    profile: shownProfile,
+    isStaff: shownProfile?.role === "manager" || shownProfile?.role === "admin",
+    isAdmin: shownProfile?.role === "admin",
     loading,
     signInWithPassword,
     signUpWithPassword,
