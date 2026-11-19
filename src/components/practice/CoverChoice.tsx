@@ -22,8 +22,9 @@ export function CoverChoice({
 }) {
   const withThumb = apps.filter((a) => a.thumbnailUrl)
   const pickedApp = !value.file && withThumb.some((a) => a.thumbnailUrl === value.url)
-  const [upload, setUpload] = useState(!pickedApp && (!!value.file || !!value.url))
-  const showUpload = upload || withThumb.length === 0
+  // 직접 고르기 전(null)에는 지금 표지가 자료 썸네일인지로 정한다 — 자료 목록이 늦게 와도 맞게 보이도록.
+  const [upload, setUpload] = useState<boolean | null>(null)
+  const showUpload = withThumb.length === 0 || (upload ?? !pickedApp)
 
   return (
     <div className="flex flex-col gap-3">
