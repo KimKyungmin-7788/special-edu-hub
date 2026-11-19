@@ -43,7 +43,7 @@ export const DATA_ITEM_ORDER: DataItem[] = ["non_identifying", "identifying", "o
 /** 검증 마크와 게시 상태 문구(68). 마크는 '확인한 범위'를 말할 뿐 안전을 보증하지 않는다. */
 export const verifyText = {
   marks: {
-    verified: { label: "자동 점검 확인", detail: "누리집이 앱 주소의 파일을 받아 읽어 본 결과, 확인이 필요한 항목이 없었습니다." },
+    verified: { label: "자동 점검 확인", hint: "누리집이 앱 파일을 읽어 보고 확인이 필요한 항목을 찾지 못했어요.", detail: "누리집이 앱 주소의 파일을 받아 읽어 본 결과, 확인이 필요한 항목이 없었습니다." },
     reviewing: { label: "검토 중", detail: "자동 점검에서 확인이 필요한 항목이 나와 운영진이 확인하고 있습니다." },
     reverify: { label: "재검증 필요", detail: "마지막 점검 뒤 확인이 필요한 항목이 나와 다시 확인하고 있습니다." },
     unverified: { label: "점검 미확인", detail: "누리집이 이 자료의 파일을 받아 볼 수 없었거나 아직 점검하지 않았습니다." },

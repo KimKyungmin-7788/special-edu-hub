@@ -139,7 +139,7 @@ export function AppCard({
 
         <div className="flex flex-1 flex-col gap-2 px-4 pt-3 pb-3">
           {/* 뱃지 줄 — 대표 분류 · 교사 전용. 운영진이면 오른쪽에 순서 ▲▼. 높이 고정(카드 정렬). */}
-          <div className="flex h-6 items-center gap-1.5">
+          <div className="relative flex h-6 items-center gap-1.5">
             {mainLabel && (
               <span className="truncate rounded-full bg-primary px-2.5 py-0.5 text-xs font-bold text-primary-foreground">
                 {mainLabel}

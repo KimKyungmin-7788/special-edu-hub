@@ -3,7 +3,7 @@ import { Check, Copy, ListChecks } from "lucide-react"
 import { DetailSection } from "@/components/app/DetailSection"
 import { Emphasis } from "@/components/ui/Emphasis"
 import { GuideLink } from "@/components/app/GuideLink"
-import { criteriaSource, criterionStateText, evaluateCriteria, type CriterionResult, type CriterionState, type Todo, type TodoLevel, todoLevelText } from "@/config/criteria"
+import { criterionStateText, evaluateCriteria, type CriterionResult, type CriterionState, type Todo, type TodoLevel, todoLevelText } from "@/config/criteria"
 import { getAppChecks, getSafety, type AppCheck, type Safety } from "@/lib/safety"
 import { cn } from "@/lib/utils"
 
@@ -61,7 +61,7 @@ export function CheckReport({ appId, refreshKey, bare }: { appId: string; refres
           <Emphasis text={ev.summary} />
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
-          기준: <GuideLink />
+          {data.check.createdAt.slice(0, 10)} 점검 · 기준: <GuideLink />
         </p>
 
         {ev.todos.length > 0 && (
@@ -72,18 +72,17 @@ export function CheckReport({ appId, refreshKey, bare }: { appId: string; refres
           </ol>
         )}
 
-        <details className="mt-3">
-          <summary className="cursor-pointer text-muted-foreground underline">9개 기준 모두 보기</summary>
-          <dl className="mt-2 divide-y divide-border">
-            {groupResults([...ev.results, ev.baseline]).map((r) => (
-              <ResultRow key={r.id} r={r} />
-            ))}
-          </dl>
-          <p className="mt-2 text-xs text-muted-foreground">
-            <GuideLink /> · {data.check.createdAt.slice(0, 10)} 점검. 기본 보안은 가이드 기준 밖의 권장 항목입니다.{" "}
-            {criteriaSource.caveat}
-          </p>
-        </details>
+        {/* 학생 정보를 다루지 않는 앱은 위 요약과 같은 말뿐이라 펼쳐 보기를 두지 않는다 */}
+        {ev.processing && (
+          <details className="mt-3">
+            <summary className="cursor-pointer text-muted-foreground underline">9개 기준 모두 보기</summary>
+            <dl className="mt-2 divide-y divide-border">
+              {groupResults(ev.results).map((r) => (
+                <ResultRow key={r.id} r={r} />
+              ))}
+            </dl>
+          </details>
+        )}
       </div>
     )
   }
@@ -122,7 +121,8 @@ function TodoRow({ todo, n }: { todo: Todo; n: number }) {
           >
             {todoLevelText[todo.level]}
           </span>
-          <Emphasis text={todo.text} /> <span className="text-xs text-muted-foreground">({todo.ids.join("·")})</span>
+          <Emphasis text={todo.text} />
+          {todo.ids[0] !== "기본 보안" && <span className="text-xs text-muted-foreground"> ({todo.ids.join("·")})</span>}
         </span>
       </div>
       <details className="ml-7 mt-1.5">
