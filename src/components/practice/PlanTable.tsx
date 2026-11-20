@@ -52,7 +52,7 @@ export function PlanBar({ icon: Icon, children, tone }: { icon: LucideIcon; chil
 export function PlanRow({ label, required, children }: { label: ReactNode; required?: boolean; children: ReactNode }) {
   return (
     <div className="grid border-t border-border first:border-t-0 sm:grid-cols-[9rem_minmax(0,1fr)]">
-      <div className="flex items-center bg-surface px-3 py-2 font-medium sm:justify-center sm:border-r sm:border-border sm:text-center">
+      <div className="flex items-center break-keep bg-surface px-3 py-2 font-medium text-balance sm:justify-center sm:border-r sm:border-border sm:text-center">
         {label}
         {required && <span className="ml-0.5 text-destructive">*</span>}
       </div>
@@ -178,12 +178,12 @@ type GroupField = (typeof GROUP_FIELDS)[number]
 function GroupHead() {
   return (
     <div className="hidden border-t border-border sm:grid sm:grid-cols-[2.75rem_minmax(0,1fr)_minmax(0,1.25fr)_minmax(0,1.25fr)]">
-      <div className="bg-surface px-2 py-2 text-center text-xs font-semibold">{planText.group.level}</div>
+      <div className="break-keep bg-surface px-2 py-2 text-center text-xs font-semibold text-balance">{planText.group.level}</div>
       {GROUP_FIELDS.map((f) => (
         <div
           key={f}
           className={cn(
-            "border-l border-border px-2 py-2 text-center text-xs font-semibold",
+            "break-keep border-l border-border px-2 py-2 text-center text-xs font-semibold text-balance",
             f === "highTouch" ? "bg-brand-muted text-brand-muted-foreground" : "bg-surface",
           )}
         >
@@ -278,7 +278,7 @@ export type ToolOption = { value: string; label: string }
 
 function LessonHead() {
   return (
-    <div className="hidden border-t border-border bg-surface text-xs font-semibold sm:grid sm:grid-cols-[6rem_3.5rem_minmax(0,1fr)_11rem]">
+    <div className="hidden break-keep border-t border-border bg-surface text-xs font-semibold text-balance sm:grid sm:grid-cols-[6rem_3.5rem_minmax(0,1fr)_11rem]">
       <div className="px-2 py-2 text-center">{planText.lesson.head}</div>
       <div className="border-l border-border px-2 py-2 text-center">{planText.lesson.step}</div>
       <div className="border-l border-border px-2 py-2 text-center">{planText.lesson.text}</div>
