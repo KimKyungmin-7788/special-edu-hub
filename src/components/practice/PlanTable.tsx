@@ -428,8 +428,9 @@ export function PlanLessonsFields({
 
 // ── 읽기 ─────────────────────────────────────────────
 
-export function PlanGroupsView({ groups }: { groups: PlanGroup[] }) {
-  const rows = groups.filter((g) => GROUP_FIELDS.some((f) => g[f].trim()))
+/** all: 인쇄본처럼 빈 칸도 모두 그린다 */
+export function PlanGroupsView({ groups, all }: { groups: PlanGroup[]; all?: boolean }) {
+  const rows = all ? groups : groups.filter((g) => GROUP_FIELDS.some((f) => g[f].trim()))
   if (!rows.length) return null
   return (
     <>
@@ -440,7 +441,7 @@ export function PlanGroupsView({ groups }: { groups: PlanGroup[] }) {
           {GROUP_FIELDS.map((f) => (
             <div key={f} className={cn("sm:border-l sm:border-border", f === "highTouch" && "bg-brand-muted/40")}>
               <MobileLabel field={f} />
-              <p className="whitespace-pre-line px-3 py-2.5">{g[f] || "—"}</p>
+              <p className="min-h-[3.5rem] whitespace-pre-line px-3 py-2.5">{g[f] || (all ? "" : "—")}</p>
             </div>
           ))}
         </div>
@@ -449,7 +450,15 @@ export function PlanGroupsView({ groups }: { groups: PlanGroup[] }) {
   )
 }
 
-export function PlanLessonsView({ lessons, toolLabel }: { lessons: PlanLesson[]; toolLabel: (v: string) => ReactNode }) {
+export function PlanLessonsView({
+  lessons,
+  toolLabel,
+  all,
+}: {
+  lessons: PlanLesson[]
+  toolLabel: (v: string) => ReactNode
+  all?: boolean
+}) {
   return (
     <>
       <LessonHead />
@@ -468,7 +477,7 @@ export function PlanLessonsView({ lessons, toolLabel }: { lessons: PlanLesson[];
                 <div className="flex items-center bg-surface px-3 py-1.5 text-xs font-semibold sm:justify-center sm:border-r sm:border-border sm:px-1">
                   {planText.steps[s]}
                 </div>
-                <p className="whitespace-pre-line px-3 py-2.5">{l[s].text || "—"}</p>
+                <p className={cn("whitespace-pre-line px-3 py-2.5", all && "min-h-[3.5rem]")}>{l[s].text || (all ? "" : "—")}</p>
                 <div className="px-3 pb-2.5 sm:border-l sm:border-border sm:py-2.5">{l[s].tool ? toolLabel(l[s].tool) : null}</div>
               </div>
             ))}

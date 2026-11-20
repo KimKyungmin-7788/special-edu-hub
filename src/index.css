@@ -251,6 +251,9 @@
     position: absolute;
     inset: 0 0 auto 0;
     background: var(--background);
+    /* 칸 이름·머리줄 바탕색이 빠지지 않게 */
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
   @page {
     size: A4;

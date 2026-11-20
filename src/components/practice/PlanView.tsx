@@ -7,8 +7,21 @@ import type { App } from "@/lib/apps"
 import { PLAN_LEVELS, type PracticePlan } from "@/lib/practices"
 import { PlanBar, PlanDivider, PlanGroupsView, PlanLessonsView, PlanRow, PlanTable } from "@/components/practice/PlanTable"
 
-/** 사례 상세 — 지도안 양식 글을 쓰기 화면과 같은 표로 보여 준다. 빈 칸 줄은 숨긴다. */
-export function PlanView({ plan, apps }: { plan: PracticePlan; apps: App[] }) {
+/**
+ * 사례 상세 — 지도안 양식 글을 쓰기 화면과 같은 표로 보여 준다. 빈 칸 줄은 숨긴다.
+ * full: 'PDF로 저장' 인쇄본 — 쓰지 않은 칸도 빈칸으로 모든 서식을 그린다. head 는 표 맨 위 교과·수업 주제·대상 줄.
+ */
+export function PlanView({
+  plan,
+  apps,
+  full,
+  head,
+}: {
+  plan: PracticePlan
+  apps: App[]
+  full?: boolean
+  head?: { subject: string; title: string; target: string }
+}) {
   const [standards, setStandards] = useState<StandardLite[]>([])
 
   useEffect(() => {
@@ -35,15 +48,25 @@ export function PlanView({ plan, apps }: { plan: PracticePlan; apps: App[] }) {
     return <span className="rounded-full border border-border px-2 py-0.5 text-xs">{v.slice(5)}</span>
   }
   const tools = [...apps.map((a) => `app:${a.id}`), ...plan.tools.map((t) => `tool:${t}`)]
-  const text = (v: string) => <p className="whitespace-pre-line px-3 py-2.5">{v}</p>
+  const text = (v: string) => (
+    <p className={full ? "min-h-[2.75rem] whitespace-pre-line px-3 py-2.5" : "whitespace-pre-line px-3 py-2.5"}>{v}</p>
+  )
+  const show = (v: unknown) => full || !!v
 
   const table = (
     <PlanTable>
       <PlanBar icon={ClipboardList}>{planText.bars.head}</PlanBar>
-      {plan.unit && <PlanRow label={planText.unit}>{text(plan.unit)}</PlanRow>}
-      {plan.standards.length > 0 && (
+      {head && (
+        <>
+          <PlanRow label={planText.subject}>{text(head.subject)}</PlanRow>
+          <PlanRow label={planText.title}>{text(head.title)}</PlanRow>
+          <PlanRow label={planText.target}>{text(head.target)}</PlanRow>
+        </>
+      )}
+      {show(plan.unit) && <PlanRow label={planText.unit}>{text(plan.unit)}</PlanRow>}
+      {show(plan.standards.length) && (
         <PlanRow label={planText.standards}>
-          <ul className="flex flex-col gap-1.5 px-3 py-2.5">
+          <ul className={full ? "flex min-h-[2.75rem] flex-col gap-1.5 px-3 py-2.5" : "flex flex-col gap-1.5 px-3 py-2.5"}>
             {plan.standards.map((code) => {
               const s = standards.find((x) => x.code === code)
               return (
@@ -65,9 +88,9 @@ export function PlanView({ plan, apps }: { plan: PracticePlan; apps: App[] }) {
           ))}
         </div>
       </PlanRow>
-      {tools.length > 0 && (
+      {show(tools.length) && (
         <PlanRow label={planText.tools}>
-          <div className="flex flex-wrap gap-1.5 px-3 py-2.5">
+          <div className={full ? "flex min-h-[2.75rem] flex-wrap gap-1.5 px-3 py-2.5" : "flex flex-wrap gap-1.5 px-3 py-2.5"}>
             {tools.map((t) => (
               <span key={t}>{toolLabel(t)}</span>
             ))}
@@ -75,22 +98,22 @@ export function PlanView({ plan, apps }: { plan: PracticePlan; apps: App[] }) {
         </PlanRow>
       )}
 
-      {plan.groups.some((g) => g.performance || g.content || g.method || g.highTouch) && (
+      {show(plan.groups.some((g) => g.performance || g.content || g.method || g.highTouch)) && (
         <>
           <PlanBar icon={Users}>{planText.bars.groups}</PlanBar>
-          <PlanGroupsView groups={plan.groups} />
+          <PlanGroupsView groups={plan.groups} all={full} />
         </>
       )}
 
       <PlanBar icon={ListOrdered}>
         {planText.bars.lessons} · {plan.lessons.length}차시
       </PlanBar>
-      <PlanLessonsView lessons={plan.lessons} toolLabel={toolLabel} />
-      {plan.evaluation && <PlanRow label={planText.evaluation}>{text(plan.evaluation)}</PlanRow>}
+      <PlanLessonsView lessons={plan.lessons} toolLabel={toolLabel} all={full} />
+      {show(plan.evaluation) && <PlanRow label={planText.evaluation}>{text(plan.evaluation)}</PlanRow>}
 
     </PlanTable>
   )
-  if (!plan.reaction && !plan.reflection) return table
+  if (!full && !plan.reaction && !plan.reflection) return table
   return (
     <div className="flex flex-col gap-6">
       {table}
@@ -99,8 +122,8 @@ export function PlanView({ plan, apps }: { plan: PracticePlan; apps: App[] }) {
         <PlanBar icon={NotebookPen} tone="record">
           {planText.bars.record}
         </PlanBar>
-        {plan.reaction && <PlanRow label={planText.reaction}>{text(plan.reaction)}</PlanRow>}
-        {plan.reflection && <PlanRow label={planText.reflection}>{text(plan.reflection)}</PlanRow>}
+        {show(plan.reaction) && <PlanRow label={planText.reaction}>{text(plan.reaction)}</PlanRow>}
+        {show(plan.reflection) && <PlanRow label={planText.reflection}>{text(plan.reflection)}</PlanRow>}
       </PlanTable>
     </div>
   )

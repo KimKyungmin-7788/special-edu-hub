@@ -13,6 +13,7 @@ import {
   practiceSections,
   practiceTargets,
   planText,
+  practiceCopy,
   practiceDraftEnabled,
 } from "@/config/practice"
 import { uploadThumbnail, charCount, getApps, type App } from "@/lib/apps"
@@ -978,19 +979,41 @@ export function PracticeForm({
 
       {/* 인쇄본(화면에는 숨김) — 'PDF로 저장'을 누르면 이것만 인쇄된다 */}
       <div className="print-sheet" aria-hidden>
-        <h1 className="text-2xl font-semibold">{title || "수업 사례"}</h1>
-        <p className="mb-4 mt-1 text-sm text-muted-foreground">
-          {[subjects.map((sid) => getCategory(sid)?.name).join("·"), target, format === "plan" ? `${plan.lessons.length}차시` : ""]
-            .filter(Boolean)
-            .join(" · ")}
-        </p>
         {format === "plan" ? (
-          <PlanView plan={plan} apps={linkedApps} />
+          <PlanView
+            plan={plan}
+            apps={linkedApps}
+            full
+            head={{
+              subject: subjects.map((sid) => getCategory(sid)?.name).join("·"),
+              title,
+              target,
+            }}
+          />
         ) : (
-          <>
-            {summary && <p className="mb-4">{summary}</p>}
-            <RichTextViewer html={stripEmptySections(body)} />
-          </>
+          <PlanTable>
+            <PlanBar icon={ClipboardList}>{practiceCopy.writeTitle}</PlanBar>
+            <PlanRow label="제목">
+              <p className="min-h-[2.75rem] px-3 py-2.5">{title}</p>
+            </PlanRow>
+            <PlanRow label="한 줄 요약">
+              <p className="min-h-[2.75rem] px-3 py-2.5">{summary}</p>
+            </PlanRow>
+            <PlanRow label={planText.subject}>
+              <p className="min-h-[2.75rem] px-3 py-2.5">{subjects.map((sid) => getCategory(sid)?.name).join("·")}</p>
+            </PlanRow>
+            <PlanRow label={planText.target}>
+              <p className="min-h-[2.75rem] px-3 py-2.5">{target}</p>
+            </PlanRow>
+            <PlanRow label="차시">
+              <p className="min-h-[2.75rem] px-3 py-2.5">{lessonCount && `${lessonCount}차시`}</p>
+            </PlanRow>
+            <PlanRow label="수업 이야기">
+              <div className="min-h-[12rem] px-3 py-2.5">
+                <RichTextViewer html={body} />
+              </div>
+            </PlanRow>
+          </PlanTable>
         )}
       </div>
 
