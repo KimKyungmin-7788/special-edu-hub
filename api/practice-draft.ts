@@ -93,12 +93,11 @@ const SCHEMA = {
           items: {
             type: "object",
             additionalProperties: false,
-            required: ["level", "performance", "content", "method", "highTouch"],
+            required: ["level", "performance", "content", "highTouch"],
             properties: {
               level: { type: "string", enum: ["가", "나", "다"] },
               performance: { type: "string" },
               content: { type: "string" },
-              method: { type: "string" },
               highTouch: { type: "string" },
             },
           },
@@ -148,7 +147,7 @@ const SYSTEM = `당신은 특수교육 교사 연구회 누리집의 편집자�
   - unit: 단원명. 없으면 "".
   - goals: 수준별 수업 목표 가·나·다 각 한 문장("~할 수 있다."). 설계안에 수준별 목표가 하나뿐이면 셋 모두 그 문장.
   - tools: 수업에 쓴 AI·디지털 도구 이름 목록(웹앱·서비스 이름). 없으면 빈 배열.
-  - groups: 가·나·다 집단마다 performance(수행 수준), content(조정된 내용), method(조정된 방법), highTouch(교사가 직접 하는 정서적·관계적 상호작용).
+  - groups: 가·나·다 집단마다 performance(교과 관련 수행 수준), content(조정된 내용 또는 학습과정 — 내용·방법 조정을 함께), highTouch(교사가 직접 하는 정서적·관계적 상호작용).
     설계안에 적힌 내용만 쓰고, 없는 칸은 "". 특히 highTouch 는 설계안에 그런 지원이 적혀 있을 때만 씁니다.
   - lessons: 차시마다 minutes(분, 모르면 40)와 도입(intro)·전개(main)·정리(wrap). text 는 교사·학생 활동을 짧은 줄로, tool 은 그 단계에서 쓴 도구 이름 하나(tools 에 있는 이름 그대로, 없으면 "").
   - evaluation: 평가 방법을 한두 줄로. 없으면 "".

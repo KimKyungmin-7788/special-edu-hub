@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react"
-import { Camera, ClipboardList, ListOrdered, NotebookPen, Users } from "lucide-react"
+import { ClipboardList, FileDown, History, ListOrdered, NotebookPen, Users, X } from "lucide-react"
 import { Link, useNavigate } from "react-router-dom"
 import {
   getCategory,
@@ -13,6 +13,7 @@ import {
   practiceSections,
   practiceTargets,
   planText,
+  practiceDraftEnabled,
 } from "@/config/practice"
 import { uploadThumbnail, charCount, getApps, type App } from "@/lib/apps"
 import {
@@ -46,6 +47,7 @@ import { type CoverValue } from "@/components/practice/CoverField"
 import { CoverChoice } from "@/components/practice/CoverChoice"
 import {
   PlanBar,
+  PlanDivider,
   PlanGoalsFields,
   PlanGroupsFields,
   PlanLessonsFields,
@@ -56,6 +58,17 @@ import {
   type ToolOption,
 } from "@/components/practice/PlanTable"
 import { SelectedStandards } from "@/components/app/SelectedStandards"
+import { RichTextViewer } from "@/components/app/RichTextViewer"
+import { PlanView } from "@/components/practice/PlanView"
+import { useAuth } from "@/lib/auth"
+import {
+  deleteWritingDraft,
+  formatDraftTime,
+  listWritingDrafts,
+  saveWritingDraft,
+  type WritingDraft,
+  type WritingDraftData,
+} from "@/lib/practiceDrafts"
 import { StandardsFinderModal } from "@/components/app/StandardsFinderModal"
 import { StandardsManualModal } from "@/components/app/StandardsManualModal"
 import { AppLinkPicker } from "@/components/practice/AppLinkPicker"
@@ -93,13 +106,37 @@ function normalizePlan(p: Partial<PracticePlan> | null | undefined): PracticePla
     ...base,
     ...p,
     goals: { ...base.goals, ...(p.goals ?? {}) },
-    groups: base.groups.map((g) => ({ ...g, ...(p.groups?.find((x) => x.level === g.level) ?? {}) })),
+    groups: base.groups.map((g) => {
+      const { method, ...saved } = p.groups?.find((x) => x.level === g.level) ?? g
+      // 예전 '조정된 방법' 칸은 '조정된 내용 또는 학습과정'에 합친다.
+      return { ...g, ...saved, content: [saved.content, method].map((x) => x?.trim()).filter(Boolean).join("\n") }
+    }),
     lessons: p.lessons?.length
       ? p.lessons.map((l) => ({ ...emptyLesson(), ...l }))
       : base.lessons,
     standards: p.standards ?? [],
     tools: p.tools ?? [],
   }
+}
+
+/** 임시 저장할 만큼 뭔가 썼는지 — 빈 화면을 열기만 해도 카드가 생기지 않게. */
+function draftHasContent(d: WritingDraftData): boolean {
+  const p = d.plan
+  return (
+    d.title.trim() !== "" ||
+    d.summary.trim() !== "" ||
+    d.apps.length > 0 ||
+    d.files.length > 0 ||
+    (d.format === "free" && stripEmptySections(d.body) !== "") ||
+    (d.format === "plan" &&
+      (p.unit.trim() !== "" ||
+        PLAN_LEVELS.some((l) => p.goals[l].trim() !== "") ||
+        p.groups.some((g) => g.performance || g.content || g.highTouch) ||
+        p.lessons.some((l) => l.intro.text || l.main.text || l.wrap.text) ||
+        p.evaluation.trim() !== "" ||
+        p.reaction.trim() !== "" ||
+        p.reflection.trim() !== ""))
+  )
 }
 
 /** 저장된 category_ids → [고른 교과(순서대로)], {교과: 세부분류[]} */
@@ -183,6 +220,124 @@ export function PracticeForm({
   const knownPaths = useRef(new Set((practice?.files ?? []).map((f) => f.path)))
   // 새 글 저장이 중간(앱 연결)에서 실패했을 때 다시 누르면 중복 등록 대신 수정으로.
   const savedId = useRef<string | null>(practice?.id ?? null)
+
+  // ── 작성 중인 사례(73): 새 글은 쓰는 동안 자동 저장, 다시 들어오면 카드로 이어 쓰기 ──
+  const { session } = useAuth()
+  const draftsOn = !isEdit && !!session
+  const [drafts, setDrafts] = useState<WritingDraft[]>([])
+  const [draftId, setDraftId] = useState<string | null>(null)
+  const [savedAt, setSavedAt] = useState<string | null>(null)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const draftIdRef = useRef<string | null>(null)
+  const lastSnap = useRef("")
+  const saveChain = useRef<Promise<void>>(Promise.resolve())
+  const draftData: WritingDraftData = {
+    format,
+    title,
+    summary,
+    coverUrl: cover.url,
+    subjects,
+    subs,
+    target,
+    lessonCount,
+    body,
+    apps,
+    links,
+    files,
+    visibility,
+    plan,
+  }
+  const dataRef = useRef(draftData)
+  dataRef.current = draftData
+  const snapshot = JSON.stringify(draftData)
+
+  useEffect(() => {
+    if (draftsOn) listWritingDrafts().then(setDrafts)
+  }, [draftsOn])
+
+  /** 지금 내용을 임시 저장(내용이 있고 바뀌었을 때만). 저장은 하나씩 차례로 — 같은 글이 두 번 생기지 않게. */
+  function saveNow(): Promise<void> {
+    saveChain.current = saveChain.current.then(async () => {
+      if (!draftsOn) return
+      const d = dataRef.current
+      const snap = JSON.stringify(d)
+      if (snap === lastSnap.current || !draftHasContent(d)) return
+      try {
+        const r = await saveWritingDraft(draftIdRef.current, d.title, d)
+        draftIdRef.current = r.id
+        lastSnap.current = snap
+        setDraftId(r.id)
+        setSavedAt(r.updatedAt)
+        setSaveError(null)
+      } catch (err) {
+        setSaveError(errorText(err, "임시 저장하지 못했어요."))
+      }
+    })
+    return saveChain.current
+  }
+
+  useEffect(() => {
+    if (!draftsOn || submitting) return
+    const t = setTimeout(() => void saveNow(), 1500)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [snapshot, draftsOn, submitting])
+
+  useEffect(() => {
+    if (!draftsOn) return
+    const onHide = () => document.visibilityState === "hidden" && void saveNow()
+    document.addEventListener("visibilitychange", onHide)
+    return () => document.removeEventListener("visibilitychange", onHide)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftsOn])
+
+  /** 카드를 누르면: 지금 쓰던 것은 저장해 카드로 남기고, 고른 것을 불러와 이어 쓴다. */
+  async function openDraft(d: WritingDraft) {
+    await saveNow()
+    const x = d.data
+    setFormat(x.format)
+    setTitle(x.title)
+    setSummary(x.summary)
+    setCover({ file: null, url: x.coverUrl })
+    setSubjects(x.subjects)
+    setSubs(x.subs)
+    setTarget(x.target)
+    setLessonCount(x.lessonCount)
+    setBody(x.body)
+    setApps(x.apps)
+    setLinks(x.links)
+    setFiles(x.files)
+    for (const f of x.files) knownPaths.current.add(f.path)
+    setVisibility(x.visibility)
+    setPlan(normalizePlan(x.plan))
+    setEditorKey((k) => k + 1)
+    draftIdRef.current = d.id
+    lastSnap.current = JSON.stringify(x)
+    setDraftId(d.id)
+    setSavedAt(d.updatedAt)
+    setDrafts(await listWritingDrafts())
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }
+
+  async function discardDraft(d: WritingDraft) {
+    if (!window.confirm(`'${d.title || "제목 없음"}' 작성 중인 사례를 지울까요? 되돌릴 수 없어요.`)) return
+    await deleteWritingDraft(d.id)
+    setDrafts((cur) => cur.filter((x) => x.id !== d.id))
+  }
+
+  /** 지금까지 쓴 내용을 인쇄 창으로 — 'PDF로 저장'을 고르면 PDF 파일이 된다. */
+  function printSheet() {
+    const prevTitle = document.title
+    document.title = title.trim() || "수업 사례"
+    document.body.classList.add("printing-sheet")
+    const done = () => {
+      document.body.classList.remove("printing-sheet")
+      document.title = prevTitle
+      window.removeEventListener("afterprint", done)
+    }
+    window.addEventListener("afterprint", done)
+    window.print()
+  }
 
   const cancelTo = isEdit ? `/practices/${practice.id}` : "/practices"
 
@@ -344,12 +499,16 @@ export function PracticeForm({
       }
       await setPracticeApps(id, apps)
 
-      // 목록에서 뺀 첨부는 저장소에서도 정리(실패해도 무시).
-      const keep = new Set(files.map((f) => f.path))
+      // 목록에서 뺀 첨부는 저장소에서도 정리(실패해도 무시). 다른 작성 중인 사례가 쓰는 파일은 남긴다.
+      const keep = new Set([
+        ...files.map((f) => f.path),
+        ...drafts.filter((d) => d.id !== draftIdRef.current).flatMap((d) => d.data.files.map((f) => f.path)),
+      ])
       await Promise.all(
         [...knownPaths.current].filter((p) => !keep.has(p)).map(removePracticeFile),
       )
 
+      if (draftIdRef.current) await deleteWritingDraft(draftIdRef.current)
       navigate(`/practices/${id}`, { replace: true })
     } catch (err) {
       setError(errorText(err, "저장하지 못했습니다."))
@@ -435,7 +594,47 @@ export function PracticeForm({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-      {/* ── 양식 고르기 + 설계안으로 초안 채우기(새 글) ── */}
+      {/* ── 작성 중인 사례(이어 쓰기) ── */}
+      {draftsOn && drafts.some((d) => d.id !== draftId) && (
+        <section className="rounded-xl border border-border bg-card p-4">
+          <h2 className="flex items-center gap-1.5 text-sm font-semibold">
+            <History className="size-4" aria-hidden />
+            아직 작성 중인 사례가 있습니다
+          </h2>
+          <ul className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {drafts
+              .filter((d) => d.id !== draftId)
+              .map((d) => (
+                <li key={d.id} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => openDraft(d)}
+                    disabled={busy}
+                    className="flex w-full flex-col items-start gap-1 rounded-lg border border-border bg-surface px-3 py-2.5 pr-9 text-left hover:border-primary hover:bg-accent"
+                  >
+                    <span className="line-clamp-1 text-sm font-medium">
+                      {d.title || d.data.plan?.goals?.가 || "제목 없음"}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {planText.formats[d.data.format]} · 마지막 작성 {formatDraftTime(d.updatedAt)}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => discardDraft(d)}
+                    aria-label={`${d.title || "제목 없음"} 지우기`}
+                    title="지우기"
+                    className="absolute right-1.5 top-1.5 rounded p-1 text-muted-foreground hover:bg-accent hover:text-destructive"
+                  >
+                    <X className="size-4" aria-hidden />
+                  </button>
+                </li>
+              ))}
+          </ul>
+        </section>
+      )}
+
+      {/* ── 양식 고르기 + 저장 상태 + PDF ── */}
       <div className="flex flex-wrap items-center gap-2" role="radiogroup" aria-label="쓰는 양식">
         {(["plan", "free"] as const).map((f) => (
           <button
@@ -454,8 +653,23 @@ export function PracticeForm({
             {planText.formats[f]}
           </button>
         ))}
+        <span className="ml-auto flex items-center gap-3">
+          {draftsOn && (saveError || savedAt) && (
+            <span className={saveError ? "text-xs text-destructive" : "text-xs text-muted-foreground"} role="status">
+              {saveError ?? `임시 저장됨 · ${formatDraftTime(savedAt!)}`}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={printSheet}
+            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-2 text-sm hover:bg-accent"
+          >
+            <FileDown className="size-4" aria-hidden />
+            PDF로 저장
+          </button>
+        </span>
       </div>
-      {!isEdit && (
+      {!isEdit && practiceDraftEnabled && (
         <DraftFromPlan
           onDraft={applyDraft}
           canAttach={files.length < PRACTICE_FILES_MAX}
@@ -483,11 +697,11 @@ export function PracticeForm({
       {format === "plan" ? (
         <PlanTable>
           <PlanBar icon={ClipboardList}>{planText.bars.head}</PlanBar>
-          <PlanRow label={planText.title} required>
-            {titleInput}
-          </PlanRow>
           <PlanRow label={planText.subject} required>
             <div className="flex flex-col gap-2 p-3">{subjectPicker}</div>
+          </PlanRow>
+          <PlanRow label={planText.title} required>
+            {titleInput}
           </PlanRow>
           <PlanRow label={planText.target}>
             <div className="p-3">{targetPicker}</div>
@@ -554,7 +768,13 @@ export function PracticeForm({
             />
           </PlanRow>
 
-          <PlanBar icon={NotebookPen}>{planText.bars.record}</PlanBar>
+        </PlanTable>
+      ) : null}
+      {format === "plan" && (
+        <>
+          <PlanDivider>{planText.recordIntro}</PlanDivider>
+          <PlanTable>
+          <PlanBar icon={NotebookPen} tone="record">{planText.bars.record}</PlanBar>
           <PlanRow label={planText.reaction}>
             <textarea
               className={cellInput + " min-h-[5rem] resize-y"}
@@ -578,12 +798,11 @@ export function PracticeForm({
             />
           </PlanRow>
 
-          <PlanBar icon={Camera}>{planText.bars.cover}</PlanBar>
-          <PlanRow label={planText.cover} required>
-            <div className="p-3">{coverChoice}</div>
-          </PlanRow>
-        </PlanTable>
-      ) : (
+          </PlanTable>
+          <Section title={planText.cover}>{coverChoice}</Section>
+        </>
+      )}
+      {format === "free" && (
         <>
           {/* ── 1. 기본 정보 ── */}
           <Section title="기본 정보">
@@ -755,6 +974,24 @@ export function PracticeForm({
         >
           {submitting ? "저장 중…" : fileBusy ? "파일 올리는 중…" : isEdit ? "수정 저장" : "올리기"}
         </button>
+      </div>
+
+      {/* 인쇄본(화면에는 숨김) — 'PDF로 저장'을 누르면 이것만 인쇄된다 */}
+      <div className="print-sheet" aria-hidden>
+        <h1 className="text-2xl font-semibold">{title || "수업 사례"}</h1>
+        <p className="mb-4 mt-1 text-sm text-muted-foreground">
+          {[subjects.map((sid) => getCategory(sid)?.name).join("·"), target, format === "plan" ? `${plan.lessons.length}차시` : ""]
+            .filter(Boolean)
+            .join(" · ")}
+        </p>
+        {format === "plan" ? (
+          <PlanView plan={plan} apps={linkedApps} />
+        ) : (
+          <>
+            {summary && <p className="mb-4">{summary}</p>}
+            <RichTextViewer html={stripEmptySections(body)} />
+          </>
+        )}
       </div>
 
       <StandardsFinderModal

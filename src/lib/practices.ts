@@ -33,7 +33,8 @@ export type PlanStep = { text: string; tool: string }
 export type PlanLesson = { minutes: number; intro: PlanStep; main: PlanStep; wrap: PlanStep }
 export const PLAN_LEVELS = ["가", "나", "다"] as const
 export type PlanLevel = (typeof PLAN_LEVELS)[number]
-export type PlanGroup = { level: PlanLevel; performance: string; content: string; method: string; highTouch: string }
+/** content = 조정된 내용 또는 학습과정. method 는 예전(합치기 전) 칸 — 불러올 때 content 로 합친다. */
+export type PlanGroup = { level: PlanLevel; performance: string; content: string; highTouch: string; method?: string }
 export type PracticePlan = {
   unit: string
   standards: string[]
@@ -57,7 +58,7 @@ export function emptyPlan(): PracticePlan {
     standards: [],
     goals: { 가: "", 나: "", 다: "" },
     tools: [],
-    groups: PLAN_LEVELS.map((level) => ({ level, performance: "", content: "", method: "", highTouch: "" })),
+    groups: PLAN_LEVELS.map((level) => ({ level, performance: "", content: "", highTouch: "" })),
     lessons: [emptyLesson()],
     evaluation: "",
     reaction: "",

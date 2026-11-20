@@ -233,3 +233,27 @@
     font-weight: 600;
   }
 }
+
+/* 사례 쓰기 'PDF로 저장' — 인쇄할 때는 지도안 인쇄본(.print-sheet)만 보인다. */
+.print-sheet {
+  display: none;
+}
+@media print {
+  body.printing-sheet * {
+    visibility: hidden;
+  }
+  body.printing-sheet .print-sheet,
+  body.printing-sheet .print-sheet * {
+    visibility: visible;
+  }
+  body.printing-sheet .print-sheet {
+    display: block;
+    position: absolute;
+    inset: 0 0 auto 0;
+    background: var(--background);
+  }
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+}

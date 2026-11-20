@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react"
-import { ChevronDown, HeartHandshake, Plus, Trash2, X, type LucideIcon } from "lucide-react"
+import { HighTouchPicker } from "@/components/practice/HighTouchPicker"
+import { ChevronDown, HeartHandshake, ListPlus, Plus, Trash2, X, type LucideIcon } from "lucide-react"
 import { planText } from "@/config/practice"
 import {
   emptyLesson,
@@ -18,13 +19,30 @@ import { cn } from "@/lib/utils"
  * 넓은 화면은 표, 휴대폰은 칸 이름을 위로 올려 쌓는다. 쓰기(…Fields)와 읽기(…View)가 같은 틀을 쓴다.
  */
 
+/** 지도안과 실천 기록 사이 구분선 */
+export function PlanDivider({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex items-center gap-3 text-sm font-semibold text-muted-foreground" role="separator">
+      <span className="h-px flex-1 bg-border" />
+      {children}
+      <span className="h-px flex-1 bg-border" />
+    </div>
+  )
+}
+
 export function PlanTable({ children }: { children: ReactNode }) {
   return <div className="overflow-hidden rounded-xl border border-border bg-card text-sm">{children}</div>
 }
 
-export function PlanBar({ icon: Icon, children }: { icon: LucideIcon; children: ReactNode }) {
+/** tone="record": 수업 뒤 실천 기록처럼 지도안과 다른 구역임을 보이는 회색 머리줄 */
+export function PlanBar({ icon: Icon, children, tone }: { icon: LucideIcon; children: ReactNode; tone?: "record" }) {
   return (
-    <div className="flex items-center justify-center gap-1.5 border-t border-border bg-brand-muted px-3 py-2 font-semibold text-brand-muted-foreground first:border-t-0">
+    <div
+      className={cn(
+        "flex items-center justify-center gap-1.5 border-t border-border px-3 py-2 font-semibold first:border-t-0",
+        tone === "record" ? "bg-secondary text-foreground" : "bg-brand-muted text-brand-muted-foreground",
+      )}
+    >
       <Icon className="size-4" aria-hidden />
       {children}
     </div>
@@ -154,12 +172,12 @@ export function PlanToolNames({
 
 // ── 학생 특성·개별화 지원 ─────────────────────────────
 
-const GROUP_FIELDS = ["performance", "content", "method", "highTouch"] as const
+const GROUP_FIELDS = ["performance", "content", "highTouch"] as const
 type GroupField = (typeof GROUP_FIELDS)[number]
 
 function GroupHead() {
   return (
-    <div className="hidden border-t border-border sm:grid sm:grid-cols-[2.75rem_repeat(4,minmax(0,1fr))]">
+    <div className="hidden border-t border-border sm:grid sm:grid-cols-[2.75rem_minmax(0,1fr)_minmax(0,1.25fr)_minmax(0,1.25fr)]">
       <div className="bg-surface px-2 py-2 text-center text-xs font-semibold">{planText.group.level}</div>
       {GROUP_FIELDS.map((f) => (
         <div
@@ -200,30 +218,55 @@ export function PlanGroupsFields({
   onChange: (g: PlanGroup[]) => void
   disabled?: boolean
 }) {
+  const [picking, setPicking] = useState<number | null>(null)
   const set = (i: number, f: GroupField, v: string) =>
     onChange(groups.map((g, j) => (j === i ? { ...g, [f]: v } : g)))
+  function addHighTouch(i: number, lines: string[]) {
+    const cur = groups[i].highTouch.trim()
+    set(i, "highTouch", [cur, ...lines].filter(Boolean).join("\n"))
+  }
   return (
     <>
       <GroupHead />
       {groups.map((g, i) => (
-        <div key={g.level} className="grid border-t border-border sm:grid-cols-[2.75rem_repeat(4,minmax(0,1fr))]">
+        <div key={g.level} className="grid border-t border-border sm:grid-cols-[2.75rem_minmax(0,1fr)_minmax(0,1.25fr)_minmax(0,1.25fr)]">
           <LevelCell>{g.level}</LevelCell>
           {GROUP_FIELDS.map((f) => (
-            <label key={f} className={cn("sm:border-l sm:border-border", f === "highTouch" && "bg-brand-muted/40")}>
-              <MobileLabel field={f} />
-              <textarea
-                className={cellArea}
-                rows={2}
-                value={g[f]}
-                placeholder={planText.groupPlaceholders[f]}
-                onChange={(e) => set(i, f, e.target.value)}
-                aria-label={`${g.level} ${planText.group[f]}`}
-                disabled={disabled}
-              />
-            </label>
+            <div key={f} className={cn("flex flex-col sm:border-l sm:border-border", f === "highTouch" && "bg-brand-muted/40")}>
+              <label className="flex flex-1 flex-col">
+                <MobileLabel field={f} />
+                <textarea
+                  className={cn(cellArea, "flex-1")}
+                  rows={f === "highTouch" ? 3 : 2}
+                  value={g[f]}
+                  placeholder={planText.groupPlaceholders[f]}
+                  onChange={(e) => set(i, f, e.target.value)}
+                  aria-label={`${g.level} ${planText.group[f]}`}
+                  disabled={disabled}
+                />
+              </label>
+              {f === "highTouch" && (
+                <button
+                  type="button"
+                  onClick={() => setPicking(i)}
+                  disabled={disabled}
+                  className="m-2 mt-0 inline-flex items-center justify-center gap-1 self-start rounded-full border border-brand-muted-foreground/40 bg-card px-3 py-1 text-xs font-semibold text-brand-muted-foreground hover:bg-brand-muted"
+                >
+                  <ListPlus className="size-3.5" aria-hidden />
+                  {planText.highTouchPick}
+                </button>
+              )}
+            </div>
           ))}
         </div>
       ))}
+      <HighTouchPicker
+        open={picking !== null}
+        onClose={() => setPicking(null)}
+        level={picking !== null ? groups[picking].level : ""}
+        current={picking !== null ? groups[picking].highTouch : ""}
+        onAdd={(lines) => picking !== null && addHighTouch(picking, lines)}
+      />
     </>
   )
 }
@@ -392,7 +435,7 @@ export function PlanGroupsView({ groups }: { groups: PlanGroup[] }) {
     <>
       <GroupHead />
       {rows.map((g) => (
-        <div key={g.level} className="grid border-t border-border sm:grid-cols-[2.75rem_repeat(4,minmax(0,1fr))]">
+        <div key={g.level} className="grid border-t border-border sm:grid-cols-[2.75rem_minmax(0,1fr)_minmax(0,1.25fr)_minmax(0,1.25fr)]">
           <LevelCell>{g.level}</LevelCell>
           {GROUP_FIELDS.map((f) => (
             <div key={f} className={cn("sm:border-l sm:border-border", f === "highTouch" && "bg-brand-muted/40")}>

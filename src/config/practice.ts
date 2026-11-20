@@ -27,6 +27,9 @@ export const practiceBodyTemplate = practiceSections
   .map((s) => `<h2>${s.title}</h2><p></p>`)
   .join("")
 
+/** 설계안 PDF 초안 채우기 — 잠시 가려 둠(true 로 바꾸면 다시 보임). 서버 함수는 그대로. */
+export const practiceDraftEnabled = false
+
 /** 학생 개인정보 확인 문구(등록 시 필수 체크). */
 export const practicePrivacyCheck =
   "사진·파일·본문에 학생이 식별되지 않도록 처리했거나(얼굴·이름·학교 등), 보호자 동의를 받았습니다."
@@ -35,8 +38,7 @@ export const practiceCopy = {
   listTitle: "수업실천사례",
   listIntro: "선생님들의 수업 이야기와 설계안, 함께 쓴 학습자료를 모았습니다.",
   writeTitle: "수업 사례 쓰기",
-  writeIntro:
-    "기본 정보만 채우면 바로 올릴 수 있어요. 본문은 소제목 틀을 참고해 자유롭게 써 주세요.",
+  writeIntro: "지도안 표로 쓰거나, 자유 본문으로 쓸 수 있어요.",
   editTitle: "수업 사례 수정",
   editIntro: "저장하면 바로 반영됩니다.",
 }
@@ -51,7 +53,8 @@ export const planText = {
     record: "실천 기록",
     cover: "표지",
   },
-  title: "수업명",
+  recordIntro: "수업을 마친 뒤",
+  title: "수업 주제",
   subject: "교과",
   target: "대상",
   unit: "단원",
@@ -64,17 +67,16 @@ export const planText = {
   toolsOtherAdd: "추가",
   group: {
     level: "집단",
-    performance: "수행 수준",
-    content: "조정된 내용",
-    method: "조정된 방법",
+    performance: "교과 관련 수행 수준",
+    content: "조정된 내용 또는 학습과정",
     highTouch: "하이터치",
   },
   groupPlaceholders: {
     performance: "예: 숫자 1~31 읽기 가능",
-    content: "예: 날짜만",
-    method: "예: 큰 글씨 달력 함께",
-    highTouch: "예: 눈 맞추고 3초 기다리기",
+    content: "예: 날짜만 찾기, 큰 글씨 달력과 함께",
+    highTouch: "예: 질문한 뒤 3~5초 기다리기",
   },
+  highTouchPick: "하이터치 사례",
   goalPlaceholders: {
     가: "예: 달력에서 오늘의 날짜와 요일을 찾아 말할 수 있다.",
     나: "예: 달력에서 오늘의 날짜를 찾아 말할 수 있다.",
@@ -97,6 +99,6 @@ export const planText = {
   reactionPlaceholder: "수업 뒤에 직접 써 주세요",
   reflection: "돌아보며",
   reflectionPlaceholder: "잘된 점, 다음에 바꿔 볼 점",
-  cover: "표지",
+  cover: "목록 표지",
   coverUpload: "사진 올리기",
 }

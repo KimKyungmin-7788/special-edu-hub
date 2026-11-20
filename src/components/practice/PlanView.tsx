@@ -5,7 +5,7 @@ import { planText } from "@/config/practice"
 import { lookupStandards, type StandardLite } from "@/lib/standards"
 import type { App } from "@/lib/apps"
 import { PLAN_LEVELS, type PracticePlan } from "@/lib/practices"
-import { PlanBar, PlanGroupsView, PlanLessonsView, PlanRow, PlanTable } from "@/components/practice/PlanTable"
+import { PlanBar, PlanDivider, PlanGroupsView, PlanLessonsView, PlanRow, PlanTable } from "@/components/practice/PlanTable"
 
 /** 사례 상세 — 지도안 양식 글을 쓰기 화면과 같은 표로 보여 준다. 빈 칸 줄은 숨긴다. */
 export function PlanView({ plan, apps }: { plan: PracticePlan; apps: App[] }) {
@@ -37,7 +37,7 @@ export function PlanView({ plan, apps }: { plan: PracticePlan; apps: App[] }) {
   const tools = [...apps.map((a) => `app:${a.id}`), ...plan.tools.map((t) => `tool:${t}`)]
   const text = (v: string) => <p className="whitespace-pre-line px-3 py-2.5">{v}</p>
 
-  return (
+  const table = (
     <PlanTable>
       <PlanBar icon={ClipboardList}>{planText.bars.head}</PlanBar>
       {plan.unit && <PlanRow label={planText.unit}>{text(plan.unit)}</PlanRow>}
@@ -88,13 +88,20 @@ export function PlanView({ plan, apps }: { plan: PracticePlan; apps: App[] }) {
       <PlanLessonsView lessons={plan.lessons} toolLabel={toolLabel} />
       {plan.evaluation && <PlanRow label={planText.evaluation}>{text(plan.evaluation)}</PlanRow>}
 
-      {(plan.reaction || plan.reflection) && (
-        <>
-          <PlanBar icon={NotebookPen}>{planText.bars.record}</PlanBar>
-          {plan.reaction && <PlanRow label={planText.reaction}>{text(plan.reaction)}</PlanRow>}
-          {plan.reflection && <PlanRow label={planText.reflection}>{text(plan.reflection)}</PlanRow>}
-        </>
-      )}
     </PlanTable>
+  )
+  if (!plan.reaction && !plan.reflection) return table
+  return (
+    <div className="flex flex-col gap-6">
+      {table}
+      <PlanDivider>{planText.recordIntro}</PlanDivider>
+      <PlanTable>
+        <PlanBar icon={NotebookPen} tone="record">
+          {planText.bars.record}
+        </PlanBar>
+        {plan.reaction && <PlanRow label={planText.reaction}>{text(plan.reaction)}</PlanRow>}
+        {plan.reflection && <PlanRow label={planText.reflection}>{text(plan.reflection)}</PlanRow>}
+      </PlanTable>
+    </div>
   )
 }

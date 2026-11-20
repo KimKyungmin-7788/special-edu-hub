@@ -83,7 +83,7 @@ export function DraftFromPlan({
               )}
             </p>
             <p className="mt-0.5 text-sm text-muted-foreground">
-              설계안 PDF를 올리면 제목·교과·수업 개요·활동 흐름을 초안으로 채워 드려요. 설계안은
+              설계안 PDF를 올리면 제목·교과와 지도안 칸(자유 본문은 수업 개요·활동 흐름)을 초안으로 채워 드려요. 설계안은
               첨부파일로도 함께 들어갑니다.
             </p>
           </div>
