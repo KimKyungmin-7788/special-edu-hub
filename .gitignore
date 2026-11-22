@@ -28,3 +28,6 @@ dist-ssr
 
 # 작업용 묶음 파일
 *.zip
+
+# 연구회 회원 매칭표(개인정보)
+member-matching.md
