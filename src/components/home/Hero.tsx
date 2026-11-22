@@ -43,7 +43,7 @@ function Pager({ index, count, onGo }: PagerProps) {
         >
           <ChevronLeft className="size-3.5" aria-hidden />
         </button>
-        <span className="tabular-nums">
+        <span className="shrink-0 whitespace-nowrap tabular-nums">
           {index + 1} / {count}
         </span>
         <button
