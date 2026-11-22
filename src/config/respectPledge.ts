@@ -23,6 +23,7 @@ export const respectPledge = {
     "**돈을 받고 쓰는 도용**은 부정경쟁방지법으로도 다툴 수 있어요.",
   ],
   progress: "{n} / {total} 확인",
-  submit: "약속해요",
+  confirm: "위 내용을 확인합니다",
+  submit: "제출하기",
   later: "나중에",
 }

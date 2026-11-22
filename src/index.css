@@ -260,3 +260,40 @@
     margin: 14mm;
   }
 }
+
+/* ── 서로 존중 약속(RespectPledgeDialog) 체크 마이크로 인터랙션 ──
+   체크하면 상자가 살짝 튀고 V자가 그려지듯 나타나며, 하트가 톡 튀어 오른다. */
+.pledge-box {
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+.pledge-box[data-on="true"] {
+  animation: pledge-box-pop 0.32s ease-out;
+}
+.pledge-box path {
+  stroke-dasharray: 20;
+  stroke-dashoffset: 20;
+  transition: stroke-dashoffset 0.32s ease-out 0.06s;
+}
+.pledge-box[data-on="true"] path {
+  stroke-dashoffset: 0;
+}
+.pledge-heart {
+  color: var(--heart);
+  animation: pledge-heart-up 0.9s ease-out forwards;
+  pointer-events: none;
+}
+@keyframes pledge-box-pop {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.22); }
+  100% { transform: scale(1); }
+}
+@keyframes pledge-heart-up {
+  0% { opacity: 0; transform: translateY(0) scale(0.4); }
+  25% { opacity: 1; transform: translateY(-12px) scale(1.15); }
+  100% { opacity: 0; transform: translateY(-30px) scale(0.9); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pledge-box[data-on="true"] { animation: none; }
+  .pledge-box path { transition: none; }
+  .pledge-heart { display: none; }
+}
