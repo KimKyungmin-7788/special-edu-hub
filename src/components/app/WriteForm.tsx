@@ -39,7 +39,9 @@ import { StandardsFinderModal } from "@/components/app/StandardsFinderModal"
 import { SelectedStandards } from "@/components/app/SelectedStandards"
 import { StandardsManualModal } from "@/components/app/StandardsManualModal"
 import { SafetyFields } from "@/components/app/SafetyFields"
-import { EMPTY_SAFETY, getSafety, isEmptySafety, requestSafetyCheck, sameSafety, saveSafety, type Safety } from "@/lib/safety"
+import { LicenseFields } from "@/components/app/LicenseFields"
+import { safetyText } from "@/config/safety"
+import { EMPTY_SAFETY, getSafety, requestSafetyCheck, sameSafety, saveSafety, type Safety } from "@/lib/safety"
 import {
   CharCounter,
   FormField,
@@ -278,6 +280,8 @@ export function WriteForm({
         primary.monthly ? "해당하는 달을 한 개 이상 선택하세요." : "하위 주제를 한 개 이상 선택하세요.",
       )
     if (intent.trim() === "") return setSubmitError(isSeedling ? "만들게 된 계기와 시작 이야기를 짧게 남겨 주세요." : "교육적 의도를 입력하세요.")
+    // 이용 조건(75): 새로 등록할 때는 꼭 고른다. 예전 자료 수정은 고르지 않아도 저장된다(상세에선 허락받고 사용).
+    if (!app && !safety.license) return setSubmitError(safetyText.license.required)
 
     setSubmitting(true)
     try {
@@ -323,7 +327,7 @@ export function WriteForm({
           .forEach((f) => removeAppFile(f.path).catch(() => {}))
       if (previewChanged && oldPreview) removePreview(oldPreview).catch(() => {})
       // 안전 확인 정보는 선택 입력 — 저장에 실패해도 자료 등록은 끝난 것으로 둔다
-      if (appUrl.trim() && !sameSafety(safety, savedSafety) && !(isEmptySafety(safety) && isEmptySafety(savedSafety)))
+      if (!sameSafety(safety, savedSafety))
         await saveSafety(saved.id, safety).catch((e) => console.error("[safety] 저장 실패:", e))
       // 자동 점검(68): 새로 등록했거나 앱 주소·학생 정보 저장 입력을 바꿨으면 점검을 요청한다 — 걸린 것이 없으면 바로 공개된다.
       // (저장 입력은 점검 결과와 대조하므로 바뀌면 다시 본다.) 요청에 실패해도 등록은 끝난 것이고, 상세 화면의 "다시 점검"으로 다시 할 수 있다.
@@ -651,6 +655,14 @@ export function WriteForm({
 
       {/* ── 안전 확인 정보(선택) — 앱 링크가 있을 때만 ── */}
       {appUrl.trim() !== "" && <SafetyFields value={safety} onChange={setSafety} disabled={submitting} />}
+
+      {/* ── 이용 조건(75) — 다른 선생님이 이 자료를 쓸 수 있는 조건. 새 등록은 필수 ── */}
+      <LicenseFields
+        value={safety.license}
+        onChange={(license) => setSafety({ ...safety, license })}
+        includesOthers={appUrl.trim() !== "" && safety.copyright === "includes_others"}
+        disabled={submitting}
+      />
 
       {/* ── 6. 공개 범위 ── */}
       <FormPanel

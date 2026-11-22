@@ -26,6 +26,7 @@ import { RichTextViewer } from "@/components/app/RichTextViewer"
 import { StandardsInfoBlock } from "@/components/app/StandardsInfoBlock"
 import { DetailSection } from "@/components/app/DetailSection"
 import { SafetyCard } from "@/components/app/SafetyCard"
+import { LicenseLine } from "@/components/app/LicenseFields"
 import { VerifyMarkDetail } from "@/components/app/VerifyMark"
 import { ReviewNotice } from "@/components/app/ReviewNotice"
 import { CheckReport } from "@/components/app/CheckReport"
@@ -424,6 +425,13 @@ export function AppDetail() {
           {shareCopied ? "링크 복사됨" : "공유"}
         </button>
       </div>
+
+      {/* 이용 조건(75) + 처음 등록한 날 — 고른 적 없으면 허락받고 사용 */}
+      {!app.locked && (
+        <div className="mt-4">
+          <LicenseLine license={safety?.license ?? null} createdAt={app.createdAt} />
+        </div>
+      )}
 
       {/* 안전 확인 정보 — 등록 교사가 입력한 자료만 */}
       {!app.locked && app.appUrl && safety && !isEmptySafety(safety) && (

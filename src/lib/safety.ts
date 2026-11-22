@@ -9,6 +9,8 @@ export type StudentData = "none" | "device" | "server"
 export type DataItem = "non_identifying" | "identifying" | "other"
 export type TargetAge = "all" | "over14"
 export type Copyright = "own" | "includes_others"
+/** 다른 선생님이 이 자료를 쓸 수 있는 조건(75, CCL). null = 고른 적 없음 → 화면에선 허락받고 사용 */
+export type License = "by" | "by_nc" | "by_nc_nd" | "ask"
 
 export type Safety = {
   studentData: StudentData | null
@@ -18,6 +20,7 @@ export type Safety = {
   aiService: string
   targetAge: TargetAge | null
   copyright: Copyright | null
+  license: License | null
   /** 저장한 시각(읽어 온 것만) */
   createdAt?: string
 }
@@ -30,6 +33,7 @@ export const EMPTY_SAFETY: Safety = {
   aiService: "",
   targetAge: null,
   copyright: null,
+  license: null,
 }
 
 /** 화면에서 보이지 않는 칸의 값은 버리고 정리한다(예: 저장하지 않음이면 저장 항목 없음). */
@@ -45,6 +49,7 @@ export function cleanSafety(v: Safety): Safety {
     aiService: ai ? v.aiService.trim() : "",
     targetAge: stored || ai ? v.targetAge : null,
     copyright: v.copyright,
+    license: v.license,
   }
 }
 
@@ -66,6 +71,7 @@ type Row = {
   ai_service: string
   target_age: TargetAge | null
   copyright: Copyright | null
+  license: License | null
   created_at: string
 }
 
@@ -73,7 +79,7 @@ type Row = {
 export async function getSafety(appId: string): Promise<Safety | null> {
   const { data, error } = await supabase
     .from("app_safety_declarations")
-    .select("student_data, data_items, data_other, student_ai, ai_service, target_age, copyright, created_at")
+    .select("student_data, data_items, data_other, student_ai, ai_service, target_age, copyright, license, created_at")
     .eq("app_id", appId)
     .order("created_at", { ascending: false })
     .order("id", { ascending: false })
@@ -89,6 +95,7 @@ export async function getSafety(appId: string): Promise<Safety | null> {
     aiService: r.ai_service,
     targetAge: r.target_age,
     copyright: r.copyright,
+    license: r.license,
     createdAt: r.created_at,
   }
 }
@@ -109,6 +116,7 @@ export async function saveSafety(appId: string, value: Safety): Promise<void> {
     ai_service: v.aiService,
     target_age: v.targetAge,
     copyright: v.copyright,
+    license: v.license,
   })
   if (error) throw error
 }
@@ -117,7 +125,7 @@ export async function saveSafety(appId: string, value: Safety): Promise<void> {
 export function sameSafety(a: Safety, b: Safety): boolean {
   const key = (v: Safety) => {
     const c = cleanSafety(v)
-    return JSON.stringify([c.studentData, [...c.dataItems].sort(), c.dataOther, c.studentAi, c.aiService, c.targetAge, c.copyright])
+    return JSON.stringify([c.studentData, [...c.dataItems].sort(), c.dataOther, c.studentAi, c.aiService, c.targetAge, c.copyright, c.license])
   }
   return key(a) === key(b)
 }

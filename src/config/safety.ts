@@ -1,4 +1,4 @@
-import type { Copyright, DataItem, StudentData, TargetAge } from "@/lib/safety"
+import type { Copyright, DataItem, License, StudentData, TargetAge } from "@/lib/safety"
 
 /**
  * 안전 확인 정보(자료 등록·상세)의 화면 문구. 입력란과 상세 카드가 함께 쓴다.
@@ -34,6 +34,19 @@ export const safetyText = {
   copyright: {
     label: "저작권",
     options: { own: "모두 직접 만듦", includes_others: "다른 사람의 자료 포함" } satisfies Record<Copyright, string>,
+  },
+  license: {
+    label: "다른 선생님이 이 자료를 쓸 수 있는 조건",
+    shortLabel: "이용 조건",
+    required: "다른 선생님이 이 자료를 쓸 수 있는 조건을 골라 주세요.",
+    othersNote: "다른 사람의 자료가 들어간 부분은 그 자료의 원래 조건을 따릅니다.",
+    firstRegistered: "처음 등록",
+    options: {
+      by: { name: "출처 표시", hint: "출처만 밝히면 고쳐 쓰기·나누기·판매 모두 가능", badges: ["출처 표시"], code: "CC BY" },
+      by_nc: { name: "출처 표시 · 비영리", hint: "출처를 밝히고 고쳐 쓰기·나누기 가능, 돈 받는 곳에서는 안 됨", badges: ["출처 표시", "비영리"], code: "CC BY-NC" },
+      by_nc_nd: { name: "출처 표시 · 비영리 · 변경 금지", hint: "출처를 밝히고 그대로만 나누기 가능, 고쳐 쓰기·돈 받는 곳은 안 됨", badges: ["출처 표시", "비영리", "변경 금지"], code: "CC BY-NC-ND" },
+      ask: { name: "허락받고 사용", hint: "쓰기 전에 먼저 작성자에게 허락받기", badges: ["허락받고 사용"], code: "" },
+    } satisfies Record<License, { name: string; hint: string; badges: string[]; code: string }>,
   },
   guardianNotice: "개인정보 보호법 제22조의2에 의거해 만 14세 미만 학생은 보호자 동의가 필요합니다.",
 }
