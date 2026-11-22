@@ -15,8 +15,9 @@ import { NicknameOnboardingDialog } from "@/components/auth/NicknameOnboardingDi
 import { SchoolOnboardingDialog } from "@/components/auth/SchoolOnboardingDialog"
 import { needsSchool } from "@/lib/account"
 import { ConsentDialog } from "@/components/auth/ConsentDialog"
+import { RespectPledgeDialog } from "@/components/auth/RespectPledgeDialog"
 import { CONSENT_DIALOG_ENABLED } from "@/config/consents"
-import { getPendingConsents, recordConsents, shownConsentVersions, type ConsentItem } from "@/lib/consents"
+import { getPendingConsents, needsRespectPledge, postponeRespectPledge, recordConsents, shownConsentVersions, type ConsentItem } from "@/lib/consents"
 
 /**
  * 로그인 세션 토대 (2단계 묶음 A-1).
@@ -62,6 +63,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     profile: Profile
     pending: ConsentItem[]
   } | null>(null)
+
+  // 서로 존중 약속(76): 아직 약속하지 않은 회원. 다른 로그인 창이 모두 닫힌 뒤에 띄운다.
+  const [respectAsk, setRespectAsk] = useState(false)
 
   // 소속 학교가 없는 사용자에게 띄울 창(52). 닉네임 창 다음 차례.
   const [schoolAsk, setSchoolAsk] = useState<string | null>(null)
@@ -174,6 +178,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe()
   }, [runPostLogin])
 
+  // 로그인한 계정이 바뀔 때마다 서로 존중 약속이 필요한지 한 번 확인한다(76 미적용이면 묻지 않음).
+  const sessionUid = session?.user.id
+  useEffect(() => {
+    if (!sessionUid) {
+      setRespectAsk(false)
+      return
+    }
+    let active = true
+    needsRespectPledge().then((need) => {
+      if (active) setRespectAsk(need)
+    })
+    return () => {
+      active = false
+    }
+  }, [sessionUid])
+
   useEffect(() => {
     const refresh = () => { if (session?.user.id) void getProfile(session.user.id).then((p) => setProfile(p ?? null)) }
     window.addEventListener("focus", refresh)
@@ -245,6 +265,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             // 동의 없이 닫음 → 다음 로그인에 다시 묻는다
             setConsentAsk(null)
             askNicknameOrNext(consentAsk.uid, consentAsk.profile)
+          }}
+        />
+      )}
+      {respectAsk && !consentAsk && !onboarding && !schoolAsk && !showCelebration && (
+        <RespectPledgeDialog
+          onDone={() => setRespectAsk(false)}
+          onLater={() => {
+            postponeRespectPledge()
+            setRespectAsk(false)
           }}
         />
       )}

@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase"
 import { CONSENT_KINDS, consents, type ConsentKind } from "@/config/consents"
+import { respectPledge } from "@/config/respectPledge"
 
 /**
  * 가입 동의 기록 (66_consents.sql).
@@ -28,4 +29,39 @@ export async function getPendingConsents(): Promise<ConsentItem[]> {
 export async function recordConsents(items: ConsentItem[], source: "signup" | "login"): Promise<void> {
   const { error } = await supabase.rpc("record_consents", { p_items: items, p_source: source })
   if (error) throw error
+}
+
+// ── 서로 존중 약속 (76) — 약관 동의 창과 따로 묻는다 ─────────────────
+const RESPECT_LATER_KEY = "respect-pledge-later"
+
+/** 아직 약속하지 않았고, 이번 방문에 '나중에'를 누르지 않았으면 true. 76 미적용 DB·조회 실패는 false */
+export async function needsRespectPledge(): Promise<boolean> {
+  try {
+    if (sessionStorage.getItem(RESPECT_LATER_KEY)) return false
+  } catch {
+    // 저장소를 못 쓰는 브라우저는 그냥 묻는다
+  }
+  const { data, error } = await supabase.rpc("pending_consents")
+  if (error || !data) return false
+  return (data as { kind: string; version: string }[]).some(
+    (p) => p.kind === respectPledge.kind && p.version === respectPledge.version,
+  )
+}
+
+/** 약속 기록(계정·버전·서버 시각) */
+export async function recordRespectPledge(): Promise<void> {
+  const { error } = await supabase.rpc("record_consents", {
+    p_items: [{ kind: respectPledge.kind, version: respectPledge.version }],
+    p_source: "login",
+  })
+  if (error) throw error
+}
+
+/** '나중에' — 이번 방문(탭) 동안은 다시 묻지 않는다 */
+export function postponeRespectPledge(): void {
+  try {
+    sessionStorage.setItem(RESPECT_LATER_KEY, "1")
+  } catch {
+    // 저장 못 해도 창은 닫힌다
+  }
 }
