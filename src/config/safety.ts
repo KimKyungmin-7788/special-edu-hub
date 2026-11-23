@@ -42,11 +42,11 @@ export const safetyText = {
     othersNote: "다른 사람의 자료가 들어간 부분은 그 자료의 원래 조건을 따릅니다.",
     firstRegistered: "처음 등록",
     options: {
-      by: { name: "출처 표시", hint: "출처만 밝히면 고쳐 쓰기·나누기·판매 모두 가능", badges: ["출처 표시"], code: "CC BY" },
-      by_nc: { name: "출처 표시 · 비영리", hint: "출처를 밝히고 고쳐 쓰기·나누기 가능, 돈 받는 곳에서는 안 됨", badges: ["출처 표시", "비영리"], code: "CC BY-NC" },
-      by_nc_nd: { name: "출처 표시 · 비영리 · 변경 금지", hint: "출처를 밝히고 그대로만 나누기 가능, 고쳐 쓰기·돈 받는 곳은 안 됨", badges: ["출처 표시", "비영리", "변경 금지"], code: "CC BY-NC-ND" },
-      ask: { name: "허락받고 사용", hint: "쓰기 전에 먼저 작성자에게 허락받기", badges: ["허락받고 사용"], code: "" },
-    } satisfies Record<License, { name: string; hint: string; badges: string[]; code: string }>,
+      by: { name: "출처 표시", hint: "출처만 밝히면 고쳐 쓰기·나누기·판매 모두 가능", badges: ["출처 표시"] },
+      by_nc: { name: "출처 표시 · 비영리", hint: "출처를 밝히고 고쳐 쓰기·나누기 가능, 돈 받는 곳에서는 안 됨", badges: ["출처 표시", "비영리"] },
+      by_nc_nd: { name: "출처 표시 · 비영리 · 변경 금지", hint: "출처를 밝히고 그대로만 나누기 가능, 고쳐 쓰기·돈 받는 곳은 안 됨", badges: ["출처 표시", "비영리", "변경 금지"] },
+      ask: { name: "허락받고 사용", hint: "쓰기 전에 먼저 작성자에게 허락받기", badges: ["허락받고 사용"] },
+    } satisfies Record<License, { name: string; hint: string; badges: string[] }>,
   },
   guardianNotice: "개인정보 보호법 제22조의2에 의거해 만 14세 미만 학생은 보호자 동의가 필요합니다.",
 }

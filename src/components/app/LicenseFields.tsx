@@ -64,24 +64,25 @@ const badgeIcons: Record<string, typeof UserCheck> = {
 /** 자료 상세: 이용 조건 배지 줄 + 처음 등록한 날. 고른 적 없으면 허락받고 사용 */
 export function LicenseLine({ license, createdAt }: { license: License | null; createdAt: string }) {
   const opt = t.options[license ?? "ask"]
-  const date = new Date(createdAt).toLocaleDateString("ko-KR")
+  // 시안대로 2026-09-14 꼴(그 기기 날짜 기준)
+  const d = new Date(createdAt)
+  const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
   return (
-    <div className="flex flex-wrap items-center gap-x-2 gap-y-2 border-t border-border pt-3 text-sm">
+    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2 border-t border-border pt-4">
       <span className="shrink-0 whitespace-nowrap text-muted-foreground">{t.shortLabel}</span>
-      <ul className="flex flex-wrap gap-1.5" title={opt.hint}>
+      <ul className="flex flex-wrap gap-2" title={opt.hint}>
         {opt.badges.map((b) => {
           const Icon = badgeIcons[b]
           return (
-            <li key={b} className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-brand-soft px-2.5 py-0.5 text-xs font-medium text-primary">
-              <Icon className="size-3.5" aria-hidden />
+            <li key={b} className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-brand-muted px-3 py-1 text-sm font-medium text-brand-muted-foreground">
+              <Icon className="size-4" aria-hidden />
               {b}
             </li>
           )
         })}
       </ul>
       <span className="sr-only">{opt.hint}</span>
-      {opt.code && <span className="whitespace-nowrap text-xs text-muted-foreground">{opt.code}</span>}
-      <span className="ml-auto whitespace-nowrap text-xs text-muted-foreground">
+      <span className="ml-auto whitespace-nowrap text-sm text-muted-foreground">
         {date} {t.firstRegistered}
       </span>
     </div>

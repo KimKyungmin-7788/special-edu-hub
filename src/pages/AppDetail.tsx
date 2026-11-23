@@ -341,8 +341,9 @@ export function AppDetail() {
         <AppThumbnail app={app} />
       </div>
 
-      {/* 액션: 앱 열기(작동) + 담기·공유(모양만) */}
-      <div className="mt-6 flex flex-wrap items-center gap-2">
+      {/* 액션 카드: 앱 열기·수정·좋아요·담기·공유 + 그 아래 이용 조건 줄 */}
+      <div className="mt-6 rounded-2xl border border-border bg-card p-4 sm:p-5">
+      <div className="flex flex-wrap items-center gap-2">
         {!app.locked && app.appUrl && (
           <a
             href={app.appUrl}
@@ -432,6 +433,7 @@ export function AppDetail() {
           <LicenseLine license={safety?.license ?? null} createdAt={app.createdAt} />
         </div>
       )}
+      </div>
 
       {/* 안전 확인 정보 — 등록 교사가 입력한 자료만 */}
       {!app.locked && app.appUrl && safety && !isEmptySafety(safety) && (
