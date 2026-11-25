@@ -28,7 +28,7 @@ export function NotificationItem({
   const href = notificationHref(n)
   const quote = notificationQuote(n)
   const name = n.actor?.nickname?.trim() || "알 수 없는 사용자"
-  const system = n.type === "notice" || n.type.startsWith("verify")
+  const system = n.type === "notice" || n.type.startsWith("verify") || (n.type === "collab" && !n.actor)
 
   function open() {
     if (!n.readAt) void markNotificationsRead([n.id])

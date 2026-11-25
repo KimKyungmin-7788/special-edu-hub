@@ -23,7 +23,7 @@ export function ProjectCatalogue() {
     getProjects().then(setList).catch((e) => setError(projectError(e)))
   }, [])
   const count = (s: ProjectStatus) => list?.filter((p) => p.status === s).length ?? 0
-  const shown = list?.filter((p) => !filter || p.status === filter) ?? []
+  const shown = list?.filter((p) => (filter ? p.status === filter : p.status !== "stopped")) ?? []
   const chip = (on: boolean) => cn("rounded-full border px-3 py-1.5 text-sm whitespace-nowrap", on ? "border-primary bg-primary text-primary-foreground" : "bg-card hover:bg-accent")
   return <div>
     <div role="group" aria-label="상태" className="mb-5 flex flex-wrap gap-2">

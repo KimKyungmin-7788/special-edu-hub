@@ -17,8 +17,8 @@ export const projects = {
     done: "완성",
     stopped: "그만둠",
   } satisfies Record<ProjectStatus, string>,
-  /** 목록 걸러보기 순서(그만둠은 전체에서만) */
-  filters: ["recruiting", "working", "done"] as ProjectStatus[],
+  /** 목록 걸러보기 순서. 그만둠은 '전체'에서 빼고 그만둠 칩에서만 보인다(3묶음) */
+  filters: ["recruiting", "working", "done", "stopped"] as ProjectStatus[],
   emptyTitle: "첫 프로젝트를 기다리고 있어요",
   form: {
     heading: "프로젝트 열기",
@@ -80,6 +80,47 @@ export const projects = {
     heading: "팀 공간",
     join: "카톡 단톡방 들어가기",
     changeLink: "링크 바꾸기",
+  },
+  /** 3묶음: 진행 소식·마감 지남·완성·소감·첫 화면 */
+  updates: {
+    heading: "진행 소식",
+    placeholder: "오늘 한 일 한 줄",
+    add: "남기기",
+    empty: "아직 남긴 소식이 없어요",
+  },
+  overdue: {
+    heading: (due: string) => `마감일(${due})이 지났어요`,
+    question: "프로젝트를 어떻게 할까요?",
+    extend: "기한 늘리기",
+    finish: "완성으로 바꾸기",
+    stop: "그만두기",
+    newDue: "새 마감일",
+    save: "저장",
+  },
+  finish: {
+    heading: "완성하기",
+    editHeading: "후기 고치기",
+    review: "협업 과정과 후기",
+    reviewPlaceholder: "몇 명이, 얼마 동안, 어떻게 나눠 만들었는지",
+    app: "완성한 자료 연결 (선택)",
+    noApp: "연결 안 함",
+    submit: "완성으로 바꾸기",
+    save: "저장",
+    edit: "후기 고치기",
+  },
+  done: {
+    review: "협업 과정과 후기",
+    app: "완성한 자료 보기",
+    notes: "함께한 사람의 한 줄",
+    noNote: "아직 안 썼어요",
+    notePlaceholder: "내 한 줄 소감",
+    save: "남기기",
+  },
+  home: {
+    eyebrow: "협업 프로젝트",
+    title: "함께할 선생님을 찾아요",
+    count: "모집 중",
+    more: "둘러보기",
   },
   my: {
     tab: "내 협업",

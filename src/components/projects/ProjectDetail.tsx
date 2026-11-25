@@ -4,12 +4,13 @@ import { ExternalLink } from "lucide-react"
 import { projects } from "@/config/projects"
 import { useAuth } from "@/lib/auth"
 import {
-  deleteProject, getMembers, getProject, getRequests, getTeamLink, projectError,
-  type CollabRequest, type Member, type Project,
+  deleteProject, getMembers, getNotes, getProject, getRequests, getTeamLink, getUpdates, isOverdue, projectError,
+  type CollabNote, type CollabRequest, type CollabUpdate, type Member, type Project,
 } from "@/lib/projects"
 import { ProfileTrigger } from "@/components/profile/ProfileTrigger"
 import { ProjectStatusBadge } from "@/components/projects/ProjectStatusBadge"
 import { LeaderPanel, RequestPanel, TeamSpace } from "@/components/projects/ProjectCollab"
+import { DoneSection, FinishForm, OverduePanel, UpdatesSection } from "@/components/projects/ProjectProgress"
 import { usePageTitle } from "@/lib/usePageTitle"
 
 /**
@@ -24,6 +25,9 @@ export function ProjectDetail() {
   const [members, setMembers] = useState<Member[]>([])
   const [requests, setRequests] = useState<CollabRequest[]>([])
   const [link, setLink] = useState<string | null>(null)
+  const [updates, setUpdates] = useState<CollabUpdate[]>([])
+  const [notes, setNotes] = useState<CollabNote[]>([])
+  const [finishing, setFinishing] = useState(false)
   const [error, setError] = useState("")
   usePageTitle(project?.title ?? projects.title)
 
@@ -33,6 +37,9 @@ export function ProjectDetail() {
       setProject(p)
       if (!p) return
       setMembers(await getMembers(id))
+      setUpdates(p.status === "recruiting" ? [] : await getUpdates(id).catch(() => []))
+      setNotes(p.status === "done" ? await getNotes(id).catch(() => []) : [])
+      setFinishing(false)
       setRequests(user ? await getRequests(id) : [])
       setLink(user && p.status !== "recruiting" ? await getTeamLink(id).catch(() => null) : null)
     } catch (e) { setError(projectError(e)) }
@@ -57,6 +64,7 @@ export function ProjectDetail() {
 
   return <div>
     {back}
+    {isLeader && isOverdue(p) && !finishing && <OverduePanel project={p} onFinish={() => setFinishing(true)} onChange={load} />}
     {(isLeader || isMember) && p.status === "working" && <TeamSpace project={p} members={members} link={link} isLeader={isLeader} onChange={load} />}
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
       <article className="min-w-0">
@@ -66,9 +74,13 @@ export function ProjectDetail() {
         {p.cover_url && <img src={p.cover_url} alt="" className="mt-6 aspect-video w-full rounded-xl border object-cover" />}
         {p.mockup_url && <a href={p.mockup_url} target="_blank" rel="noopener" className="mt-4 inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-semibold whitespace-nowrap text-primary hover:bg-brand-soft">{projects.detail.mockup}<ExternalLink className="size-4" aria-hidden /></a>}
         {p.body && <p className="mt-6 leading-relaxed whitespace-pre-line break-keep">{p.body}</p>}
+        {p.status === "done" && <DoneSection project={p} members={members} notes={notes} myId={user?.id} onChange={load} />}
+        {isLeader && finishing && <FinishForm project={p} onCancel={() => setFinishing(false)} onChange={load} />}
+        <UpdatesSection project={p} updates={updates} isLeader={isLeader} isStaff={isStaff} onChange={load} />
         {isLeader && <LeaderPanel project={p} requests={requests} accepted={members.length} onChange={load} />}
         {canEdit && <div className="mt-8 flex gap-3 border-t pt-5 text-sm">
           <Link to={`${projects.path}/${p.id}/edit`} className="rounded-md border px-4 py-2 whitespace-nowrap hover:bg-accent">고치기</Link>
+          {isLeader && (p.status === "working" || p.status === "done") && !finishing && <button type="button" onClick={() => setFinishing(true)} className="rounded-md border px-4 py-2 whitespace-nowrap hover:bg-accent">{p.status === "done" ? projects.finish.edit : projects.finish.heading}</button>}
           <button type="button" onClick={remove} className="rounded-md border px-4 py-2 whitespace-nowrap text-destructive hover:bg-accent">지우기</button>
         </div>}
       </article>

@@ -99,6 +99,7 @@ export async function getNotifications(
 
 /** 안 읽은 알림 수. */
 export async function getUnreadNotificationCount(): Promise<number> {
+  await supabase.rpc("notify_collab_overdue").then(() => {}, () => {}) // 협업 마감 지남 알림(81)
   const { count, error } = await supabase
     .from("notifications")
     .select("id", { count: "exact", head: true })

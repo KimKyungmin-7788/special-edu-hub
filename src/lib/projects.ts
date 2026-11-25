@@ -25,6 +25,9 @@ export type Project = {
   status: ProjectStatus
   due_date: string | null
   created_at: string
+  review: string
+  app_id: string | null
+  done_at: string | null
   leader: { nickname: string | null; avatar_url: string | null } | null
 }
 
@@ -178,4 +181,55 @@ export async function getMyCollabs(userId: string) {
     })),
     requests: (mine.data ?? []) as unknown as CollabRequest[],
   }
+}
+
+// ── 3묶음: 진행 소식·마감 지남·완성·소감 (81_collab_progress.sql) ──
+
+export const UPDATE_MAX = 100
+export const NOTE_MAX = 100
+export const REVIEW_MAX = 2000
+
+export type CollabUpdate = { id: string; body: string; created_at: string }
+export type CollabNote = { user_id: string; body: string; nickname: string | null }
+
+/** 오늘(내 컴퓨터 날짜, YYYY-MM-DD) */
+export function todayLocal(): string {
+  return new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10)
+}
+
+/** 작업 중인데 마감일이 오늘보다 앞이면 마감 지남 */
+export function isOverdue(p: Pick<Project, "status" | "due_date">): boolean {
+  return p.status === "working" && !!p.due_date && p.due_date < todayLocal()
+}
+
+export async function getUpdates(projectId: string): Promise<CollabUpdate[]> {
+  const { data, error } = await supabase.from("collab_updates").select("id, body, created_at").eq("project_id", projectId).order("created_at", { ascending: false })
+  if (error) throw error
+  return data ?? []
+}
+
+export async function getNotes(projectId: string): Promise<CollabNote[]> {
+  const { data, error } = await supabase.from("collab_notes").select("user_id, body, author:profiles!collab_notes_user_id_fkey(nickname)").eq("project_id", projectId).order("created_at")
+  if (error) throw error
+  return ((data ?? []) as unknown as { user_id: string; body: string; author: { nickname: string | null } | null }[])
+    .map((n) => ({ user_id: n.user_id, body: n.body, nickname: n.author?.nickname ?? null }))
+}
+
+async function call(fn: string, args: Record<string, unknown>) {
+  const { error } = await supabase.rpc(fn, args)
+  if (error) throw error
+}
+
+export const addUpdate = (projectId: string, body: string) => call("add_collab_update", { p_project: projectId, p_body: body })
+export const deleteUpdate = (updateId: string) => call("delete_collab_update", { p_update: updateId })
+export const extendDue = (projectId: string, due: string) => call("extend_collab_due", { p_project: projectId, p_due: due })
+export const finishProject = (projectId: string, review: string, appId: string) => call("finish_collab_project", { p_project: projectId, p_review: review, p_app: appId })
+export const stopProject = (projectId: string) => call("stop_collab_project", { p_project: projectId })
+export const setNote = (projectId: string, body: string) => call("set_collab_note", { p_project: projectId, p_body: body })
+
+/** 첫 화면 날개 배너·띠: 모집 중 프로젝트(최신순) */
+export async function getRecruiting(): Promise<Pick<Project, "id" | "title" | "needed">[]> {
+  const { data, error } = await supabase.from("collab_projects").select("id, title, needed").eq("status", "recruiting").order("created_at", { ascending: false })
+  if (error) throw error
+  return data ?? []
 }

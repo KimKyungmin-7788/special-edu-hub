@@ -4,6 +4,7 @@ import { Hero } from "@/components/home/Hero"
 import { CategoryGrid } from "@/components/home/CategoryGrid"
 import { AppCardList } from "@/components/home/AppCardList"
 import { PopularRankList } from "@/components/home/PopularRankList"
+import { CollabStrip, CollabWing, useRecruiting } from "@/components/home/CollabRecruiting"
 import { RegisterCtaCard } from "@/components/app/RegisterCtaCard"
 import { registerCta } from "@/config/registerCta"
 import { getApps, comparePopularApps, type App } from "@/lib/apps"
@@ -22,6 +23,7 @@ export function Home() {
   usePageTitle()
   const [apps, setApps] = useState<App[]>([])
   const [latestLimit, setLatestLimit] = useState(INITIAL_LATEST_LIMIT)
+  const recruiting = useRecruiting()
 
   useEffect(() => {
     let active = true
@@ -46,11 +48,14 @@ export function Home() {
   )
 
   return (
-    <div className={`${CONTAINER} flex flex-col gap-12 py-8`}>
+    <div className={`${CONTAINER} relative flex flex-col gap-12 py-8`}>
+      {/* 모집 중 협업 프로젝트: 넓은 화면은 왼쪽 여백 날개 배너, 좁으면 자료 칸 위 띠(PRD §15) */}
+      <CollabWing list={recruiting} />
       <Hero />
       <CategoryGrid />
       {/* 새로 올라온(카드 그리드) + 인기(순위 목록) 를 2:1 로 나란히. 좁은 화면은 위아래로. */}
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+        <CollabStrip list={recruiting} />
         <div className="lg:col-span-2">
           <div id="latest-resources">
             <AppCardList
