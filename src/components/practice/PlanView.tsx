@@ -5,6 +5,7 @@ import { planText } from "@/config/practice"
 import { lookupStandards, type StandardLite } from "@/lib/standards"
 import type { App } from "@/lib/apps"
 import { PLAN_LEVELS, type PracticePlan } from "@/lib/practices"
+import { signPracticePhotos } from "@/lib/practicePhotos"
 import { PlanBar, PlanDivider, PlanGroupsView, PlanLessonsView, PlanRow, PlanTable } from "@/components/practice/PlanTable"
 
 /**
@@ -23,6 +24,17 @@ export function PlanView({
   head?: { subject: string; title: string; target: string }
 }) {
   const [standards, setStandards] = useState<StandardLite[]>([])
+  const photos = plan.photos ?? []
+  const [photoUrls, setPhotoUrls] = useState<Map<string, string>>(new Map())
+  const photoKey = photos.map((p) => p.path).join("|")
+
+  useEffect(() => {
+    let alive = true
+    if (photoKey) signPracticePhotos(photoKey.split("|")).then((m) => alive && setPhotoUrls(m))
+    return () => {
+      alive = false
+    }
+  }, [photoKey])
 
   useEffect(() => {
     let alive = true
@@ -113,7 +125,7 @@ export function PlanView({
 
     </PlanTable>
   )
-  if (!full && !plan.reaction && !plan.reflection) return table
+  if (!full && !plan.reaction && !plan.reflection && !photos.length) return table
   return (
     <div className="flex flex-col gap-6">
       {table}
@@ -124,6 +136,22 @@ export function PlanView({
         </PlanBar>
         {show(plan.reaction) && <PlanRow label={planText.reaction}>{text(plan.reaction)}</PlanRow>}
         {show(plan.reflection) && <PlanRow label={planText.reflection}>{text(plan.reflection)}</PlanRow>}
+        {show(photos.length) && (
+          <PlanRow label={planText.photos.label}>
+            <div className={full ? "grid min-h-[2.75rem] max-w-2xl grid-cols-2 gap-3 px-3 py-3" : "grid max-w-2xl grid-cols-2 gap-3 px-3 py-3"}>
+              {photos.map((p, i) => {
+                const url = photoUrls.get(p.path)
+                return url ? (
+                  <a key={p.path} href={url} target="_blank" rel="noopener" className="block overflow-hidden rounded-md bg-surface">
+                    <img src={url} alt={`${planText.photos.label} ${i + 1}`} className="aspect-[4/3] w-full object-cover" />
+                  </a>
+                ) : (
+                  <div key={p.path} className="aspect-[4/3] rounded-md bg-surface" />
+                )
+              })}
+            </div>
+          </PlanRow>
+        )}
       </PlanTable>
     </div>
   )

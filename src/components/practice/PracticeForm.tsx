@@ -75,6 +75,8 @@ import { StandardsManualModal } from "@/components/app/StandardsManualModal"
 import { AppLinkPicker } from "@/components/practice/AppLinkPicker"
 import { LinkListField } from "@/components/practice/LinkListField"
 import { FileListField } from "@/components/practice/FileListField"
+import { PracticePhotoField } from "@/components/practice/PracticePhotoField"
+import { removePracticePhotos } from "@/lib/practicePhotos"
 import { DraftFromPlan } from "@/components/practice/DraftFromPlan"
 import { FormField, FormPanel, chipClass, fieldInput } from "@/components/form/FormParts"
 
@@ -117,6 +119,7 @@ function normalizePlan(p: Partial<PracticePlan> | null | undefined): PracticePla
       : base.lessons,
     standards: p.standards ?? [],
     tools: p.tools ?? [],
+    photos: p.photos ?? [],
   }
 }
 
@@ -136,7 +139,8 @@ function draftHasContent(d: WritingDraftData): boolean {
         p.lessons.some((l) => l.intro.text || l.main.text || l.wrap.text) ||
         p.evaluation.trim() !== "" ||
         p.reaction.trim() !== "" ||
-        p.reflection.trim() !== ""))
+        p.reflection.trim() !== "" ||
+        !!p.photos?.length))
   )
 }
 
@@ -189,6 +193,7 @@ export function PracticeForm({
     practice?.visibility ?? "public",
   )
   const [privacyOk, setPrivacyOk] = useState(isEdit)
+  const [photoOk, setPhotoOk] = useState(isEdit)
   const [fileBusy, setFileBusy] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -219,6 +224,7 @@ export function PracticeForm({
 
   // 이번 편집에서 저장소에 있던/올린 파일 경로 — 저장 후 목록에서 빠진 것만 지운다.
   const knownPaths = useRef(new Set((practice?.files ?? []).map((f) => f.path)))
+  const knownPhotos = useRef(new Set((practice?.plan?.photos ?? []).map((p) => p.path)))
   // 새 글 저장이 중간(앱 연결)에서 실패했을 때 다시 누르면 중복 등록 대신 수정으로.
   const savedId = useRef<string | null>(practice?.id ?? null)
 
@@ -311,6 +317,7 @@ export function PracticeForm({
     for (const f of x.files) knownPaths.current.add(f.path)
     setVisibility(x.visibility)
     setPlan(normalizePlan(x.plan))
+    for (const p of x.plan.photos ?? []) knownPhotos.current.add(p.path)
     setEditorKey((k) => k + 1)
     draftIdRef.current = d.id
     lastSnap.current = JSON.stringify(x)
@@ -444,6 +451,7 @@ export function PracticeForm({
           tools: tools.slice(0, 10),
           reaction: plan.reaction,
           reflection: plan.reflection,
+          photos: plan.photos,
         }),
       )
     }
@@ -467,6 +475,7 @@ export function PracticeForm({
           lessons: plan.lessons.map((l) => ({ ...l, intro: clean(l.intro), main: clean(l.main), wrap: clean(l.wrap) })),
         }
       : null
+    if (isPlan && plan.photos?.length && !photoOk) return setError(planText.photos.checkRequired)
     const lesson = isPlan ? plan.lessons.length : lessonCount.trim() === "" ? null : Number(lessonCount)
     if (lesson !== null && !(Number.isInteger(lesson) && lesson >= 1 && lesson <= 99))
       return setError("차시는 1~99 사이 숫자로 써 주세요.")
@@ -508,6 +517,11 @@ export function PracticeForm({
       await Promise.all(
         [...knownPaths.current].filter((p) => !keep.has(p)).map(removePracticeFile),
       )
+      const keepPhotos = new Set([
+        ...(savedPlan?.photos ?? []).map((p) => p.path),
+        ...drafts.filter((d) => d.id !== draftIdRef.current).flatMap((d) => (d.data.plan.photos ?? []).map((p) => p.path)),
+      ])
+      await removePracticePhotos([...knownPhotos.current].filter((p) => !keepPhotos.has(p)))
 
       if (draftIdRef.current) await deleteWritingDraft(draftIdRef.current)
       navigate(`/practices/${id}`, { replace: true })
@@ -795,6 +809,27 @@ export function PracticeForm({
               value={plan.reflection}
               onChange={(e) => patchPlan({ reflection: e.target.value })}
               aria-label={planText.reflection}
+              disabled={busy}
+            />
+          </PlanRow>
+          <PlanRow
+            label={
+              <span>
+                {planText.photos.label}
+                <span className="block text-xs font-normal text-muted-foreground">{planText.photos.max}</span>
+              </span>
+            }
+          >
+            <PracticePhotoField
+              value={plan.photos ?? []}
+              onChange={(photos) => {
+                for (const p of photos) knownPhotos.current.add(p.path)
+                if (photos.length > (plan.photos?.length ?? 0)) setPhotoOk(false) // 새 사진은 다시 확인
+                patchPlan({ photos })
+              }}
+              checked={photoOk}
+              onCheckedChange={setPhotoOk}
+              onBusyChange={setFileBusy}
               disabled={busy}
             />
           </PlanRow>

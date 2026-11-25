@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase"
 import { charCount, removeThumbnail } from "@/lib/apps"
+import { removePracticePhotos, type PracticePhoto } from "@/lib/practicePhotos"
 
 /**
  * 수업실천사례 데이터 접근 (PRD §13, 31_practices.sql).
@@ -45,6 +46,8 @@ export type PracticePlan = {
   evaluation: string
   reaction: string
   reflection: string
+  /** 실천 기록 활동사진(78) — 비공개 버킷 위치만. 예전 글은 없음. */
+  photos?: PracticePhoto[]
 }
 
 export const PLAN_LESSONS_MAX = 20
@@ -63,6 +66,7 @@ export function emptyPlan(): PracticePlan {
     evaluation: "",
     reaction: "",
     reflection: "",
+    photos: [],
   }
 }
 
@@ -380,7 +384,7 @@ export async function updatePractice(id: string, input: PracticeInput): Promise<
 
 /**
  * 사례 완전 삭제(59, RLS: 작성자 본인·운영진). 댓글·좋아요·담기·자료 연결·알림은 DB 가 함께 지운다.
- * 지운 뒤 대표 사진·첨부파일도 정리한다(본인 폴더만, 실패해도 삭제는 끝난 것).
+ * 지운 뒤 대표 사진·첨부파일·활동사진도 정리한다(본인 폴더만, 실패해도 삭제는 끝난 것).
  */
 export async function deletePractice(practice: Practice): Promise<void> {
   const { data, error } = await supabase.from("practices").delete().eq("id", practice.id).select("id")
@@ -389,6 +393,7 @@ export async function deletePractice(practice: Practice): Promise<void> {
   await Promise.allSettled([
     removeOwnCover(practice.coverUrl),
     ...practice.files.map((f) => removePracticeFile(f.path)),
+    removePracticePhotos((practice.plan?.photos ?? []).map((p) => p.path)),
   ])
 }
 

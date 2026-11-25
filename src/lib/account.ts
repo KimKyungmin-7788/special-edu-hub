@@ -71,6 +71,7 @@ const OWN_FOLDER_BUCKETS = [
   "app-thumbnails",
   "app-files",
   "practice-files",
+  "practice-photos",
   "comment-images",
   "research-images",
   "verification-docs",

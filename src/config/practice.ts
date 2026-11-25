@@ -99,6 +99,24 @@ export const planText = {
   reactionPlaceholder: "수업 뒤에 직접 써 주세요",
   reflection: "돌아보며",
   reflectionPlaceholder: "잘된 점, 다음에 바꿔 볼 점",
+  photos: {
+    label: "활동사진",
+    max: "(2장까지)",
+    notice:
+      "학생 얼굴이 나오지 않게 찍은 사진을 올려 주세요. 얼굴이 불가피하게 나오면 모자이크한 뒤 올려 주세요. 이름표·학교명·명찰도 가려 주세요.",
+    add: "사진 올리기",
+    remove: "사진 빼기",
+    checkTitle: "사진 개인정보 확인 (사진이 있을 때 필수)",
+    check:
+      "학생 얼굴이 나오지 않거나 모자이크했고, 이름표·학교명 등 개인을 알아볼 수 있는 정보가 없음을 확인했습니다.",
+    checkRequired: "활동사진 개인정보 확인란에 체크해 주세요.",
+    mosaicTitle: "얼굴 모자이크",
+    brush: "붓 크기",
+    undo: "되돌리기",
+    cancel: "취소",
+    upload: "올리기",
+    uploading: "올리는 중…",
+  },
   cover: "목록 표지",
   coverUpload: "사진 올리기",
 }
