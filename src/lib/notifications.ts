@@ -21,6 +21,7 @@ export type NotificationType =
   | "verify_approved"
   | "verify_rejected"
   | "notice"
+  | "collab"
 
 export type Notification = {
   id: string
@@ -206,18 +207,20 @@ export function notificationMessage(n: Notification): string {
       return "교사인증이 반려됐어요"
     case "notice":
       return n.title
+    case "collab":
+      return n.snippet
   }
 }
 
 /** 따옴표로 보여 줄 요약. 좋아요(앱·사례)는 대상 제목, 그 밖에는 본문 요약. */
 export function notificationQuote(n: Notification): string {
-  if (n.type === "app_like" || n.type === "practice_like") return n.title
+  if (n.type === "app_like" || n.type === "practice_like" || n.type === "collab") return n.title
   return n.snippet
 }
 
 /** 누르면 갈 곳. 없으면 null. */
 export function notificationHref(n: Notification): string | null {
-  if (n.type === "notice") return n.link
+  if (n.type === "notice" || n.type === "collab") return n.link
   if (n.type === "message") return "/mypage?tab=messages"
   if (n.type === "verify_approved" || n.type === "verify_rejected") return "/verify"
   if (n.commentId && n.link?.startsWith("/board/")) return n.link

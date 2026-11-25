@@ -5,6 +5,8 @@ import {
   type ChangeEvent,
   type FormEvent,
 } from "react"
+import { projects } from "@/config/projects"
+import { MyCollabs } from "@/components/projects/MyCollabs"
 import { Navigate, Link, useSearchParams } from "react-router-dom"
 import { useAuth } from "@/lib/auth"
 import {
@@ -51,8 +53,8 @@ function emptyToNull(v: string): string | null {
   return t === "" ? null : t
 }
 
-type MyTab = "bookmarks" | "profile" | "activity" | "messages" | "notifications"
-const MY_TABS: MyTab[] = ["bookmarks", "profile", "activity", "messages", "notifications"]
+type MyTab = "bookmarks" | "profile" | "activity" | "collabs" | "messages" | "notifications"
+const MY_TABS: MyTab[] = ["bookmarks", "profile", "activity", "collabs", "messages", "notifications"]
 
 export function MyPage() {
   usePageTitle("마이페이지")
@@ -203,7 +205,7 @@ export function MyPage() {
       <div
         role="tablist"
         aria-label="마이페이지 메뉴"
-        className="mt-6 grid grid-cols-5 divide-x divide-border overflow-hidden rounded-lg border border-border bg-card"
+        className="mt-6 grid grid-cols-3 gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-6"
       >
         <MyTabButton selected={tab === "bookmarks"} onClick={() => setTab("bookmarks")}>
           즐겨찾기
@@ -213,6 +215,9 @@ export function MyPage() {
         </MyTabButton>
         <MyTabButton selected={tab === "activity"} onClick={() => setTab("activity")}>
           내 활동
+        </MyTabButton>
+        <MyTabButton selected={tab === "collabs"} onClick={() => setTab("collabs")}>
+          {projects.my.tab}
         </MyTabButton>
         <MyTabButton selected={tab === "messages"} onClick={() => setTab("messages")}>
           쪽지함
@@ -470,6 +475,13 @@ export function MyPage() {
         </div>
       )}
 
+      {/* 내 협업(PRD §15) — 내가 연 프로젝트·보낸 요청 */}
+      {tab === "collabs" && (
+        <div className="mt-6">
+          <MyCollabs uid={user.id} />
+        </div>
+      )}
+
       {/* 쪽지함(대화방) — 묶음 E-2 개편. 차단 목록은 MessageBox 안(목록 화면)에. */}
       {tab === "messages" && (
         <div className="mt-6">
@@ -503,7 +515,7 @@ function MyTabButton({
       aria-selected={selected}
       onClick={onClick}
       className={
-        "flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm transition-colors " +
+        "flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm whitespace-nowrap transition-colors " +
         (selected
           ? "bg-primary font-medium text-primary-foreground"
           : "bg-card text-muted-foreground hover:bg-accent")

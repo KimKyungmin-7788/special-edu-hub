@@ -82,3 +82,100 @@ export function projectError(e: unknown): string {
   if (code === "42P01" || code === "PGRST205") return "협업 프로젝트를 준비하고 있습니다."
   return "협업 프로젝트를 불러오지 못했어요."
 }
+
+// ── 2묶음: 협업 요청·결성·팀 공간 (80_collab_requests.sql) ──
+
+export const REQUEST_WORK_MAX = 60
+export const REQUEST_MESSAGE_MAX = 300
+export const REQUEST_GOAL_MAX = 200
+export const KAKAO_URL = /^https:\/\/open\.kakao\.com\/[A-Za-z0-9/_-]+$/
+
+export type RequestStatus = "pending" | "accepted" | "declined" | "closed"
+
+export type CollabRequest = {
+  id: string
+  project_id: string
+  user_id: string
+  work: string
+  message: string
+  goal: string
+  status: RequestStatus
+  created_at: string
+  requester?: { nickname: string | null; avatar_url: string | null } | null
+  project?: Pick<Project, "id" | "title" | "status" | "needed" | "due_date"> | null
+}
+
+export type Member = { user_id: string; nickname: string | null; avatar_url: string | null }
+
+/** RPC 가 던진 안내 문장은 그대로, 그 밖에는 일반 안내 */
+export function rpcError(e: unknown): string {
+  const msg = (e as { message?: string })?.message ?? ""
+  return /[가-힣]/.test(msg) ? msg : "처리하지 못했어요. 잠시 뒤 다시 시도해 주세요."
+}
+
+export async function getMembers(projectId: string): Promise<Member[]> {
+  const { data, error } = await supabase.rpc("collab_members", { p_project: projectId })
+  if (error) throw error
+  return (data ?? []) as Member[]
+}
+
+/** 리더: 이 프로젝트에 온 요청 전부 / 신청자: 내 요청 한 건(RLS 가 걸러 준다) */
+export async function getRequests(projectId: string): Promise<CollabRequest[]> {
+  const { data, error } = await supabase
+    .from("collab_requests")
+    .select("*, requester:profiles!collab_requests_user_id_fkey(nickname, avatar_url)")
+    .eq("project_id", projectId)
+    .order("created_at")
+  if (error) throw error
+  return (data ?? []) as unknown as CollabRequest[]
+}
+
+export async function getTeamLink(projectId: string): Promise<string | null> {
+  const { data, error } = await supabase.from("collab_team_links").select("kakao_url").eq("project_id", projectId).maybeSingle()
+  if (error) throw error
+  return data?.kakao_url ?? null
+}
+
+export async function sendRequest(projectId: string, work: string, message: string, goal: string) {
+  const { error } = await supabase.rpc("send_collab_request", { p_project: projectId, p_work: work, p_message: message, p_goal: goal })
+  if (error) throw error
+}
+
+export async function cancelRequest(requestId: string) {
+  const { error } = await supabase.rpc("cancel_collab_request", { p_request: requestId })
+  if (error) throw error
+}
+
+export async function decideRequest(requestId: string, accept: boolean) {
+  const { error } = await supabase.rpc("decide_collab_request", { p_request: requestId, p_accept: accept })
+  if (error) throw error
+}
+
+export async function formProject(projectId: string, due: string, kakao: string) {
+  const { error } = await supabase.rpc("form_collab_project", { p_project: projectId, p_due: due, p_kakao: kakao })
+  if (error) throw error
+}
+
+export async function setTeamLink(projectId: string, kakao: string) {
+  const { error } = await supabase.rpc("set_collab_team_link", { p_project: projectId, p_kakao: kakao })
+  if (error) throw error
+}
+
+/** 마이페이지 '내 협업': 내가 연 프로젝트(+ 기다리는 요청 수)와 내가 보낸 요청 */
+export async function getMyCollabs(userId: string) {
+  const [led, mine] = await Promise.all([
+    supabase.from("collab_projects").select("id, title, status, needed, due_date, collab_requests(status)").eq("leader_id", userId).order("created_at", { ascending: false }),
+    supabase.from("collab_requests").select("*, project:collab_projects(id, title, status, needed, due_date)").eq("user_id", userId).order("created_at", { ascending: false }),
+  ])
+  if (led.error) throw led.error
+  if (mine.error) throw mine.error
+  const ledRows = (led.data ?? []) as unknown as (Pick<Project, "id" | "title" | "status" | "needed" | "due_date"> & { collab_requests: { status: RequestStatus }[] })[]
+  return {
+    led: ledRows.map(({ collab_requests, ...p }) => ({
+      ...p,
+      pending: collab_requests.filter((r) => r.status === "pending").length,
+      accepted: collab_requests.filter((r) => r.status === "accepted").length,
+    })),
+    requests: (mine.data ?? []) as unknown as CollabRequest[],
+  }
+}
