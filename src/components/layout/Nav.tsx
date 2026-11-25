@@ -96,6 +96,12 @@ function BarLink({ item, density }: { item: NavItem; density: number }) {
 
 /** 하부 섹션 — 메뉴 바로 아래 담백한 목록. 고른 뒤에는 포커스를 풀어 바로 닫히게 한다. */
 function SubMenu({ label, items }: { label: string; items: NavChild[] }) {
+  // 같은 주소를 ?stage= 로 나눠 쓰는 하부 섹션(바이브코딩 → 협업 프로젝트)은 주소 뒷부분까지 맞춰 표시한다
+  const { search } = useLocation()
+  const queryOf = (to: string) => to.split("?")[1] ?? ""
+  const queryHit = items.some((c) => queryOf(c.to) && search.includes(queryOf(c.to)))
+  const current = (to: string, isActive: boolean) =>
+    isActive && (queryOf(to) ? search.includes(queryOf(to)) : !queryHit)
   return (
     <div className="absolute left-0 top-full z-50 hidden pt-px group-focus-within/nav:block group-hover/nav:block">
       <ul
@@ -111,7 +117,7 @@ function SubMenu({ label, items }: { label: string; items: NavChild[] }) {
               className={({ isActive }) =>
                 cn(
                   "block whitespace-nowrap px-4 py-2 text-sm transition-colors",
-                  isActive
+                  current(child.to, isActive)
                     ? "bg-brand-soft font-semibold text-primary"
                     : "text-foreground/80 hover:bg-accent hover:text-foreground",
                 )

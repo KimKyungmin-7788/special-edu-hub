@@ -8,6 +8,7 @@
 import { subjectCategories } from "@/config/categories"
 import { training } from "@/config/training"
 import { seedling } from "@/config/seedling"
+import { projects } from "@/config/projects"
 
 export type NavStatus = "active" | "soon"
 
@@ -37,14 +38,11 @@ export const navItems: NavItem[] = [
     label: training.title,
     to: "/training",
     status: "active",
-    // 함께 여는 연수가 공개예정이면 하부 섹션 없이 열린연수방이란?으로만 간다
-    children:
-      training.share.status === "active"
-        ? [
-            { label: "열린 연수", to: training.basePath },
-            { label: training.share.title, to: training.share.path },
-          ]
-        : undefined,
+    // 열린 연수(단계 연수 + 회원 연수) · 협업 프로젝트(PRD §15)
+    children: [
+      { label: training.catalogueLabel, to: training.basePath },
+      { label: projects.title, to: projects.listPath },
+    ],
   },
   {
     label: "게시판",

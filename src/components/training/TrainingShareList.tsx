@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react"
 import { Link, useSearchParams } from "react-router-dom"
-import { ArrowDown, ArrowRight, BookOpen, FileText, Heart, LayoutGrid, Link2, List, MessageSquare, PenLine, Pin, PlayCircle, Presentation, Search, Users, type LucideIcon } from "lucide-react"
+import { ArrowDown, ArrowRight, BookOpen, FileText, Heart, LayoutGrid, Link2, List, Plus, MessageSquare, PenLine, Pin, PlayCircle, Presentation, Search, type LucideIcon } from "lucide-react"
 import { isTrainingStage, setupMaterial, soonLabel, training, trainingPath, type TrainingCourse, type TrainingPage } from "@/config/training"
 import { useAuth } from "@/lib/auth"
+import { projects } from "@/config/projects"
+import { countRecruiting } from "@/lib/projects"
+import { ProjectCatalogue } from "@/components/projects/ProjectList"
 import { usePageTitle } from "@/lib/usePageTitle"
 import { BOARD_PAGE_SIZE, boardError, boardPostPath, getBoardPosts, TRAINING_LINK_KINDS, type BoardPost, type TrainingLinkKind } from "@/lib/board"
 import { ProfileTrigger } from "@/components/profile/ProfileTrigger"
@@ -23,7 +26,7 @@ export function TrainingShareList() {
   usePageTitle(training.title)
   const [params, setParams] = useSearchParams()
   const rawStage = params.get("stage")
-  const stage = rawStage === "all" || rawStage === "study" || isTrainingStage(rawStage) ? rawStage : "all"
+  const stage = rawStage === "all" || rawStage === "projects" || isTrainingStage(rawStage) ? rawStage : "all"
   const kind = TRAINING_LINK_KINDS.find((k) => k.kind === params.get("kind"))?.kind
   const search = params.get("q") ?? ""
   const listView = params.get("view") === "list"
@@ -33,12 +36,14 @@ export function TrainingShareList() {
   const [result, setResult] = useState<{ posts: BoardPost[]; count: number } | null>(null)
   const [error, setError] = useState("")
   const [retry, setRetry] = useState(0)
+  const [recruiting, setRecruiting] = useState<number | null>(null)
   useEffect(() => { setDraft(search) }, [search])
+  useEffect(() => { countRecruiting().then(setRecruiting).catch(() => setRecruiting(null)) }, [])
   useEffect(() => {
     let active = true
     setResult(null)
     setError("")
-    if (stage === "study") return
+    if (stage === "projects") return
     getBoardPosts(search, page, "training", { stage: isTrainingStage(stage) ? stage : undefined, kind })
       .then((data) => { if (active) setResult(data) })
       .catch((e) => { if (active) setError(boardError(e)) })
@@ -65,13 +70,15 @@ export function TrainingShareList() {
       <div><h1 className="text-3xl font-bold tracking-tight">{training.title}</h1><p className="mt-2 text-sm text-muted-foreground">{training.description}</p></div>
       <div className="flex flex-wrap items-center gap-3 sm:gap-5">
       <Link to={`${training.basePath}/guide`} className="py-3 text-sm font-semibold text-primary underline-offset-4 hover:underline">{training.guideLabel}</Link>
-      <Link to={writeTo} className="inline-flex items-center gap-2 rounded-lg bg-cta px-5 py-3 text-sm font-semibold text-cta-foreground"><PenLine className="size-4" aria-hidden />{training.share.ctaLabel}</Link>
+      {stage === "projects"
+        ? <Link to={`${projects.path}/write`} className="inline-flex items-center gap-2 rounded-lg bg-cta px-5 py-3 text-sm font-semibold whitespace-nowrap text-cta-foreground"><Plus className="size-4" aria-hidden />{projects.ctaLabel}</Link>
+        : <Link to={writeTo} className="inline-flex items-center gap-2 rounded-lg bg-cta px-5 py-3 text-sm font-semibold text-cta-foreground"><PenLine className="size-4" aria-hidden />{training.share.ctaLabel}</Link>}
       </div>
     </header>
     <div className="grid gap-6 xl:grid-cols-[3fr_1fr]">
       <ol aria-label="연수 단계" className="grid gap-7 sm:grid-cols-3 sm:gap-8">
         {training.courses.map((c, i) => <li key={c.slug} className="relative min-w-0">
-          <button type="button" aria-pressed={stage === c.slug} aria-controls="training-catalogue" onClick={() => change({ stage: c.slug, kind: null, q: null })}
+          <button type="button" aria-pressed={stage === c.slug} aria-controls="training-catalogue" onClick={() => change({ stage: c.slug, kind: null, q: null, status: null })}
             className={cn("flex h-full w-full flex-col items-start gap-4 rounded-xl border-2 p-5 text-left transition-colors", stage === c.slug ? "border-primary bg-brand-soft" : "border-border bg-card hover:border-brand-line")}>
             <span className="flex items-center gap-3 text-primary"><span className="text-4xl leading-none font-bold tracking-tighter">{String(i + 1).padStart(2, "0")}</span><span className="text-sm font-semibold">{c.eyebrow}</span></span>
             <span className="text-xl leading-snug font-bold break-keep">{c.title}</span>
@@ -81,17 +88,17 @@ export function TrainingShareList() {
           {i < training.courses.length - 1 && <><ArrowRight aria-hidden className="absolute top-1/2 -right-6 hidden size-4 -translate-y-1/2 text-muted-foreground sm:block" /><ArrowDown aria-hidden className="absolute -bottom-5 left-8 size-4 text-muted-foreground sm:hidden" /></>}
         </li>)}
       </ol>
-      <button type="button" aria-pressed={stage === "study"} aria-controls="training-catalogue" onClick={() => change({ stage: "study", kind: null, q: null })}
-        className={cn("flex h-full flex-col items-start gap-4 rounded-xl border-2 border-dashed p-5 text-left transition-colors", stage === "study" ? "border-primary bg-brand-soft" : "border-border bg-card hover:border-brand-line")}>
-        <span className="text-sm font-semibold text-primary">함께 배우기</span>
+      <button type="button" aria-pressed={stage === "projects"} aria-controls="training-catalogue" onClick={() => change({ stage: "projects", kind: null, q: null, view: null })}
+        className={cn("flex h-full flex-col items-start gap-4 rounded-xl border-2 border-dashed p-5 text-left transition-colors", stage === "projects" ? "border-primary bg-brand-soft" : "border-brand-line bg-card hover:border-primary")}>
+        <span className="text-sm font-semibold text-primary">{training.study.eyebrow}</span>
         <span className="text-xl font-bold">{training.study.title}</span>
         <span className="text-sm leading-relaxed break-keep text-muted-foreground">{training.study.description}</span>
-        <span className="mt-auto pt-2 text-sm text-muted-foreground">준비 중</span>
+        <span className="mt-auto inline-flex items-center gap-2 pt-2 text-sm font-semibold whitespace-nowrap text-primary">{recruiting !== null && recruiting > 0 ? `${projects.status.recruiting} ${recruiting}` : "둘러보기"}<ArrowRight className="size-4" aria-hidden /></span>
       </button>
     </div>
     <section id="training-catalogue" aria-label="선택한 단계의 연수" className="mt-8">
-      <div className="mb-5 flex items-start justify-between gap-4">{stage === "study" && <h2 className="text-xl font-bold">{training.study.title}</h2>}<button type="button" onClick={() => change({ stage: "all", kind: null, q: null })} className="ml-auto shrink-0 py-1 text-sm text-primary underline underline-offset-4">전체 연수 보기</button></div>
-      {stage === "study" ? <div className="rounded-xl bg-brand-soft px-5 py-16 text-center"><Users className="mx-auto size-8 text-primary" aria-hidden /><p className="mt-4 font-semibold">준비 중</p></div> : <>
+      <div className="mb-5 flex items-start justify-between gap-4"><button type="button" onClick={() => change({ stage: "all", kind: null, q: null, status: null })} className="ml-auto shrink-0 py-1 text-sm text-primary underline underline-offset-4">전체 연수 보기</button></div>
+      {stage === "projects" ? <ProjectCatalogue /> : <>
         <div role="group" aria-label="자료 형식" className="mb-4 flex flex-wrap gap-2">
           {[{ kind: undefined, label: "전체" }, ...TRAINING_LINK_KINDS].map((k) => <button key={k.kind ?? "all"} type="button" aria-pressed={kind === k.kind} onClick={() => change({ kind: k.kind ?? null })} className={cn("rounded-full border px-3 py-1.5 text-sm", kind === k.kind ? "border-primary bg-primary text-primary-foreground" : "bg-card hover:bg-accent")}>{k.label}</button>)}
         </div>

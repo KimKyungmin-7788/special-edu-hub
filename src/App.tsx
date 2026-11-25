@@ -3,6 +3,7 @@ import { AuthProvider } from "@/lib/auth"
 import { Layout } from "@/components/layout/Layout"
 import { vibecoding } from "@/config/vibecoding"
 import { seedling } from "@/config/seedling"
+import { projects } from "@/config/projects"
 import { Home } from "@/pages/Home"
 import { lazyPage } from "@/lib/lazyPage"
 
@@ -30,6 +31,8 @@ const PracticeDetail = lazyPage(() => import("@/pages/PracticeDetail").then((m) 
 const PracticeWritePage = lazyPage(() => import("@/pages/PracticeWritePage").then((m) => ({ default: m.PracticeWritePage })))
 const TrainingPage = lazyPage(() => import("@/pages/TrainingPage").then((m) => ({ default: m.TrainingPage })))
 const TrainingShareList = lazyPage(() => import("@/components/training/TrainingShareList").then((m) => ({ default: m.TrainingShareList })))
+const ProjectWrite = lazyPage(() => import("@/components/projects/ProjectWrite").then((m) => ({ default: m.ProjectWrite })))
+const ProjectDetail = lazyPage(() => import("@/components/projects/ProjectDetail").then((m) => ({ default: m.ProjectDetail })))
 const TrainingGuide = lazyPage(() => import("@/components/training/TrainingGuide").then((m) => ({ default: m.TrainingGuide })))
 const VibeSetup = lazyPage(() => import("@/components/vibecoding/setup/VibeSetup").then((m) => ({ default: m.VibeSetup })))
 const VibeWhy = lazyPage(() => import("@/components/vibecoding/why/VibeWhy").then((m) => ({ default: m.VibeWhy })))
@@ -84,6 +87,13 @@ function App() {
                 <Route index element={<Navigate to="setup" replace />} />
                 <Route path="setup" element={<VibeSetup />} />
                 <Route path="survey" element={<VibeSurvey />} />
+              </Route>
+              {/* 협업 프로젝트(PRD §15) — 보기는 누구나, 열기는 교사인증 회원 */}
+              <Route path="projects">
+                <Route index element={<Navigate to={projects.listPath} replace />} />
+                <Route path="write" element={<ProjectWrite />} />
+                <Route path=":id" element={<ProjectDetail />} />
+                <Route path=":id/edit" element={<ProjectWrite />} />
               </Route>
               {/* 함께 여는 연수 — 회원이 올리는 연수 게시판(누구나 보고 인증 교사가 올림). 글 보기·쓰기는 게시판 화면을 같이 쓴다 */}
               <Route path="share">

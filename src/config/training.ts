@@ -77,8 +77,10 @@ export const training = {
       ],
     },
   ] satisfies TrainingCourse[] as TrainingCourse[],
-  /** 연수 흐름 밖의 함께하는 활동 — 사이드바 구분선 아래·연수 단계 그림 아래에 따로. 지금은 준비중 */
-  study: { title: "협업·스터디 활동", description: "공통 관심사를 탐구하며 협업 작품을 만들어요." },
+  /** 바이브코딩 메뉴의 단계 연수·회원 연수 목록 이름 */
+  catalogueLabel: "열린 연수",
+  /** 연수 흐름 밖의 협업 프로젝트 바로가기 — 단계 패널 옆 점선 패널(PRD §15) */
+  study: { eyebrow: "함께 만들기", title: "협업 프로젝트", description: "공통 관심사를 탐구하며 협업 작품을 만들어요." },
   /** 회원 연수 게시판(49·62). 누구나 보고, 인증 교사가 단계를 골라 올린다. */
   share: {
     title: "함께 여는 연수",
