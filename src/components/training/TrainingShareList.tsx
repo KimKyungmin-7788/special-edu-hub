@@ -4,7 +4,7 @@ import { ArrowDown, ArrowRight, BookOpen, FileText, Heart, LayoutGrid, Link2, Li
 import { isTrainingStage, setupMaterial, soonLabel, training, trainingPath, type TrainingCourse, type TrainingPage } from "@/config/training"
 import { useAuth } from "@/lib/auth"
 import { projects } from "@/config/projects"
-import { countRecruiting } from "@/lib/projects"
+import { countActive } from "@/lib/projects"
 import { ProjectCatalogue } from "@/components/projects/ProjectList"
 import { usePageTitle } from "@/lib/usePageTitle"
 import { BOARD_PAGE_SIZE, boardError, boardPostPath, getBoardPosts, TRAINING_LINK_KINDS, type BoardPost, type TrainingLinkKind } from "@/lib/board"
@@ -36,9 +36,9 @@ export function TrainingShareList() {
   const [result, setResult] = useState<{ posts: BoardPost[]; count: number } | null>(null)
   const [error, setError] = useState("")
   const [retry, setRetry] = useState(0)
-  const [recruiting, setRecruiting] = useState<number | null>(null)
+  const [active, setActive] = useState<{ recruiting: number; working: number } | null>(null)
   useEffect(() => { setDraft(search) }, [search])
-  useEffect(() => { countRecruiting().then(setRecruiting).catch(() => setRecruiting(null)) }, [])
+  useEffect(() => { countActive().then(setActive).catch(() => setActive(null)) }, [])
   useEffect(() => {
     let active = true
     setResult(null)
@@ -88,13 +88,21 @@ export function TrainingShareList() {
           {i < training.courses.length - 1 && <><ArrowRight aria-hidden className="absolute top-1/2 -right-6 hidden size-4 -translate-y-1/2 text-muted-foreground sm:block" /><ArrowDown aria-hidden className="absolute -bottom-5 left-8 size-4 text-muted-foreground sm:hidden" /></>}
         </li>)}
       </ol>
+      {/* 단계 흐름 밖이라는 걸 점선으로 나누고, 연두 바탕·숫자로 단계 패널과 구분한다(진한 초록 A안은 사용자가 촌스럽다며 되돌림, 2026-11-25) */}
+      <div className="xl:border-l xl:border-dashed xl:border-border xl:pl-6">
       <button type="button" aria-pressed={stage === "projects"} aria-controls="training-catalogue" onClick={() => change({ stage: "projects", kind: null, q: null, view: null })}
-        className={cn("flex h-full flex-col items-start gap-4 rounded-xl border-2 border-dashed p-5 text-left transition-colors", stage === "projects" ? "border-primary bg-brand-soft" : "border-brand-line bg-card hover:border-primary")}>
+        className={cn("flex h-full w-full flex-col items-start gap-3 rounded-xl border-2 bg-brand-soft p-5 text-left transition-colors", stage === "projects" ? "border-primary" : "border-brand-line hover:border-primary")}>
         <span className="text-sm font-semibold text-primary">{training.study.eyebrow}</span>
         <span className="text-xl font-bold">{training.study.title}</span>
         <span className="text-sm leading-relaxed break-keep text-muted-foreground">{training.study.description}</span>
-        <span className="mt-auto inline-flex items-center gap-2 pt-2 text-sm font-semibold whitespace-nowrap text-primary">{recruiting !== null && recruiting > 0 ? `${projects.status.recruiting} ${recruiting}` : "둘러보기"}<ArrowRight className="size-4" aria-hidden /></span>
+        <span className="mt-auto flex w-full items-end justify-between gap-3 pt-2">
+          <span className="flex gap-4">
+            {(["recruiting", "working"] as const).map((s) => <span key={s} className="flex items-baseline gap-1.5 whitespace-nowrap"><span className="text-2xl leading-none font-bold text-primary">{active?.[s] ?? 0}</span><span className="text-xs text-muted-foreground">{projects.status[s]}</span></span>)}
+          </span>
+          <ArrowRight className="size-4 shrink-0 text-primary" aria-hidden />
+        </span>
       </button>
+      </div>
     </div>
     <section id="training-catalogue" aria-label="선택한 단계의 연수" className="mt-8">
       <div className="mb-5 flex items-start justify-between gap-4"><button type="button" onClick={() => change({ stage: "all", kind: null, q: null, status: null })} className="ml-auto shrink-0 py-1 text-sm text-primary underline underline-offset-4">전체 연수 보기</button></div>

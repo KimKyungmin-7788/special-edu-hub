@@ -44,13 +44,12 @@ export async function getProject(id: string): Promise<Project | null> {
   return data as unknown as Project | null
 }
 
-export async function countRecruiting(): Promise<number> {
-  const { count, error } = await supabase
-    .from("collab_projects")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "recruiting")
+/** 모집 중·작업 중 수(바이브코딩 화면의 협업 프로젝트 패널) */
+export async function countActive(): Promise<{ recruiting: number; working: number }> {
+  const { data, error } = await supabase.from("collab_projects").select("status").in("status", ["recruiting", "working"])
   if (error) throw error
-  return count ?? 0
+  const rows = data ?? []
+  return { recruiting: rows.filter((r) => r.status === "recruiting").length, working: rows.filter((r) => r.status === "working").length }
 }
 
 export async function createProject(leaderId: string, input: ProjectInput): Promise<string> {
