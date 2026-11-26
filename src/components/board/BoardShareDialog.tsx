@@ -14,17 +14,19 @@ export function boardPostUrl(id: string, slug: BoardSlug) {
  * 게시글 공유 창 — 위에 링크, 아래에 링크 복사·메일·카카오톡(준비 중) 버튼.
  * 연구회 글은 제목도 연구회원에게만 보이는 정보라, 메일에 제목을 넣지 않고 '연구회원만 열 수 있음'을 적는다.
  */
-export function BoardShareDialog({ open, onClose, id, title, slug }: {
+export function BoardShareDialog({ open, onClose, id, title, slug, url: urlProp }: {
   open: boolean
   onClose: () => void
   id: string
   title: string
-  slug: BoardSlug
+  slug?: BoardSlug
+  /** 게시판 밖 글(협업 프로젝트 등)은 공유 주소를 직접 준다 */
+  url?: string
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [copied, setCopied] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const url = boardPostUrl(id, slug)
+  const url = urlProp ?? boardPostUrl(id, slug ?? "free")
   const research = slug === "research"
 
   useEffect(() => {

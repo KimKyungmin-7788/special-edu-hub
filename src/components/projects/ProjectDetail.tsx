@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
-import { ExternalLink } from "lucide-react"
-import { projects } from "@/config/projects"
+import { ExternalLink, Share2 } from "lucide-react"
+import { projectPath, projects } from "@/config/projects"
 import { useAuth } from "@/lib/auth"
 import {
   deleteProject, getMembers, getNotes, getProject, getRequests, getTeamLink, getUpdates, isOverdue, projectError,
   type CollabNote, type CollabRequest, type CollabUpdate, type Member, type Project,
 } from "@/lib/projects"
 import { ProfileTrigger } from "@/components/profile/ProfileTrigger"
+import { BoardShareDialog } from "@/components/board/BoardShareDialog"
 import { PersonAvatar } from "@/components/projects/PersonAvatar"
 import { ProjectStatusBadge } from "@/components/projects/ProjectStatusBadge"
 import { LeaderPanel, RequestPanel, TeamSpace } from "@/components/projects/ProjectCollab"
@@ -31,6 +32,7 @@ export function ProjectDetail() {
   const [updates, setUpdates] = useState<CollabUpdate[]>([])
   const [notes, setNotes] = useState<CollabNote[]>([])
   const [finishing, setFinishing] = useState(false)
+  const [sharing, setSharing] = useState(false)
   const [error, setError] = useState("")
   usePageTitle(project?.title ?? projects.title)
 
@@ -72,7 +74,10 @@ export function ProjectDetail() {
     {/* 왼쪽 = 리더가 처음 게시한 글, 오른쪽 = 진행(인원·팀 공간·완성 후기·진행 소식·받은 요청) 1:1 (2026-11-25 사용자 요청) */}
     <div className="grid gap-8 lg:grid-cols-2">
       <article className="min-w-0">
-        <ProjectStatusBadge project={p} />
+        <div className="flex items-center justify-between gap-3">
+          <ProjectStatusBadge project={p} />
+          <button type="button" onClick={() => setSharing(true)} className="inline-flex shrink-0 items-center gap-1.5 rounded-md border px-3 py-2 text-sm whitespace-nowrap hover:bg-accent"><Share2 className="size-4" aria-hidden />공유</button>
+        </div>
         <h1 className="mt-2 text-3xl font-bold tracking-tight break-keep">{p.title}</h1>
         <p className="mt-4 rounded-lg bg-brand-soft px-4 py-3 text-lg leading-relaxed break-keep text-brand-muted-foreground">{p.vision}</p>
         {p.cover_url && <img src={p.cover_url} alt="" className="mt-6 aspect-video w-full rounded-xl border object-cover" />}
@@ -105,6 +110,7 @@ export function ProjectDetail() {
         {isLeader && <LeaderPanel project={p} requests={requests} accepted={members.length} onChange={load} />}
       </aside>
     </div>
+    <BoardShareDialog open={sharing} onClose={() => setSharing(false)} id={p.id} title={p.title} url={`${window.location.origin}${projectPath(p.id)}`} />
   </div>
 }
 
