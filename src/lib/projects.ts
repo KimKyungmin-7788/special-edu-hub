@@ -1,3 +1,4 @@
+import DOMPurify from "dompurify"
 import { supabase } from "@/lib/supabase"
 import { removeThumbnail } from "@/lib/apps"
 import type { ProjectStatus } from "@/config/projects"
@@ -10,7 +11,8 @@ import type { ProjectStatus } from "@/config/projects"
 /** DB check 와 같은 값(79). */
 export const PROJECT_TITLE_MAX = 40
 export const PROJECT_VISION_MAX = 60
-export const PROJECT_BODY_MAX = 2000
+/** 소개는 자료 작성과 같은 편집기(HTML) — 83 에서 게시판과 같은 한도로 늘림 */
+export const PROJECT_BODY_MAX = 100000
 export const PROJECT_NEEDED_MAX = 10
 
 export type Project = {
@@ -60,7 +62,7 @@ export async function countActive(): Promise<{ recruiting: number; working: numb
 export async function createProject(leaderId: string, input: ProjectInput): Promise<string> {
   const { data, error } = await supabase
     .from("collab_projects")
-    .insert({ leader_id: leaderId, ...input })
+    .insert({ leader_id: leaderId, ...input, body: DOMPurify.sanitize(input.body) })
     .select("id")
     .single()
   if (error) throw error
@@ -68,7 +70,7 @@ export async function createProject(leaderId: string, input: ProjectInput): Prom
 }
 
 export async function updateProject(id: string, input: ProjectInput): Promise<void> {
-  const { data, error } = await supabase.from("collab_projects").update(input).eq("id", id).select("id")
+  const { data, error } = await supabase.from("collab_projects").update({ ...input, body: DOMPurify.sanitize(input.body) }).eq("id", id).select("id")
   if (error) throw error
   if (!data?.length) throw new Error("고칠 권한이 없어요.")
 }

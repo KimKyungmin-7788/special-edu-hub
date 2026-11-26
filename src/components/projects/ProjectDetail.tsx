@@ -8,6 +8,7 @@ import {
   type CollabNote, type CollabRequest, type CollabUpdate, type Member, type Project,
 } from "@/lib/projects"
 import { ProfileTrigger } from "@/components/profile/ProfileTrigger"
+import { RichTextViewer } from "@/components/app/RichTextViewer"
 import { BoardShareDialog } from "@/components/board/BoardShareDialog"
 import { PersonAvatar } from "@/components/projects/PersonAvatar"
 import { ProjectStatusBadge } from "@/components/projects/ProjectStatusBadge"
@@ -82,7 +83,7 @@ export function ProjectDetail() {
         <p className="mt-4 rounded-lg bg-brand-soft px-4 py-3 text-lg leading-relaxed break-keep text-brand-muted-foreground">{p.vision}</p>
         {p.cover_url && <img src={p.cover_url} alt="" className="mt-6 aspect-video w-full rounded-xl border object-cover" />}
         {p.mockup_url && <a href={p.mockup_url} target="_blank" rel="noopener" className="mt-4 inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-semibold whitespace-nowrap text-primary hover:bg-brand-soft">{projects.detail.mockup}<ExternalLink className="size-4" aria-hidden /></a>}
-        {p.body && <p className="mt-6 leading-relaxed whitespace-pre-line break-keep">{p.body}</p>}
+        {p.body && <div className="mt-6"><RichTextViewer html={p.body} /></div>}
         {canEdit && <div className="mt-8 flex flex-wrap gap-3 border-t pt-5 text-sm">
           <Link to={`${projects.path}/${p.id}/edit`} className="rounded-md border px-4 py-2 whitespace-nowrap hover:bg-accent">고치기</Link>
           {isLeader && (p.status === "working" || p.status === "done") && !finishing && <button type="button" onClick={() => setFinishing(true)} className="rounded-md border px-4 py-2 whitespace-nowrap hover:bg-accent">{p.status === "done" ? projects.finish.edit : projects.finish.heading}</button>}

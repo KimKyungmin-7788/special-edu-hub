@@ -3,7 +3,8 @@ import { Link, useNavigate, useParams } from "react-router-dom"
 import { projectPath, projects } from "@/config/projects"
 import { useAuth } from "@/lib/auth"
 import { uploadThumbnail, charCount } from "@/lib/apps"
-import { createProject, getProject, todayLocal, PROJECT_BODY_MAX, PROJECT_NEEDED_MAX, PROJECT_TITLE_MAX, PROJECT_VISION_MAX, projectError, updateProject, type Project } from "@/lib/projects"
+import { createProject, getProject, todayLocal, PROJECT_NEEDED_MAX, PROJECT_TITLE_MAX, PROJECT_VISION_MAX, projectError, updateProject, type Project } from "@/lib/projects"
+import { RichTextEditor } from "@/components/app/RichTextEditor"
 import { CoverField, type CoverValue } from "@/components/practice/CoverField"
 
 const input = "w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
@@ -24,6 +25,7 @@ export function ProjectWrite() {
   const [recruitUntil, setRecruitUntil] = useState("")
   const [due, setDue] = useState("")
   const [busy, setBusy] = useState(false)
+  const [imageBusy, setImageBusy] = useState(false)
   const [error, setError] = useState("")
   useEffect(() => {
     if (!id) return
@@ -80,10 +82,16 @@ export function ProjectWrite() {
         {!datesOpen && <p className="-mt-3 text-xs text-muted-foreground sm:col-span-2">{f.datesLocked}</p>}
       </div>
       <Field label={f.cover}><CoverField value={cover} onChange={setCover} disabled={busy} /></Field>
-      <Field label={f.body} count={`${charCount(body)}/${PROJECT_BODY_MAX}`}><textarea value={body} onChange={(e) => setBody(e.target.value)} maxLength={PROJECT_BODY_MAX} rows={8} placeholder={f.bodyPlaceholder} className={input} /></Field>
+      {/* 소개: 자료 작성의 '자세한 설명'과 같은 편집기(사진·링크·서식) */}
+      <div>
+        <p id="project-body-label" className="mb-1.5 text-sm font-semibold">{f.body}</p>
+        <div role="group" aria-labelledby="project-body-label" className="text-base">
+          <RichTextEditor value={body} onChange={setBody} disabled={busy} onBusyChange={setImageBusy} placeholder={f.bodyPlaceholder} />
+        </div>
+      </div>
     </div>
     {error && <p role="alert" className="mt-4 text-sm text-destructive">{error}</p>}
-    <button type="submit" disabled={busy} className="mt-6 rounded-lg bg-cta px-6 py-3 text-sm font-semibold whitespace-nowrap text-cta-foreground disabled:opacity-60">{busy ? "저장하는 중…" : id ? f.save : f.submit}</button>
+    <button type="submit" disabled={busy || imageBusy} className="mt-6 rounded-lg bg-cta px-6 py-3 text-sm font-semibold whitespace-nowrap text-cta-foreground disabled:opacity-60">{busy ? "저장하는 중…" : id ? f.save : f.submit}</button>
   </form>
 }
 
