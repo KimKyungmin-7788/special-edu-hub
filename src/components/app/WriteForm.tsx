@@ -40,6 +40,9 @@ import { SelectedStandards } from "@/components/app/SelectedStandards"
 import { StandardsManualModal } from "@/components/app/StandardsManualModal"
 import { SafetyFields } from "@/components/app/SafetyFields"
 import { LicenseFields } from "@/components/app/LicenseFields"
+import { useAuth } from "@/lib/auth"
+import { useAutoDraft } from "@/lib/writingDrafts"
+import { DraftResume, DraftStatus } from "@/components/common/DraftResume"
 import { safetyText } from "@/config/safety"
 import { EMPTY_SAFETY, getSafety, requestSafetyCheck, sameSafety, saveSafety, type Safety } from "@/lib/safety"
 import {
@@ -67,6 +70,16 @@ const THUMB_SOURCE_MAX_BYTES = 20 * 1024 * 1024 // 원본 사진 한도 — 자�
 
 /** 글자 수 제한까지만 받는다(유니코드 기준). */
 const clip = (text: string, max: number) => Array.from(text).slice(0, max).join("")
+
+/** 작성 중인 자료(86)에 저장하는 칸. 썸네일·자료 파일·미리보기 영상처럼 아직 올리지 않은 파일은 저장하지 않는다. */
+type AppDraft = {
+  primaryId: string; subIds: string[]; relatedId: string; relatedSubIds: string[]
+  title: string; appUrl: string; summary: string; achievementCodes: string[]
+  intent: string; useCase: string; content: string; visibility: AppVisibility; safety: Safety
+}
+const appHasContent = (d: AppDraft) =>
+  [d.title, d.appUrl, d.summary, d.intent, d.useCase].some((v) => v.trim() !== "") ||
+  d.content.replace(/<[^>]*>/g, "").trim() !== "" || /<img/i.test(d.content) || d.achievementCodes.length > 0
 
 /**
  * 자료 등록/수정 폼 (2026-09-29 개편).
@@ -192,6 +205,23 @@ export function WriteForm({
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+
+  // ── 작성 중인 자료(86): 새로 등록할 때만 자동 임시 저장, 다시 들어오면 카드로 이어 쓰기 ──
+  const { session } = useAuth()
+  const [editorKey, setEditorKey] = useState(0)
+  const draft = useAutoDraft<AppDraft>({
+    kind: "app", scope: isSeedling ? "seedling" : "", enabled: !isEdit && !!session, paused: submitting,
+    data: { primaryId, subIds, relatedId, relatedSubIds, title, appUrl, summary, achievementCodes, intent, useCase, content, visibility, safety },
+    title, hasContent: appHasContent,
+  })
+  async function openDraft(d: Parameters<typeof draft.open>[0]) {
+    const x = await draft.open(d)
+    setPrimaryId(x.primaryId); setSubIds(x.subIds); setRelatedId(x.relatedId); setRelatedSubIds(x.relatedSubIds)
+    setTitle(x.title); setAppUrl(x.appUrl); setSummary(x.summary); setAchievementCodes(x.achievementCodes)
+    setIntent(x.intent); setUseCase(x.useCase); setContent(x.content); setVisibility(x.visibility); setSafety({ ...EMPTY_SAFETY, ...x.safety })
+    setEditorKey((k) => k + 1)
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }
   const previewRef = useRef<string | null>(null)
 
   function acceptImage(file: File | null) {
@@ -333,6 +363,7 @@ export function WriteForm({
       // (저장 입력은 점검 결과와 대조하므로 바뀌면 다시 본다.) 요청에 실패해도 등록은 끝난 것이고, 상세 화면의 "다시 점검"으로 다시 할 수 있다.
       if (appUrl.trim() && (!app || appUrl.trim() !== app.appUrl.trim() || safety.studentData !== savedSafety.studentData))
         await requestSafetyCheck(saved.id, app ? "edit" : "register").catch((e) => console.error("[safety] 점검 요청 실패:", e))
+      if (!app) await draft.clear()
       // replace: 폼 페이지를 히스토리에서 치워, 상세에서 "목록으로"가 폼으로 되돌아가지 않게.
       navigate(`/app/${saved.id}`, { replace: true })
     } catch (err) {
@@ -348,6 +379,7 @@ export function WriteForm({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+      {!isEdit && <DraftResume drafts={draft.others} onOpen={openDraft} onDiscard={draft.discard} disabled={submitting} />}
       {/* ── 1. 기본 정보 ── */}
       <FormPanel title="기본 정보">
         <FormField label={isSeedling ? "자료 이름" : "앱 이름"} htmlFor="app-title" required>
@@ -571,6 +603,7 @@ export function WriteForm({
       <FormPanel title="자세한 설명">
         <div className="text-base">
           <RichTextEditor
+            key={editorKey}
             value={content}
             onChange={setContent}
             placeholder={"어떻게 사용하는지, 어떤 방식으로 운영하면 효과적인지 TIP과 다양한 정보를 자유롭게 적어주세요.\n사진과 링크도 넣을 수 있어요."}
@@ -706,6 +739,7 @@ export function WriteForm({
         >
           {isEdit ? "취소" : "목록"}
         </Link>
+        {!isEdit && <span className="ml-auto mr-4"><DraftStatus savedAt={draft.savedAt} saveError={draft.saveError} /></span>}
         <button
           type="submit"
           disabled={submitting}

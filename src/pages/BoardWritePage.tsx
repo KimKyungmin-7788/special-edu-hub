@@ -9,7 +9,13 @@ import { CoverField, type CoverValue } from "@/components/practice/CoverField"
 import { TrainingLinkField } from "@/components/training/TrainingLinkField"
 import { BoardNotice } from "@/components/board/BoardNotice"
 import { RichTextEditor } from "@/components/app/RichTextEditor"
-import { resolveResearchImages } from "@/lib/researchImages"
+import { resolveResearchImages, stripResearchImageSrc } from "@/lib/researchImages"
+import { useAutoDraft } from "@/lib/writingDrafts"
+import { DraftResume, DraftStatus } from "@/components/common/DraftResume"
+
+/** 작성 중인 게시글(86)에 저장하는 칸. 아직 올리지 않은 대표 사진 파일은 빼고 주소만. */
+type PostDraft = { title: string; body: string; stage: string; visibility: "public" | "private"; coverUrl: string; links: TrainingLink[] }
+const postHasContent = (d: PostDraft) => d.title.trim() !== "" || d.body.replace(/<[^>]*>/g, "").trim() !== "" || /<img/i.test(d.body) || d.links.length > 0
 
 export function BoardWritePage({ slug = "free" }: { slug?: BoardSlug }) {
   const { id } = useParams()
@@ -68,6 +74,20 @@ function PostForm({ post, slug }: { post: BoardPost | null; slug: BoardSlug }) {
   const [imageBusy, setImageBusy] = useState(false)
   const submitting = useRef(false)
   const [error, setError] = useState("")
+  const [editorKey, setEditorKey] = useState(0)
+  // 새 글만 자동 임시 저장(86). 연구회 사진은 임시 주소를 빼고 위치만 저장한다(열 때 다시 채움).
+  const draft = useAutoDraft<PostDraft>({
+    kind: "post", scope: slug, enabled: !post, paused: busy,
+    data: { title, body: slug === "research" ? stripResearchImageSrc(body) : body, stage, visibility, coverUrl: cover.url, links },
+    title, hasContent: postHasContent,
+  })
+  async function openDraft(d: Parameters<typeof draft.open>[0]) {
+    const x = await draft.open(d)
+    setTitle(x.title); setBody(slug === "research" ? await resolveResearchImages(x.body) : x.body)
+    setStage(isTrainingStage(x.stage) ? x.stage : ""); setVisibility(x.visibility); setCover({ file: null, url: x.coverUrl }); setLinks(x.links)
+    setEditorKey((k) => k + 1)
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }
   const dirty = (slug === "training" && visibility !== (post?.visibility ?? "public")) || (slug === "training" && stage !== (post?.training_stage ?? (isTrainingStage(requestedStage) ? requestedStage : ""))) || title !== (post?.title ?? "") || body !== (post?.body ?? "")
     || !!cover.file || cover.url !== (post?.cover_url ?? "") || JSON.stringify(links) !== JSON.stringify(post?.links ?? [])
   useEffect(() => {
@@ -88,6 +108,7 @@ function PostForm({ post, slug }: { post: BoardPost | null; slug: BoardSlug }) {
         if (cover.file && coverUrl) setCover({ file: null, url: coverUrl }) // 다시 눌러도 재업로드 안 하게
         id = await saveTrainingPost(title, body, coverUrl, links, stage, visibility, post?.id)
       } else id = await saveBoardPost(title, body, post?.id, slug)
+      if (!post) await draft.clear()
       navigate(boardPostPath(slug, id), { replace: true })
     } catch (e) { setError(boardError(e)) }
     finally { submitting.current = false; setBusy(false) }
@@ -96,6 +117,7 @@ function PostForm({ post, slug }: { post: BoardPost | null; slug: BoardSlug }) {
     if (!dirty || window.confirm("작성 중인 내용을 저장하지 않고 나갈까요?")) navigate(post ? boardPostPath(slug, post.id) : boardListPath(slug))
   }
   return <form onSubmit={submit}>
+    {!post && draft.others.length > 0 && <div className="mb-6"><DraftResume drafts={draft.others} onOpen={openDraft} onDiscard={draft.discard} disabled={busy} /></div>}
     <fieldset disabled={busy} className="space-y-6 disabled:opacity-60">
       <div><label htmlFor="post-title" className="mb-2 block text-sm font-medium">제목 <span className="text-muted-foreground">(필수)</span></label><input id="post-title" required maxLength={POST_TITLE_MAX} value={title} onChange={(e) => setTitle(e.target.value)} placeholder={slug === "training" ? "어떤 연수인지 한 줄로 알려 주세요" : "어떤 이야기를 나누고 싶으신가요?"} className="w-full rounded-md border border-input bg-background px-3 py-2.5" /><p className="mt-1 text-right text-xs text-muted-foreground">{title.length} / {POST_TITLE_MAX}</p></div>
       {slug === "training" && <>
@@ -107,9 +129,9 @@ function PostForm({ post, slug }: { post: BoardPost | null; slug: BoardSlug }) {
         <div><p className="mb-2 text-sm font-medium">대표 사진 <span className="text-muted-foreground">(선택 · 카드에 보여요)</span></p><CoverField value={cover} onChange={setCover} disabled={busy} /></div>
         <div><p className="mb-2 text-sm font-medium">연수 자료 링크 <span className="text-muted-foreground">(선택 · 유튜브는 본문에서, 다른 자료는 새 탭에서 열려요)</span></p><TrainingLinkField value={links} onChange={setLinks} disabled={busy} /></div>
       </>}
-      <div><p id="post-body-label" className="mb-2 text-sm font-medium">본문 <span className="text-muted-foreground">(필수)</span></p><div role="group" aria-labelledby="post-body-label"><RichTextEditor imageStore={slug === "research" ? "research" : "public"} value={body} onChange={setBody} disabled={busy} onBusyChange={setImageBusy} placeholder={slug === "training" ? "무엇을 알려 주고 싶은지, 어떤 필요에서 만들었는지, 준비물은 무엇인지 적어 주세요." : "나누고 싶은 이야기를 적어 주세요."} /></div></div>
+      <div><p id="post-body-label" className="mb-2 text-sm font-medium">본문 <span className="text-muted-foreground">(필수)</span></p><div role="group" aria-labelledby="post-body-label"><RichTextEditor key={editorKey} imageStore={slug === "research" ? "research" : "public"} value={body} onChange={setBody} disabled={busy} onBusyChange={setImageBusy} placeholder={slug === "training" ? "무엇을 알려 주고 싶은지, 어떤 필요에서 만들었는지, 준비물은 무엇인지 적어 주세요." : "나누고 싶은 이야기를 적어 주세요."} /></div></div>
     </fieldset>
     {error && <p role="alert" className="mt-4 text-sm text-destructive">{error}</p>}
-    <div className="mt-6 flex justify-end gap-2"><button type="button" disabled={busy} onClick={cancel} className="rounded-md border px-4 py-2.5 text-sm hover:bg-accent disabled:opacity-50">취소</button><button disabled={busy || imageBusy} type="submit" className="rounded-md bg-cta px-5 py-2.5 text-sm font-semibold text-cta-foreground disabled:opacity-50">{busy ? "저장 중…" : imageBusy ? "이미지 작업 중…" : post ? "수정 완료" : "게시글 등록"}</button></div>
+    <div className="mt-6 flex flex-wrap items-center justify-end gap-2">{!post && <span className="mr-auto"><DraftStatus savedAt={draft.savedAt} saveError={draft.saveError} /></span>}<button type="button" disabled={busy} onClick={cancel} className="rounded-md border px-4 py-2.5 text-sm hover:bg-accent disabled:opacity-50">취소</button><button disabled={busy || imageBusy} type="submit" className="rounded-md bg-cta px-5 py-2.5 text-sm font-semibold text-cta-foreground disabled:opacity-50">{busy ? "저장 중…" : imageBusy ? "이미지 작업 중…" : post ? "수정 완료" : "게시글 등록"}</button></div>
   </form>
 }

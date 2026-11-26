@@ -6,6 +6,12 @@ import { uploadThumbnail, charCount } from "@/lib/apps"
 import { createProject, getProject, todayLocal, PROJECT_NEEDED_MAX, PROJECT_TITLE_MAX, PROJECT_VISION_MAX, projectError, updateProject, type Project } from "@/lib/projects"
 import { RichTextEditor } from "@/components/app/RichTextEditor"
 import { CoverField, type CoverValue } from "@/components/practice/CoverField"
+import { useAutoDraft } from "@/lib/writingDrafts"
+import { DraftResume, DraftStatus } from "@/components/common/DraftResume"
+
+/** 작성 중인 프로젝트(86)에 저장하는 칸. 아직 올리지 않은 대표 사진 파일은 빼고 주소만. */
+type ProjectDraft = { title: string; vision: string; needed: number; mockup: string; coverUrl: string; body: string; recruitUntil: string; due: string }
+const projectHasContent = (d: ProjectDraft) => d.title.trim() !== "" || d.vision.trim() !== "" || d.body.replace(/<[^>]*>/g, "").trim() !== "" || /<img/i.test(d.body) || d.mockup.trim() !== ""
 
 const input = "w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
 
@@ -27,6 +33,19 @@ export function ProjectWrite() {
   const [busy, setBusy] = useState(false)
   const [imageBusy, setImageBusy] = useState(false)
   const [error, setError] = useState("")
+  const [editorKey, setEditorKey] = useState(0)
+  // 새로 열 때만 자동 임시 저장(86) — 고치기 화면은 저장하지 않는다
+  const draft = useAutoDraft<ProjectDraft>({
+    kind: "project", scope: "", enabled: !id && !!user && !!profile?.isTeacherVerified, paused: busy,
+    data: { title, vision, needed, mockup, coverUrl: cover.url, body, recruitUntil, due },
+    title, hasContent: projectHasContent,
+  })
+  async function openDraft(d: Parameters<typeof draft.open>[0]) {
+    const x = await draft.open(d)
+    setTitle(x.title); setVision(x.vision); setNeeded(x.needed); setMockup(x.mockup); setCover({ file: null, url: x.coverUrl }); setBody(x.body); setRecruitUntil(x.recruitUntil); setDue(x.due)
+    setEditorKey((k) => k + 1)
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }
   useEffect(() => {
     if (!id) return
     getProject(id).then((p) => {
@@ -59,6 +78,7 @@ export function ProjectWrite() {
       const data = { title: title.trim(), vision: vision.trim(), body: body.trim(), cover_url: coverUrl, mockup_url: mockup.trim(), needed, ...dates }
       const target = id ?? await createProject(user!.id, data)
       if (id) await updateProject(id, data)
+      else await draft.clear()
       navigate(projectPath(target))
     } catch (err) {
       setError(err instanceof Error && !("code" in err) ? err.message : "저장하지 못했어요. 잠시 뒤 다시 시도해 주세요.")
@@ -69,6 +89,7 @@ export function ProjectWrite() {
     <Link to={id ? projectPath(id) : projects.listPath} className="mb-5 inline-block text-sm text-muted-foreground hover:text-primary">← {projects.title}</Link>
     <h1 className="mb-2 text-2xl font-bold">{id ? f.editHeading : f.heading}</h1>
     <p className="mb-6 text-sm text-muted-foreground">{f.guard}</p>
+    {!id && draft.others.length > 0 && <div className="mb-6"><DraftResume drafts={draft.others} onOpen={openDraft} onDiscard={draft.discard} disabled={busy} /></div>}
     <div className="flex flex-col gap-5">
       <Field label={f.title} count={`${charCount(title)}/${PROJECT_TITLE_MAX}`}><input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={PROJECT_TITLE_MAX} required placeholder={f.titlePlaceholder} className={input} /></Field>
       <Field label={f.vision} count={`${charCount(vision)}/${PROJECT_VISION_MAX}`}><input value={vision} onChange={(e) => setVision(e.target.value)} maxLength={PROJECT_VISION_MAX} required placeholder={f.visionPlaceholder} className={input} /></Field>
@@ -86,12 +107,15 @@ export function ProjectWrite() {
       <div>
         <p id="project-body-label" className="mb-1.5 text-sm font-semibold">{f.body}</p>
         <div role="group" aria-labelledby="project-body-label" className="text-base">
-          <RichTextEditor value={body} onChange={setBody} disabled={busy} onBusyChange={setImageBusy} placeholder={f.bodyPlaceholder} />
+          <RichTextEditor key={editorKey} value={body} onChange={setBody} disabled={busy} onBusyChange={setImageBusy} placeholder={f.bodyPlaceholder} />
         </div>
       </div>
     </div>
     {error && <p role="alert" className="mt-4 text-sm text-destructive">{error}</p>}
-    <button type="submit" disabled={busy || imageBusy} className="mt-6 rounded-lg bg-cta px-6 py-3 text-sm font-semibold whitespace-nowrap text-cta-foreground disabled:opacity-60">{busy ? "저장하는 중…" : id ? f.save : f.submit}</button>
+    <div className="mt-6 flex flex-wrap items-center gap-3">
+      <button type="submit" disabled={busy || imageBusy} className="rounded-lg bg-cta px-6 py-3 text-sm font-semibold whitespace-nowrap text-cta-foreground disabled:opacity-60">{busy ? "저장하는 중…" : id ? f.save : f.submit}</button>
+      {!id && <DraftStatus savedAt={draft.savedAt} saveError={draft.saveError} />}
+    </div>
   </form>
 }
 
