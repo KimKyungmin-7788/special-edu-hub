@@ -21,7 +21,7 @@ export function RequestBadge({ status }: { status: RequestStatus }) {
 }
 
 /** 신청자 칸: 보내기 전 폼 / 보낸 뒤 상태. 로그인·교사인증 전이면 그 안내. */
-export function RequestPanel({ project: p, mine, full, onChange }: { project: Project; mine?: CollabRequest; full: boolean; onChange: () => void }) {
+export function RequestPanel({ project: p, mine, onChange }: { project: Project; mine?: CollabRequest; onChange: () => void }) {
   const { user, profile } = useAuth()
   const t = projects.request
   const [work, setWork] = useState("")
@@ -43,7 +43,6 @@ export function RequestPanel({ project: p, mine, full, onChange }: { project: Pr
     </div>
   </div>
   if (p.status !== "recruiting") return null
-  if (full) return <p className="text-sm text-muted-foreground">{t.full}</p>
   if (isRecruitClosed(p)) return <p className="text-sm text-muted-foreground">{t.closed}</p>
   if (!user || !profile?.isTeacherVerified) return <Link to={user ? "/verify" : "/login"} state={{ from: location.pathname }} className={cn(cta, "block text-center")}>{user ? "교사인증하고 요청하기" : "로그인하고 요청하기"}</Link>
 
@@ -97,6 +96,7 @@ export function LeaderPanel({ project: p, requests, accepted, onChange }: { proj
     <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
       <h3 id="leader-requests" className="font-semibold">{t.heading} {requests.length}</h3>
       <p className="text-sm whitespace-nowrap text-muted-foreground">{projects.detail.members} {accepted}명 · 필요 {p.needed}명</p>
+      <p className="flex w-full items-center gap-1.5 text-xs text-muted-foreground"><Lock className="size-3.5 shrink-0" aria-hidden />{t.private}</p>
     </div>
     {closed && <form onSubmit={extend} className="mb-4 rounded-lg border-2 border-cta p-4">
       <p className="text-sm font-semibold break-keep">{t.recruitClosed}</p>

@@ -47,6 +47,7 @@ export const projects = {
     mockup: "목업 보기",
     recruitUntil: "모집 마감",
     dueDate: "완성 목표",
+    recruitCount: "모집 인원",
   },
   /** 2묶음: 협업 요청·결성·팀 공간 */
   request: {
@@ -60,7 +61,6 @@ export const projects = {
     send: "협업 요청 보내기",
     cancel: "요청 취소",
     messageLeader: "리더에게 쪽지",
-    full: "모집 인원이 다 찼어요",
     closed: "모집 기간이 끝났어요",
     closedBadge: "모집 기간 끝남",
     status: {
@@ -72,6 +72,7 @@ export const projects = {
   },
   leader: {
     heading: "받은 요청",
+    private: "리더만 보여요",
     accept: "함께하기",
     decline: "이번엔 어려워요",
     message: "쪽지",

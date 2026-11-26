@@ -62,7 +62,8 @@ export function ProjectDetail() {
   const canEdit = isLeader || isStaff
   const mine = requests.find((r) => r.user_id === user?.id)
   const isMember = mine?.status === "accepted"
-  const full = members.length >= p.needed
+  /** 모집 중에는 방문자·신청자에게 함께하기 수·막대·이름을 숨긴다(부담 없이 요청하게, SQL 84) */
+  const hideProgress = p.status === "recruiting" && !isLeader && !isStaff
 
   const recruitMeta = p.recruit_until ? `${md(p.created_at.slice(0, 10))} ~ ${md(p.recruit_until)}` : `${md(p.created_at.slice(0, 10))}부터`
 
@@ -98,14 +99,18 @@ export function ProjectDetail() {
         <h2 id="collab-progress" className="mb-5 text-lg font-semibold">{projects.progress.heading}</h2>
         <ol className="relative">
           <Step state={stage(p.status, 1)} title={projects.progress.recruit} meta={recruitMeta}>
-            <div className="flex items-center justify-between gap-2 text-sm font-semibold"><span>{projects.detail.needed}</span><span className="whitespace-nowrap">{members.length} / {p.needed}명</span></div>
-            <div className="mt-2 h-1.5 rounded-full bg-muted"><div className="h-1.5 rounded-full bg-primary" style={{ width: `${Math.min(100, (members.length / p.needed) * 100)}%` }} /></div>
-            <dl className="mt-4 space-y-2 text-sm">
+            {hideProgress
+              ? <p className="flex items-center gap-2 text-sm"><span className="text-muted-foreground">{projects.detail.recruitCount}</span><span className="font-semibold whitespace-nowrap">{p.needed}명</span></p>
+              : <>
+                <div className="flex items-center justify-between gap-2 text-sm font-semibold"><span>{projects.detail.needed}</span><span className="whitespace-nowrap">{members.length} / {p.needed}명</span></div>
+                <div className="mt-2 h-1.5 rounded-full bg-muted"><div className="h-1.5 rounded-full bg-primary" style={{ width: `${Math.min(100, (members.length / p.needed) * 100)}%` }} /></div>
+              </>}
+            <dl className={cn("space-y-2 text-sm", hideProgress ? "mt-2" : "mt-4")}>
               <div className="flex items-center gap-2"><dt className="shrink-0 whitespace-nowrap text-muted-foreground">{projects.detail.leader}</dt><dd><ProfileTrigger userId={p.leader_id} className="inline-flex items-center gap-1.5"><PersonAvatar name={p.leader?.nickname} url={p.leader?.avatar_url} />{p.leader?.nickname || "사용자"}</ProfileTrigger></dd></div>
-              {members.length > 0 && <div className="flex items-start gap-2"><dt className="shrink-0 whitespace-nowrap text-muted-foreground">{projects.detail.members}</dt><dd className="flex flex-wrap gap-x-3 gap-y-1.5">{members.map((m) => <ProfileTrigger key={m.user_id} userId={m.user_id} className="inline-flex items-center gap-1.5"><PersonAvatar name={m.nickname} url={m.avatar_url} />{m.nickname || "사용자"}</ProfileTrigger>)}</dd></div>}
+              {members.length > 0 && !hideProgress && <div className="flex items-start gap-2"><dt className="shrink-0 whitespace-nowrap text-muted-foreground">{projects.detail.members}</dt><dd className="flex flex-wrap gap-x-3 gap-y-1.5">{members.map((m) => <ProfileTrigger key={m.user_id} userId={m.user_id} className="inline-flex items-center gap-1.5"><PersonAvatar name={m.nickname} url={m.avatar_url} />{m.nickname || "사용자"}</ProfileTrigger>)}</dd></div>}
             </dl>
             {!isLeader && (mine || p.status === "recruiting") && <div className="mt-4 border-t pt-4">
-              <RequestPanel project={p} mine={mine} full={full} onChange={load} />
+              <RequestPanel project={p} mine={mine} onChange={load} />
             </div>}
             {isLeader && <div className="mt-4"><LeaderPanel project={p} requests={requests} accepted={members.length} onChange={load} /></div>}
           </Step>
