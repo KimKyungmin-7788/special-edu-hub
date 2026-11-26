@@ -28,6 +28,9 @@ export const projects = {
     vision: "비전 한 줄",
     visionPlaceholder: "말 대신 그림을 눌러 오늘 먹고 싶은 반찬을 고르게 하고 싶어요",
     needed: "필요 인원",
+    recruitUntil: "모집 마감일",
+    dueDate: "완성 목표일 (선택)",
+    datesLocked: "날짜는 모집 중일 때만 고칠 수 있어요.",
     neededOption: (n: number) => `나 말고 ${n}명`,
     mockup: "목업 링크 (선택)",
     cover: "대표 사진 (선택)",
@@ -42,6 +45,8 @@ export const projects = {
     leader: "리더",
     members: "함께하는 사람",
     mockup: "목업 보기",
+    recruitUntil: "모집 마감",
+    dueDate: "완성 목표",
   },
   /** 2묶음: 협업 요청·결성·팀 공간 */
   request: {
@@ -56,6 +61,8 @@ export const projects = {
     cancel: "요청 취소",
     messageLeader: "리더에게 쪽지",
     full: "모집 인원이 다 찼어요",
+    closed: "모집 기간이 끝났어요",
+    closedBadge: "모집 기간 끝남",
     status: {
       pending: "답을 기다리는 중",
       accepted: "함께함",
@@ -75,6 +82,9 @@ export const projects = {
     kakaoPlaceholder: "https://open.kakao.com/o/…",
     form: "결성 확정하기",
     formNote: "기다리는 요청은 '모집 마감'으로 바뀌어요",
+    recruitClosed: "모집 마감일이 지났어요. 결성을 확정하거나 모집 기한을 늘려 주세요.",
+    extendRecruit: "모집 기한 늘리기",
+    newRecruit: "새 모집 마감일",
   },
   team: {
     heading: "팀 공간",

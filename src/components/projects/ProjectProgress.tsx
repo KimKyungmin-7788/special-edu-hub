@@ -8,6 +8,7 @@ import {
   type CollabNote, type CollabUpdate, type Member, type Project,
 } from "@/lib/projects"
 import { cn } from "@/lib/utils"
+import { PersonAvatar } from "@/components/projects/PersonAvatar"
 
 const input = "w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
 const plain = "rounded-md border px-3 py-2 text-sm whitespace-nowrap hover:bg-accent disabled:opacity-60"
@@ -29,7 +30,7 @@ export function UpdatesSection({ project: p, updates, isLeader, isStaff, onChang
     setBusy(true); setError("")
     try { await addUpdate(p.id, body); setBody(""); onChange() } catch (err) { setError(rpcError(err)) } finally { setBusy(false) }
   }
-  return <section aria-labelledby="collab-updates" className="mt-8 border-t pt-6">
+  return <section aria-labelledby="collab-updates" className="rounded-xl border bg-card p-5">
     <h2 id="collab-updates" className="mb-3 font-semibold">{t.heading}</h2>
     {canWrite && <form onSubmit={submit} className="mb-4 flex gap-2">
       <input value={body} onChange={(e) => setBody(e.target.value)} maxLength={UPDATE_MAX} placeholder={t.placeholder} aria-label={t.heading} className={cn(input, "min-w-0 flex-1")} />
@@ -102,7 +103,7 @@ export function FinishForm({ project: p, onCancel, onChange }: { project: Projec
     setBusy(true); setError("")
     try { await finishProject(p.id, review, appId); onChange() } catch (err) { setError(rpcError(err)) } finally { setBusy(false) }
   }
-  return <form onSubmit={submit} className="mt-8 flex flex-col gap-3 rounded-xl border bg-card p-5">
+  return <form onSubmit={submit} className="flex flex-col gap-3 rounded-xl border bg-card p-5">
     <h2 className="font-semibold">{editing ? t.editHeading : t.heading}</h2>
     <label className="text-sm font-semibold">{t.review}<textarea value={review} onChange={(e) => setReview(e.target.value)} maxLength={REVIEW_MAX} required rows={6} placeholder={t.reviewPlaceholder} className={cn(input, "mt-1 font-normal")} /></label>
     <label className="text-sm font-semibold">{t.app}
@@ -136,7 +137,7 @@ export function DoneSection({ project: p, members, notes, myId, onChange }: { pr
     setBusy(true); setError("")
     try { await setNote(p.id, note); onChange() } catch (err) { setError(rpcError(err)) } finally { setBusy(false) }
   }
-  return <section aria-label={t.review} className="mt-8 border-t pt-6">
+  return <section aria-label={t.review} className="rounded-xl border-2 border-primary bg-card p-5">
     <h2 className="font-semibold">{t.review}</h2>
     <p className="mt-2 leading-relaxed whitespace-pre-line break-keep">{p.review}</p>
     {app && <Link to={`/app/${app.id}`} className="mt-5 flex items-center gap-3 rounded-lg border p-3 hover:border-brand-line">
@@ -146,9 +147,9 @@ export function DoneSection({ project: p, members, notes, myId, onChange }: { pr
     </Link>}
     {members.length > 0 && <>
       <h3 className="mt-6 mb-2 font-semibold">{t.notes}</h3>
-      <ul className="space-y-1 text-sm">
-        {members.map((m) => { const n = notes.find((x) => x.user_id === m.user_id); return <li key={m.user_id} className="break-keep">
-          <span className="font-semibold">{m.nickname || "사용자"}</span> <span className="text-muted-foreground">— {n?.body ?? t.noNote}</span>
+      <ul className="space-y-2 text-sm">
+        {members.map((m) => { const n = notes.find((x) => x.user_id === m.user_id); return <li key={m.user_id} className="flex items-start gap-2 break-keep">
+          <PersonAvatar name={m.nickname} url={m.avatar_url} /><span className="min-w-0 pt-0.5"><span className="font-semibold">{m.nickname || "사용자"}</span> <span className="text-muted-foreground">— {n?.body ?? t.noNote}</span></span>
         </li> })}
       </ul>
       {isMember && <form onSubmit={save} className="mt-3 flex gap-2 rounded-lg bg-muted p-2">

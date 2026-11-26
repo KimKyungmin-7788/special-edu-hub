@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom"
 import { projectPath, projects } from "@/config/projects"
 import { useAuth } from "@/lib/auth"
 import { uploadThumbnail, charCount } from "@/lib/apps"
-import { createProject, getProject, PROJECT_BODY_MAX, PROJECT_NEEDED_MAX, PROJECT_TITLE_MAX, PROJECT_VISION_MAX, projectError, updateProject, type Project } from "@/lib/projects"
+import { createProject, getProject, todayLocal, PROJECT_BODY_MAX, PROJECT_NEEDED_MAX, PROJECT_TITLE_MAX, PROJECT_VISION_MAX, projectError, updateProject, type Project } from "@/lib/projects"
 import { CoverField, type CoverValue } from "@/components/practice/CoverField"
 
 const input = "w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
@@ -21,13 +21,15 @@ export function ProjectWrite() {
   const [mockup, setMockup] = useState("")
   const [cover, setCover] = useState<CoverValue>({ file: null, url: "" })
   const [body, setBody] = useState("")
+  const [recruitUntil, setRecruitUntil] = useState("")
+  const [due, setDue] = useState("")
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState("")
   useEffect(() => {
     if (!id) return
     getProject(id).then((p) => {
       if (!p) return setError("프로젝트를 찾을 수 없어요.")
-      setOriginal(p); setTitle(p.title); setVision(p.vision); setNeeded(p.needed); setMockup(p.mockup_url); setCover({ file: null, url: p.cover_url }); setBody(p.body)
+      setOriginal(p); setTitle(p.title); setVision(p.vision); setNeeded(p.needed); setMockup(p.mockup_url); setCover({ file: null, url: p.cover_url }); setBody(p.body); setRecruitUntil(p.recruit_until ?? ""); setDue(p.due_date ?? "")
     }).catch((e) => setError(projectError(e)))
   }, [id])
 
@@ -37,16 +39,22 @@ export function ProjectWrite() {
     <Link to={user ? "/verify" : "/login"} className="mt-4 inline-block rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">{user ? "교사인증하기" : "로그인하기"}</Link>
   </div>
   if (id && original && original.leader_id !== user.id && !isStaff) return <p role="alert">리더만 고칠 수 있어요.</p>
+  const datesOpen = !id || original?.status === "recruiting"
+  const today = todayLocal()
 
   async function submit(e: FormEvent) {
     e.preventDefault()
     if (!title.trim() || !vision.trim()) return setError(`${f.title}과 ${f.vision}을 써 주세요.`)
+    if (datesOpen && !recruitUntil) return setError(`${f.recruitUntil}을 골라 주세요.`)
+    if (datesOpen && due && due < recruitUntil) return setError("완성 목표일은 모집 마감일이나 그 뒤로 골라 주세요.")
     if (mockup.trim() && !/^https:\/\//.test(mockup.trim())) return setError("목업 링크는 https:// 로 시작하는 주소만 넣을 수 있어요.")
     setBusy(true); setError("")
     try {
       const coverUrl = cover.file ? await uploadThumbnail(cover.file) : cover.url
       if (cover.file) setCover({ file: null, url: coverUrl })
-      const data = { title: title.trim(), vision: vision.trim(), body: body.trim(), cover_url: coverUrl, mockup_url: mockup.trim(), needed }
+      // 날짜는 모집 중일 때만 바꾼다(작업 중 이후엔 원래 값 그대로 보내 DB 트리거가 통과)
+      const dates = datesOpen ? { recruit_until: recruitUntil, due_date: due || null } : { recruit_until: original!.recruit_until, due_date: original!.due_date }
+      const data = { title: title.trim(), vision: vision.trim(), body: body.trim(), cover_url: coverUrl, mockup_url: mockup.trim(), needed, ...dates }
       const target = id ?? await createProject(user!.id, data)
       if (id) await updateProject(id, data)
       navigate(projectPath(target))
@@ -65,6 +73,11 @@ export function ProjectWrite() {
       <div className="grid gap-5 sm:grid-cols-2">
         <Field label={f.needed}><select value={needed} onChange={(e) => setNeeded(Number(e.target.value))} className={input}>{Array.from({ length: PROJECT_NEEDED_MAX }, (_, i) => i + 1).map((n) => <option key={n} value={n}>{f.neededOption(n)}</option>)}</select></Field>
         <Field label={f.mockup}><input type="url" value={mockup} onChange={(e) => setMockup(e.target.value)} placeholder="https://" className={input} /></Field>
+      </div>
+      <div className="grid gap-5 sm:grid-cols-2">
+        <Field label={f.recruitUntil}><input type="date" value={recruitUntil} onChange={(e) => setRecruitUntil(e.target.value)} min={recruitUntil && recruitUntil < today ? undefined : today} required={datesOpen} disabled={!datesOpen} className={input} /></Field>
+        <Field label={f.dueDate}><input type="date" value={due} onChange={(e) => setDue(e.target.value)} min={recruitUntil || today} disabled={!datesOpen} className={input} /></Field>
+        {!datesOpen && <p className="-mt-3 text-xs text-muted-foreground sm:col-span-2">{f.datesLocked}</p>}
       </div>
       <Field label={f.cover}><CoverField value={cover} onChange={setCover} disabled={busy} /></Field>
       <Field label={f.body} count={`${charCount(body)}/${PROJECT_BODY_MAX}`}><textarea value={body} onChange={(e) => setBody(e.target.value)} maxLength={PROJECT_BODY_MAX} rows={8} placeholder={f.bodyPlaceholder} className={input} /></Field>

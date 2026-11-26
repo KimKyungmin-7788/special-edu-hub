@@ -4,6 +4,7 @@ import { Users } from "lucide-react"
 import { projectPath, projects, type ProjectStatus } from "@/config/projects"
 import { getProjects, projectError, type Project } from "@/lib/projects"
 import { cn } from "@/lib/utils"
+import { PersonAvatar } from "@/components/projects/PersonAvatar"
 import { ProjectStatusBadge } from "@/components/projects/ProjectStatusBadge"
 
 /** 협업 프로젝트 목록 — 바이브코딩 화면 아래 영역에 뜬다. 상태 걸러보기는 주소(?status=)에 남긴다. */
@@ -48,7 +49,7 @@ function ProjectCard({ project: p }: { project: Project }) {
       <ProjectStatusBadge project={p} />
       <Link to={to} className="mt-2 font-bold leading-snug break-keep hover:text-primary">{p.title}</Link>
       <p className="mt-1 line-clamp-2 text-sm break-keep text-muted-foreground">{p.vision}</p>
-      <p className="mt-auto pt-4 text-sm text-muted-foreground">{projects.detail.leader} {p.leader?.nickname || "사용자"}</p>
+      <p className="mt-auto flex items-center gap-1.5 pt-4 text-sm text-muted-foreground"><span className="whitespace-nowrap">{projects.detail.leader}</span><PersonAvatar name={p.leader?.nickname} url={p.leader?.avatar_url} />{p.leader?.nickname || "사용자"}</p>
     </div>
   </li>
 }

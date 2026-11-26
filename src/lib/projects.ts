@@ -26,12 +26,14 @@ export type Project = {
   due_date: string | null
   created_at: string
   review: string
+  /** 모집 마감일(82). 82 전에 연 프로젝트는 null */
+  recruit_until: string | null
   app_id: string | null
   done_at: string | null
   leader: { nickname: string | null; avatar_url: string | null } | null
 }
 
-export type ProjectInput = Pick<Project, "title" | "vision" | "body" | "cover_url" | "mockup_url" | "needed">
+export type ProjectInput = Pick<Project, "title" | "vision" | "body" | "cover_url" | "mockup_url" | "needed" | "recruit_until" | "due_date">
 
 const SELECT = "*, leader:profiles!collab_projects_leader_id_fkey(nickname, avatar_url)"
 
@@ -227,9 +229,21 @@ export const finishProject = (projectId: string, review: string, appId: string) 
 export const stopProject = (projectId: string) => call("stop_collab_project", { p_project: projectId })
 export const setNote = (projectId: string, body: string) => call("set_collab_note", { p_project: projectId, p_body: body })
 
-/** 첫 화면 날개 배너·띠: 모집 중 프로젝트(최신순) */
+/** 모집 중인데 모집 마감일이 지나 새 요청을 받지 않는 상태(82) */
+export function isRecruitClosed(p: Pick<Project, "status" | "recruit_until">): boolean {
+  return p.status === "recruiting" && !!p.recruit_until && p.recruit_until < todayLocal()
+}
+
+/** 모집 기한만 늘리기(모집 중, 리더) — DB 트리거가 날짜를 다시 검사한다 */
+export async function extendRecruit(id: string, until: string): Promise<void> {
+  const { data, error } = await supabase.from("collab_projects").update({ recruit_until: until }).eq("id", id).select("id")
+  if (error) throw error
+  if (!data?.length) throw new Error("고칠 권한이 없어요.")
+}
+
+/** 첫 화면 날개 배너·띠: 요청을 받는 모집 중 프로젝트(최신순, 모집 마감일 지난 것 뺌) */
 export async function getRecruiting(): Promise<Pick<Project, "id" | "title" | "needed">[]> {
-  const { data, error } = await supabase.from("collab_projects").select("id, title, needed").eq("status", "recruiting").order("created_at", { ascending: false })
+  const { data, error } = await supabase.from("collab_projects").select("id, title, needed").eq("status", "recruiting").or(`recruit_until.is.null,recruit_until.gte.${todayLocal()}`).order("created_at", { ascending: false })
   if (error) throw error
   return data ?? []
 }
