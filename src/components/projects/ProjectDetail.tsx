@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
-import { Check, ExternalLink, Eye, Heart, Share2, X } from "lucide-react"
+import { Check, ExternalLink, Eye, Heart, Plus, Share2, X } from "lucide-react"
 import { projectPath, projects } from "@/config/projects"
 import { useAuth } from "@/lib/auth"
 import {
-  deleteProject, incrementProjectView, isProjectLiked, setProjectLike, getMembers, getNotes, getProject, getRequests, getTeamLink, getUpdates, isOverdue, projectError,
+  deleteProject, incrementProjectView, isProjectLiked, setProjectLike, getMembers, getNotes, getProject, getRequests, getTeamLink, getUpdates, isOverdue, isRecruitClosed, projectError,
   type CollabNote, type CollabRequest, type CollabUpdate, type Member, type Project,
 } from "@/lib/projects"
 import { ProfileTrigger } from "@/components/profile/ProfileTrigger"
@@ -70,6 +70,19 @@ export function ProjectDetail() {
   /** 모집 중에는 방문자·신청자에게 함께하기 수·막대·이름을 숨긴다(부담 없이 요청하게, SQL 84) */
   const hideProgress = p.status === "recruiting" && !isLeader && !isStaff
 
+  // 빈 자리 띠: 모집 중이면 필요 인원만큼 자리(방문자에게는 모두 빈 자리), 결성 뒤에는 함께한 사람만
+  const shownMembers = hideProgress ? [] : members
+  const emptySeats = p.status === "recruiting" ? Math.max(0, p.needed - shownMembers.length) : 0
+  const seatsLabel = p.status === "recruiting"
+    ? `${projects.detail.leader} 1 · ${projects.seats.empty} ${emptySeats}${p.recruit_until ? ` · ${md(p.recruit_until)} 마감` : ""}`
+    : `${projects.detail.leader} 1 · ${projects.detail.members} ${members.length}`
+  const canJoin = p.status === "recruiting" && !isLeader && !mine && !isRecruitClosed(p)
+  function goRequest() {
+    const box = document.getElementById("collab-request")
+    box?.scrollIntoView({ behavior: "smooth", block: "start" })
+    box?.querySelector<HTMLElement>("input, textarea, a")?.focus({ preventScroll: true })
+  }
+
   const recruitMeta = p.recruit_until ? `${md(p.created_at.slice(0, 10))} ~ ${md(p.recruit_until)}` : `${md(p.created_at.slice(0, 10))}부터`
 
   async function toggleLike() {
@@ -93,17 +106,34 @@ export function ProjectDetail() {
     {back}
     {/* 마감 지남(리더만): 급한 일이라 두 칸 위 가로로 */}
     {isLeader && isOverdue(p) && !finishing && <OverduePanel project={p} onFinish={() => setFinishing(true)} onChange={load} />}
+    {/* 빈 자리 띠(2026-11-26 사용자 선택): 제목·비전·'함께 만들고 싶어요' + 리더 옆 빈 자리 그림.
+        모집 중 방문자에게는 늘 모든 자리가 비어 보인다(신청 상황 숨김과 같은 규칙). 결성 뒤에는 팀원 얼굴로 채운다. */}
+    <section aria-labelledby="project-title" className="mb-8 grid items-center gap-6 rounded-2xl bg-brand-soft p-6 sm:p-8 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-3">
+          <ProjectStatusBadge project={p} />
+          <span className="inline-flex items-center gap-1 text-sm whitespace-nowrap text-muted-foreground"><Eye className="size-4" aria-hidden />조회 {(p.view_count ?? 0).toLocaleString()}</span>
+        </div>
+        <h1 id="project-title" className="mt-3 text-3xl font-bold tracking-tight break-keep">{p.title}</h1>
+        <p className="mt-3 text-xl leading-relaxed break-keep text-brand-muted-foreground">{p.vision}</p>
+        <div className="mt-6 flex flex-wrap gap-2">
+          {canJoin && <button type="button" onClick={goRequest} className="rounded-lg bg-cta px-5 py-3 text-sm font-semibold whitespace-nowrap text-cta-foreground hover:opacity-90">{projects.request.send}</button>}
+          <button type="button" onClick={() => setSharing(true)} className="inline-flex items-center gap-1.5 rounded-lg border border-brand-line bg-card px-4 py-3 text-sm whitespace-nowrap hover:bg-accent"><Share2 className="size-4" aria-hidden />공유</button>
+        </div>
+      </div>
+      <div className="rounded-xl bg-card p-5 text-center">
+        <ul aria-label={seatsLabel} className="flex flex-wrap items-center justify-center gap-2.5">
+          <li><ProfileTrigger userId={p.leader_id} className="block rounded-full ring-2 ring-primary ring-offset-2 ring-offset-card"><PersonAvatar name={p.leader?.nickname} url={p.leader?.avatar_url} className="size-11 text-base" /></ProfileTrigger></li>
+          {shownMembers.map((m) => <li key={m.user_id}><ProfileTrigger userId={m.user_id} className="block rounded-full"><PersonAvatar name={m.nickname} url={m.avatar_url} className="size-11 text-base" /></ProfileTrigger></li>)}
+          {Array.from({ length: emptySeats }, (_, i) => <li key={`seat-${i}`} aria-hidden className="flex size-11 items-center justify-center rounded-full border-2 border-dashed border-brand-line text-primary"><Plus className="size-5" /></li>)}
+        </ul>
+        <p className="mt-3 text-sm text-muted-foreground">{seatsLabel}</p>
+      </div>
+    </section>
     {/* 왼쪽 = 리더가 처음 게시한 글, 오른쪽 = 진행 과정 타임라인 1:1 */}
     <div className="grid gap-8 lg:grid-cols-2">
       <article className="min-w-0">
-        <div className="flex items-center justify-between gap-3">
-          <ProjectStatusBadge project={p} />
-          <button type="button" onClick={() => setSharing(true)} className="inline-flex shrink-0 items-center gap-1.5 rounded-md border px-3 py-2 text-sm whitespace-nowrap hover:bg-accent"><Share2 className="size-4" aria-hidden />공유</button>
-        </div>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight break-keep">{p.title}</h1>
-        <p className="mt-2 inline-flex items-center gap-1 text-sm whitespace-nowrap text-muted-foreground"><Eye className="size-4" aria-hidden />조회 {(p.view_count ?? 0).toLocaleString()}</p>
-        <p className="mt-4 rounded-lg bg-brand-soft px-4 py-3 text-lg leading-relaxed break-keep text-brand-muted-foreground">{p.vision}</p>
-        {p.cover_url && <img src={p.cover_url} alt="" className="mt-6 aspect-video w-full rounded-xl border object-cover" />}
+        {p.cover_url && <img src={p.cover_url} alt="" className="aspect-video w-full rounded-xl border object-cover" />}
         {p.mockup_url && <a href={p.mockup_url} target="_blank" rel="noopener" className="mt-4 inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-semibold whitespace-nowrap text-primary hover:bg-brand-soft">{projects.detail.mockup}<ExternalLink className="size-4" aria-hidden /></a>}
         {p.body && <div className="mt-6"><RichTextViewer html={p.body} /></div>}
         <div className="mt-8 flex justify-center">
@@ -118,8 +148,8 @@ export function ProjectDetail() {
           <button type="button" onClick={remove} className="rounded-md border px-4 py-2 whitespace-nowrap text-destructive hover:bg-accent">지우기</button>
         </div>}
       </article>
-      {/* 진행 과정: 세로 타임라인(모집 → 작업 → 완성), 단계마다 그때의 칸이 매달린다(2026-11-26 B안). 왼쪽 제목 높이에서 시작 */}
-      <aside aria-labelledby="collab-progress" className="h-fit min-w-0 rounded-xl border bg-card p-5 lg:mt-12">
+      {/* 진행 과정: 세로 타임라인(모집 → 작업 → 완성), 단계마다 그때의 칸이 매달린다(2026-11-26 B안) */}
+      <aside aria-labelledby="collab-progress" className="h-fit min-w-0 rounded-xl border bg-card p-5">
         <h2 id="collab-progress" className="mb-5 text-lg font-semibold">{projects.progress.heading}</h2>
         <ol className="relative">
           <Step state={stage(p.status, 1)} title={projects.progress.recruit} meta={recruitMeta}>
@@ -133,7 +163,7 @@ export function ProjectDetail() {
               <div className="flex items-center gap-2"><dt className="shrink-0 whitespace-nowrap text-muted-foreground">{projects.detail.leader}</dt><dd><ProfileTrigger userId={p.leader_id} className="inline-flex items-center gap-1.5"><PersonAvatar name={p.leader?.nickname} url={p.leader?.avatar_url} />{p.leader?.nickname || "사용자"}</ProfileTrigger></dd></div>
               {members.length > 0 && !hideProgress && <div className="flex items-start gap-2"><dt className="shrink-0 whitespace-nowrap text-muted-foreground">{projects.detail.members}</dt><dd className="flex flex-wrap gap-x-3 gap-y-1.5">{members.map((m) => <ProfileTrigger key={m.user_id} userId={m.user_id} className="inline-flex items-center gap-1.5"><PersonAvatar name={m.nickname} url={m.avatar_url} />{m.nickname || "사용자"}</ProfileTrigger>)}</dd></div>}
             </dl>
-            {!isLeader && (mine || p.status === "recruiting") && <div className="mt-4 border-t pt-4">
+            {!isLeader && (mine || p.status === "recruiting") && <div id="collab-request" className="mt-4 scroll-mt-24 border-t pt-4">
               <RequestPanel project={p} mine={mine} onChange={load} />
             </div>}
             {isLeader && <div className="mt-4"><LeaderPanel project={p} requests={requests} accepted={members.length} onChange={load} /></div>}

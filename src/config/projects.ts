@@ -92,6 +92,8 @@ export const projects = {
     join: "카톡 단톡방 들어가기",
     changeLink: "링크 바꾸기",
   },
+  /** 상세 맨 위 빈 자리 띠 */
+  seats: { empty: "빈 자리" },
   /** 상세 오른쪽 진행 과정 타임라인 */
   progress: {
     heading: "진행 과정",
@@ -140,6 +142,7 @@ export const projects = {
     title: "함께할 선생님을 찾아요",
     count: "모집 중",
     more: "둘러보기",
+    needed: (n: number) => `${n}명 모집`,
   },
   my: {
     tab: "내 협업",

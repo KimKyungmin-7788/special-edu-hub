@@ -234,6 +234,12 @@ export const finishProject = (projectId: string, review: string, appId: string) 
 export const stopProject = (projectId: string) => call("stop_collab_project", { p_project: projectId })
 export const setNote = (projectId: string, body: string) => call("set_collab_note", { p_project: projectId, p_body: body })
 
+/** 모집 마감까지 남은 날(오늘 마감 = 0). 마감일 없으면 null */
+export function daysLeft(until: string | null): number | null {
+  if (!until) return null
+  return Math.round((Date.parse(until) - Date.parse(todayLocal())) / 86400000)
+}
+
 /** 모집 중인데 모집 마감일이 지나 새 요청을 받지 않는 상태(82) */
 export function isRecruitClosed(p: Pick<Project, "status" | "recruit_until">): boolean {
   return p.status === "recruiting" && !!p.recruit_until && p.recruit_until < todayLocal()
@@ -246,9 +252,9 @@ export async function extendRecruit(id: string, until: string): Promise<void> {
   if (!data?.length) throw new Error("고칠 권한이 없어요.")
 }
 
-/** 첫 화면 날개 배너·띠: 요청을 받는 모집 중 프로젝트(최신순, 모집 마감일 지난 것 뺌) */
-export async function getRecruiting(): Promise<Pick<Project, "id" | "title" | "needed">[]> {
-  const { data, error } = await supabase.from("collab_projects").select("id, title, needed").eq("status", "recruiting").or(`recruit_until.is.null,recruit_until.gte.${todayLocal()}`).order("created_at", { ascending: false })
+/** 첫 화면 날개 배너·띠: 요청을 받는 모집 중 프로젝트(마감 가까운 순 → 마감일 없는 것은 최신순, 마감 지난 것 뺌) */
+export async function getRecruiting(): Promise<Pick<Project, "id" | "title" | "needed" | "recruit_until">[]> {
+  const { data, error } = await supabase.from("collab_projects").select("id, title, needed, recruit_until").eq("status", "recruiting").or(`recruit_until.is.null,recruit_until.gte.${todayLocal()}`).order("recruit_until", { ascending: true, nullsFirst: false }).order("created_at", { ascending: false })
   if (error) throw error
   return data ?? []
 }

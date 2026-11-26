@@ -2,9 +2,13 @@ import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import { ArrowRight } from "lucide-react"
 import { projectPath, projects } from "@/config/projects"
-import { getRecruiting, type Project } from "@/lib/projects"
+import { daysLeft, getRecruiting, type Project } from "@/lib/projects"
+import { cn } from "@/lib/utils"
 
-type Item = Pick<Project, "id" | "title" | "needed">
+type Item = Pick<Project, "id" | "title" | "needed" | "recruit_until">
+
+/** 마감 3일 안쪽이면 노란 D-day로 눈에 띄게 */
+const SOON_DAYS = 3
 
 /** 모집 중 협업 프로젝트(없거나 표가 아직 없으면 아무것도 안 보임) */
 export function useRecruiting(): Item[] {
@@ -17,15 +21,28 @@ export function useRecruiting(): Item[] {
 export function CollabWing({ list }: { list: Item[] }) {
   if (list.length === 0) return null
   const t = projects.home
+  // A안(흰 카드·연두 머리·프로젝트별 한 칸) + B안의 D-day·모집 인원(2026-11-26 사용자 선택)
   return <aside aria-label={t.eyebrow} className="absolute inset-y-8 right-full mr-2 hidden w-44 min-[1840px]:block">
-    <div className="sticky top-24 rounded-xl border-2 border-primary bg-brand-soft p-4">
-      <p className="text-xs text-primary">{t.eyebrow}</p>
-      <p className="mt-1 font-semibold leading-snug break-keep text-brand-muted-foreground">{t.title}</p>
-      <p className="mt-3 whitespace-nowrap"><span className="text-3xl font-bold text-primary tabular-nums">{list.length}</span> <span className="text-xs text-muted-foreground">{t.count}</span></p>
-      <ul className="mt-3 space-y-1.5 border-t border-brand-line pt-3 text-sm">
-        {list.slice(0, 3).map((p) => <li key={p.id}><Link to={projectPath(p.id)} className="line-clamp-2 break-keep hover:text-primary hover:underline">{p.title}</Link></li>)}
+    <div className="sticky top-24 overflow-hidden rounded-xl border bg-card">
+      {/* 머리(문구·모집 수) 어디를 눌러도 모집 중 목록으로 */}
+      <Link to={`${projects.listPath}&status=recruiting`} className="group block border-b border-brand-line bg-brand-soft px-3 py-3 hover:bg-brand-muted">
+        <span className="block font-semibold leading-snug break-keep text-brand-muted-foreground group-hover:underline">{t.title}</span>
+        <span className="mt-1 block text-xs whitespace-nowrap text-primary">{t.eyebrow} · {t.count} {list.length}</span>
+      </Link>
+      <ul className="divide-y px-3">
+        {list.slice(0, 3).map((p) => {
+          const d = daysLeft(p.recruit_until)
+          const soon = d !== null && d <= SOON_DAYS
+          return <li key={p.id}><Link to={projectPath(p.id)} className="group block py-2.5">
+            <span className="line-clamp-2 text-sm font-semibold leading-snug break-keep group-hover:text-primary group-hover:underline">{p.title}</span>
+            <span className="mt-1 flex items-center gap-1.5 text-xs whitespace-nowrap text-muted-foreground">
+              {d !== null && <span className={cn("rounded px-1 font-semibold tabular-nums", soon ? "bg-cta text-cta-foreground" : "bg-muted")}>{d === 0 ? "D-day" : `D-${d}`}</span>}
+              {t.needed(p.needed)}
+            </span>
+          </Link></li>
+        })}
       </ul>
-      <Link to={`${projects.listPath}&status=recruiting`} className="mt-3 inline-flex items-center gap-1 text-sm font-semibold whitespace-nowrap text-primary hover:underline">{t.more}<ArrowRight className="size-3.5" aria-hidden /></Link>
+      <Link to={`${projects.listPath}&status=recruiting`} className="flex items-center gap-1 border-t bg-muted/50 px-3 py-2.5 text-sm font-semibold whitespace-nowrap text-primary hover:underline">{t.more}<ArrowRight className="size-3.5" aria-hidden /></Link>
     </div>
   </aside>
 }

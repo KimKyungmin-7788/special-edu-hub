@@ -44,7 +44,7 @@ export function RequestPanel({ project: p, mine, onChange }: { project: Project;
   </div>
   if (p.status !== "recruiting") return null
   if (isRecruitClosed(p)) return <p className="text-sm text-muted-foreground">{t.closed}</p>
-  if (!user || !profile?.isTeacherVerified) return <Link to={user ? "/verify" : "/login"} state={{ from: location.pathname }} className={cn(cta, "block text-center")}>{user ? "교사인증하고 요청하기" : "로그인하고 요청하기"}</Link>
+  if (!user || !profile?.isTeacherVerified) return <Link to={user ? "/verify" : "/login"} state={{ from: location.pathname }} className="block rounded-lg bg-primary px-4 py-2.5 text-center text-sm font-semibold whitespace-nowrap text-primary-foreground">{user ? "교사인증하고 요청하기" : "로그인하고 요청하기"}</Link>
 
   async function submit(e: FormEvent) {
     e.preventDefault()
@@ -57,7 +57,7 @@ export function RequestPanel({ project: p, mine, onChange }: { project: Project;
     <label className="text-sm font-semibold">{t.message}<textarea value={message} onChange={(e) => setMessage(e.target.value)} maxLength={REQUEST_MESSAGE_MAX} required rows={3} placeholder={t.messagePlaceholder} className={cn(input, "mt-1 font-normal")} /></label>
     <label className="text-sm font-semibold">{t.goal}<input value={goal} onChange={(e) => setGoal(e.target.value)} maxLength={REQUEST_GOAL_MAX} placeholder={t.goalPlaceholder} className={cn(input, "mt-1 font-normal")} /></label>
     {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-    <button type="submit" disabled={busy} className={cn(cta, "w-full")}>{busy ? "보내는 중…" : t.send}</button>
+    <button type="submit" disabled={busy} className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold whitespace-nowrap text-primary-foreground disabled:opacity-60">{busy ? "보내는 중…" : t.send}</button>
     <p className="flex items-center gap-1.5 text-xs text-muted-foreground"><Lock className="size-3.5 shrink-0" aria-hidden />{t.privacy}</p>
   </form>
 }
