@@ -32,6 +32,9 @@ export type Project = {
   recruit_until: string | null
   app_id: string | null
   done_at: string | null
+  /** 85: 조회수·좋아요 수(DB 함수·트리거만 바꿈). 85 전이면 없을 수 있다 */
+  view_count?: number
+  like_count?: number
   leader: { nickname: string | null; avatar_url: string | null } | null
 }
 
@@ -248,4 +251,35 @@ export async function getRecruiting(): Promise<Pick<Project, "id" | "title" | "n
   const { data, error } = await supabase.from("collab_projects").select("id, title, needed").eq("status", "recruiting").or(`recruit_until.is.null,recruit_until.gte.${todayLocal()}`).order("created_at", { ascending: false })
   if (error) throw error
   return data ?? []
+}
+
+// ── 조회수·좋아요 (85_collab_engagement.sql, 게시판과 같은 방식) ──
+
+const VIEW_THROTTLE_MS = 24 * 60 * 60 * 1000 // 같은 프로젝트는 이 브라우저에서 하루 1회
+
+/** 조회수 +1. 오류는 화면에 영향 없게 삼킨다. */
+export async function incrementProjectView(id: string): Promise<void> {
+  try {
+    const key = `viewed_project_${id}`
+    if (Date.now() - Number(localStorage.getItem(key) || 0) < VIEW_THROTTLE_MS) return
+    localStorage.setItem(key, String(Date.now()))
+  } catch {
+    // 저장 불가 환경이면 제한 없이 진행
+  }
+  const { error } = await supabase.rpc("increment_collab_view", { p_project: id })
+  if (error) console.error("[projects] 조회수 실패:", error.message)
+}
+
+export async function isProjectLiked(id: string, uid: string): Promise<boolean> {
+  const { count, error } = await supabase.from("collab_project_likes").select("project_id", { count: "exact", head: true }).eq("user_id", uid).eq("project_id", id)
+  if (error) return false
+  return (count ?? 0) > 0
+}
+
+/** 좋아요 켜기/끄기. 개수는 DB 트리거가 like_count 에 반영. */
+export async function setProjectLike(id: string, uid: string, on: boolean): Promise<void> {
+  const { error } = on
+    ? await supabase.from("collab_project_likes").insert({ user_id: uid, project_id: id })
+    : await supabase.from("collab_project_likes").delete().eq("user_id", uid).eq("project_id", id)
+  if (error && error.code !== "23505") throw error // 이미 눌러 둔 경우(중복)는 성공으로 본다
 }

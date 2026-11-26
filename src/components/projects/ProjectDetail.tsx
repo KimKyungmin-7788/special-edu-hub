@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
-import { Check, ExternalLink, Share2, X } from "lucide-react"
+import { Check, ExternalLink, Eye, Heart, Share2, X } from "lucide-react"
 import { projectPath, projects } from "@/config/projects"
 import { useAuth } from "@/lib/auth"
 import {
-  deleteProject, getMembers, getNotes, getProject, getRequests, getTeamLink, getUpdates, isOverdue, projectError,
+  deleteProject, incrementProjectView, isProjectLiked, setProjectLike, getMembers, getNotes, getProject, getRequests, getTeamLink, getUpdates, isOverdue, projectError,
   type CollabNote, type CollabRequest, type CollabUpdate, type Member, type Project,
 } from "@/lib/projects"
 import { ProfileTrigger } from "@/components/profile/ProfileTrigger"
@@ -35,6 +35,8 @@ export function ProjectDetail() {
   const [notes, setNotes] = useState<CollabNote[]>([])
   const [finishing, setFinishing] = useState(false)
   const [sharing, setSharing] = useState(false)
+  const [liked, setLiked] = useState(false)
+  const [likeBusy, setLikeBusy] = useState(false)
   const [error, setError] = useState("")
   usePageTitle(project?.title ?? projects.title)
 
@@ -52,6 +54,9 @@ export function ProjectDetail() {
     } catch (e) { setError(projectError(e)) }
   }, [id, user])
   useEffect(() => { load() }, [load])
+  // 조회수(하루 1회/브라우저)와 내 좋아요 — 게시판과 같은 방식(85)
+  useEffect(() => { if (id) void incrementProjectView(id) }, [id])
+  useEffect(() => { if (id && user) isProjectLiked(id, user.id).then(setLiked); else setLiked(false) }, [id, user])
 
   const back = <Link to={projects.listPath} className="mb-5 inline-block text-sm text-muted-foreground hover:text-primary">← {projects.title}</Link>
   if (error) return <>{back}<p role="alert" className="text-sm text-muted-foreground">{error}</p></>
@@ -66,6 +71,18 @@ export function ProjectDetail() {
   const hideProgress = p.status === "recruiting" && !isLeader && !isStaff
 
   const recruitMeta = p.recruit_until ? `${md(p.created_at.slice(0, 10))} ~ ${md(p.recruit_until)}` : `${md(p.created_at.slice(0, 10))}부터`
+
+  async function toggleLike() {
+    if (likeBusy) return
+    if (!user) { navigate("/login", { state: { from: projectPath(p.id) } }); return }
+    const on = !liked
+    const before = p
+    setLikeBusy(true)
+    setLiked(on); setProject({ ...p, like_count: Math.max(0, (p.like_count ?? 0) + (on ? 1 : -1)) })
+    try { await setProjectLike(p.id, user.id, on) }
+    catch { setLiked(!on); setProject(before); alert("좋아요를 처리하지 못했어요. 잠시 뒤 다시 시도해 주세요.") }
+    finally { setLikeBusy(false) }
+  }
 
   async function remove() {
     if (!confirm("이 프로젝트를 지울까요? 되돌릴 수 없어요.")) return
@@ -84,10 +101,17 @@ export function ProjectDetail() {
           <button type="button" onClick={() => setSharing(true)} className="inline-flex shrink-0 items-center gap-1.5 rounded-md border px-3 py-2 text-sm whitespace-nowrap hover:bg-accent"><Share2 className="size-4" aria-hidden />공유</button>
         </div>
         <h1 className="mt-2 text-3xl font-bold tracking-tight break-keep">{p.title}</h1>
+        <p className="mt-2 inline-flex items-center gap-1 text-sm whitespace-nowrap text-muted-foreground"><Eye className="size-4" aria-hidden />조회 {(p.view_count ?? 0).toLocaleString()}</p>
         <p className="mt-4 rounded-lg bg-brand-soft px-4 py-3 text-lg leading-relaxed break-keep text-brand-muted-foreground">{p.vision}</p>
         {p.cover_url && <img src={p.cover_url} alt="" className="mt-6 aspect-video w-full rounded-xl border object-cover" />}
         {p.mockup_url && <a href={p.mockup_url} target="_blank" rel="noopener" className="mt-4 inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-semibold whitespace-nowrap text-primary hover:bg-brand-soft">{projects.detail.mockup}<ExternalLink className="size-4" aria-hidden /></a>}
         {p.body && <div className="mt-6"><RichTextViewer html={p.body} /></div>}
+        <div className="mt-8 flex justify-center">
+          <button type="button" onClick={() => void toggleLike()} disabled={likeBusy} aria-pressed={liked} title={user ? undefined : "로그인하면 좋아요를 누를 수 있어요"}
+            className={cn("inline-flex items-center gap-2 rounded-full border px-5 py-2.5 text-sm font-medium whitespace-nowrap transition-colors disabled:opacity-60", liked ? "border-primary bg-primary text-primary-foreground" : "hover:bg-accent")}>
+            <Heart className={cn("size-4", liked && "fill-current")} aria-hidden />좋아요 {(p.like_count ?? 0).toLocaleString()}
+          </button>
+        </div>
         {canEdit && <div className="mt-8 flex flex-wrap gap-3 border-t pt-5 text-sm">
           <Link to={`${projects.path}/${p.id}/edit`} className="rounded-md border px-4 py-2 whitespace-nowrap hover:bg-accent">고치기</Link>
           {isLeader && (p.status === "working" || p.status === "done") && !finishing && <button type="button" onClick={() => setFinishing(true)} className="rounded-md border px-4 py-2 whitespace-nowrap hover:bg-accent">{p.status === "done" ? projects.finish.edit : projects.finish.heading}</button>}

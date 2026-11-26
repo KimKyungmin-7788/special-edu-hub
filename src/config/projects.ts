@@ -58,7 +58,7 @@ export const projects = {
     goal: "이루고 싶은 것 (선택)",
     goalPlaceholder: "우리 반에서 바로 써 보기",
     privacy: "리더와 나만 봐요",
-    send: "협업 요청 보내기",
+    send: "함께 만들고 싶어요",
     cancel: "요청 취소",
     messageLeader: "리더에게 쪽지",
     closed: "모집 기간이 끝났어요",
