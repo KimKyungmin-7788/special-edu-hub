@@ -91,6 +91,14 @@ export const projects = {
     join: "카톡 단톡방 들어가기",
     changeLink: "링크 바꾸기",
   },
+  /** 상세 오른쪽 진행 과정 타임라인 */
+  progress: {
+    heading: "진행 과정",
+    recruit: "모집",
+    work: "작업",
+    done: "완성",
+    doneHint: "후기와 소감이 여기에",
+  },
   /** 3묶음: 진행 소식·마감 지남·완성·소감·첫 화면 */
   updates: {
     heading: "진행 소식",

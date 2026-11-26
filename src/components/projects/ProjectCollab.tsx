@@ -93,9 +93,9 @@ export function LeaderPanel({ project: p, requests, accepted, onChange }: { proj
     try { await formProject(p.id, due, kakao.trim()); onChange() } catch (err) { setError(rpcError(err)) } finally { setBusy(false) }
   }
 
-  return <section aria-labelledby="leader-requests" className="rounded-xl border bg-card p-5">
+  return <section aria-labelledby="leader-requests" className="rounded-lg border p-4">
     <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-      <h2 id="leader-requests" className="font-semibold">{t.heading} {requests.length}</h2>
+      <h3 id="leader-requests" className="font-semibold">{t.heading} {requests.length}</h3>
       <p className="text-sm whitespace-nowrap text-muted-foreground">{projects.detail.members} {accepted}명 · 필요 {p.needed}명</p>
     </div>
     {closed && <form onSubmit={extend} className="mb-4 rounded-lg border-2 border-cta p-4">
@@ -145,10 +145,10 @@ export function TeamSpace({ project: p, members, link, isLeader, onChange }: { p
     if (!KAKAO_URL.test(value.trim())) return setError("카카오톡 오픈채팅 주소(https://open.kakao.com/…)를 넣어 주세요.")
     try { await setTeamLink(p.id, value.trim()); setEditing(false); setError(""); onChange() } catch (err) { setError(rpcError(err)) }
   }
-  return <section aria-label={t.heading} className="rounded-xl border-2 border-primary bg-card p-5">
+  return <section aria-label={t.heading} className="rounded-lg border border-primary p-4">
     <div className="flex flex-wrap items-center justify-between gap-4">
       <div className="min-w-0">
-        <h2 className="font-semibold">{t.heading}</h2>
+        <h3 className="font-semibold">{t.heading}</h3>
         <ul className="mt-2 flex flex-wrap gap-x-3 gap-y-1.5 text-sm text-muted-foreground">
           <li className="flex items-center gap-1.5"><PersonAvatar name={p.leader?.nickname} url={p.leader?.avatar_url} />{p.leader?.nickname || "사용자"}(리더)</li>
           {members.map((m) => <li key={m.user_id} className="flex items-center gap-1.5"><PersonAvatar name={m.nickname} url={m.avatar_url} />{m.nickname || "사용자"}</li>)}

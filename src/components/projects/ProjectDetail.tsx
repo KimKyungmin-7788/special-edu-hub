@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
-import { ExternalLink, Share2 } from "lucide-react"
+import { Check, ExternalLink, Share2, X } from "lucide-react"
 import { projectPath, projects } from "@/config/projects"
 import { useAuth } from "@/lib/auth"
 import {
@@ -15,6 +15,7 @@ import { ProjectStatusBadge } from "@/components/projects/ProjectStatusBadge"
 import { LeaderPanel, RequestPanel, TeamSpace } from "@/components/projects/ProjectCollab"
 import { DoneSection, FinishForm, OverduePanel, UpdatesSection } from "@/components/projects/ProjectProgress"
 import { usePageTitle } from "@/lib/usePageTitle"
+import { cn } from "@/lib/utils"
 
 /**
  * 프로젝트 상세 — 왼쪽 비전·소개, 오른쪽 필요 인원·리더·함께하는 사람·협업 요청.
@@ -63,6 +64,8 @@ export function ProjectDetail() {
   const isMember = mine?.status === "accepted"
   const full = members.length >= p.needed
 
+  const recruitMeta = p.recruit_until ? `${md(p.created_at.slice(0, 10))} ~ ${md(p.recruit_until)}` : `${md(p.created_at.slice(0, 10))}부터`
+
   async function remove() {
     if (!confirm("이 프로젝트를 지울까요? 되돌릴 수 없어요.")) return
     try { await deleteProject(p); navigate(projects.listPath) } catch { alert("지우지 못했어요. 잠시 뒤 다시 시도해 주세요.") }
@@ -72,7 +75,7 @@ export function ProjectDetail() {
     {back}
     {/* 마감 지남(리더만): 급한 일이라 두 칸 위 가로로 */}
     {isLeader && isOverdue(p) && !finishing && <OverduePanel project={p} onFinish={() => setFinishing(true)} onChange={load} />}
-    {/* 왼쪽 = 리더가 처음 게시한 글, 오른쪽 = 진행(인원·팀 공간·완성 후기·진행 소식·받은 요청) 1:1 (2026-11-25 사용자 요청) */}
+    {/* 왼쪽 = 리더가 처음 게시한 글, 오른쪽 = 진행 과정 타임라인 1:1 */}
     <div className="grid gap-8 lg:grid-cols-2">
       <article className="min-w-0">
         <div className="flex items-center justify-between gap-3">
@@ -90,28 +93,64 @@ export function ProjectDetail() {
           <button type="button" onClick={remove} className="rounded-md border px-4 py-2 whitespace-nowrap text-destructive hover:bg-accent">지우기</button>
         </div>}
       </article>
-      <aside aria-label="진행" className="flex min-w-0 flex-col gap-4">
-        {p.status === "done" && <DoneSection project={p} members={members} notes={notes} myId={user?.id} onChange={load} />}
-        {isLeader && finishing && <FinishForm project={p} onCancel={() => setFinishing(false)} onChange={load} />}
-        <section aria-label={projects.detail.needed} className="rounded-xl border bg-card p-5">
-          <div className="flex items-center justify-between gap-2 text-sm font-semibold"><span>{projects.detail.needed}</span><span className="whitespace-nowrap">{members.length} / {p.needed}명</span></div>
-          <div className="mt-2 h-1.5 rounded-full bg-muted"><div className="h-1.5 rounded-full bg-primary" style={{ width: `${Math.min(100, (members.length / p.needed) * 100)}%` }} /></div>
-          <dl className="mt-4 space-y-2 text-sm">
-            {p.status === "recruiting" && p.recruit_until && <div className="flex items-center gap-2"><dt className="shrink-0 whitespace-nowrap text-muted-foreground">{projects.detail.recruitUntil}</dt><dd className="whitespace-nowrap">{md(p.recruit_until)}</dd></div>}
-            {p.status === "recruiting" && p.due_date && <div className="flex items-center gap-2"><dt className="shrink-0 whitespace-nowrap text-muted-foreground">{projects.detail.dueDate}</dt><dd className="whitespace-nowrap">{md(p.due_date)}</dd></div>}
-            <div className="flex items-center gap-2"><dt className="shrink-0 whitespace-nowrap text-muted-foreground">{projects.detail.leader}</dt><dd><ProfileTrigger userId={p.leader_id} className="inline-flex items-center gap-1.5"><PersonAvatar name={p.leader?.nickname} url={p.leader?.avatar_url} />{p.leader?.nickname || "사용자"}</ProfileTrigger></dd></div>
-            {members.length > 0 && <div className="flex items-start gap-2"><dt className="shrink-0 whitespace-nowrap text-muted-foreground">{projects.detail.members}</dt><dd className="flex flex-wrap gap-x-3 gap-y-1.5">{members.map((m) => <ProfileTrigger key={m.user_id} userId={m.user_id} className="inline-flex items-center gap-1.5"><PersonAvatar name={m.nickname} url={m.avatar_url} />{m.nickname || "사용자"}</ProfileTrigger>)}</dd></div>}
-          </dl>
-          {!isLeader && (mine || p.status === "recruiting") && <div className="mt-5 border-t pt-5">
-            <RequestPanel project={p} mine={mine} full={full} onChange={load} />
-          </div>}
-        </section>
-        {(isLeader || isMember) && p.status === "working" && <TeamSpace project={p} members={members} link={link} isLeader={isLeader} onChange={load} />}
-        <UpdatesSection project={p} updates={updates} isLeader={isLeader} isStaff={isStaff} onChange={load} />
-        {isLeader && <LeaderPanel project={p} requests={requests} accepted={members.length} onChange={load} />}
+      {/* 진행 과정: 세로 타임라인(모집 → 작업 → 완성), 단계마다 그때의 칸이 매달린다(2026-11-26 B안). 왼쪽 제목 높이에서 시작 */}
+      <aside aria-labelledby="collab-progress" className="h-fit min-w-0 rounded-xl border bg-card p-5 lg:mt-12">
+        <h2 id="collab-progress" className="mb-5 text-lg font-semibold">{projects.progress.heading}</h2>
+        <ol className="relative">
+          <Step state={stage(p.status, 1)} title={projects.progress.recruit} meta={recruitMeta}>
+            <div className="flex items-center justify-between gap-2 text-sm font-semibold"><span>{projects.detail.needed}</span><span className="whitespace-nowrap">{members.length} / {p.needed}명</span></div>
+            <div className="mt-2 h-1.5 rounded-full bg-muted"><div className="h-1.5 rounded-full bg-primary" style={{ width: `${Math.min(100, (members.length / p.needed) * 100)}%` }} /></div>
+            <dl className="mt-4 space-y-2 text-sm">
+              <div className="flex items-center gap-2"><dt className="shrink-0 whitespace-nowrap text-muted-foreground">{projects.detail.leader}</dt><dd><ProfileTrigger userId={p.leader_id} className="inline-flex items-center gap-1.5"><PersonAvatar name={p.leader?.nickname} url={p.leader?.avatar_url} />{p.leader?.nickname || "사용자"}</ProfileTrigger></dd></div>
+              {members.length > 0 && <div className="flex items-start gap-2"><dt className="shrink-0 whitespace-nowrap text-muted-foreground">{projects.detail.members}</dt><dd className="flex flex-wrap gap-x-3 gap-y-1.5">{members.map((m) => <ProfileTrigger key={m.user_id} userId={m.user_id} className="inline-flex items-center gap-1.5"><PersonAvatar name={m.nickname} url={m.avatar_url} />{m.nickname || "사용자"}</ProfileTrigger>)}</dd></div>}
+            </dl>
+            {!isLeader && (mine || p.status === "recruiting") && <div className="mt-4 border-t pt-4">
+              <RequestPanel project={p} mine={mine} full={full} onChange={load} />
+            </div>}
+            {isLeader && <div className="mt-4"><LeaderPanel project={p} requests={requests} accepted={members.length} onChange={load} /></div>}
+          </Step>
+          <Step state={stage(p.status, 2)} title={projects.progress.work} meta={p.due_date ? (p.status === "recruiting" ? `${md(p.due_date)} 목표` : `${md(p.due_date)}까지`) : undefined}>
+            {p.status !== "recruiting" && <div className="flex flex-col gap-3">
+              {(isLeader || isMember) && p.status === "working" && <TeamSpace project={p} members={members} link={link} isLeader={isLeader} onChange={load} />}
+              <UpdatesSection project={p} updates={updates} isLeader={isLeader} isStaff={isStaff} onChange={load} />
+            </div>}
+          </Step>
+          <Step last state={stage(p.status, 3)} title={p.status === "stopped" ? projects.status.stopped : projects.progress.done} meta={p.status === "done" ? undefined : p.status === "stopped" ? undefined : projects.progress.doneHint}>
+            {isLeader && finishing && <FinishForm project={p} onCancel={() => setFinishing(false)} onChange={load} />}
+            {p.status === "done" && !finishing && <DoneSection project={p} members={members} notes={notes} myId={user?.id} onChange={load} />}
+          </Step>
+        </ol>
       </aside>
     </div>
     <BoardShareDialog open={sharing} onClose={() => setSharing(false)} id={p.id} title={p.title} url={`${window.location.origin}${projectPath(p.id)}`} />
   </div>
 }
 
+
+type StepState = "done" | "current" | "upcoming" | "stopped"
+
+/** 단계 상태: 모집 중이면 1단계가 지금, 작업 중이면 2단계, 완성이면 3단계(완료 표시), 그만둠은 3단계 회색 */
+function stage(status: Project["status"], n: 1 | 2 | 3): StepState {
+  const now = status === "recruiting" ? 1 : status === "working" ? 2 : 3
+  if (status === "stopped" && n === 3) return "stopped"
+  if (status === "done" && n === 3) return "done"
+  return n < now ? "done" : n === now ? "current" : "upcoming"
+}
+
+/** 타임라인 한 단계: 왼쪽 점·세로선, 오른쪽 단계 이름·날짜·그때의 칸 */
+function Step({ state, title, meta, last, children }: { state: StepState; title: string; meta?: string; last?: boolean; children?: React.ReactNode }) {
+  return <li className={cn("relative pl-9", !last && "pb-6")} aria-current={state === "current" ? "step" : undefined}>
+    {!last && <span aria-hidden className={cn("absolute top-7 bottom-0 left-[11px] w-0.5", state === "done" ? "bg-primary" : "bg-border")} />}
+    <span aria-hidden className={cn("absolute top-0 left-0 flex size-6 items-center justify-center rounded-full border-2 text-xs font-semibold",
+      state === "done" ? "border-primary bg-primary text-primary-foreground"
+      : state === "current" ? "border-primary bg-card text-primary"
+      : "border-border bg-card text-muted-foreground")}>
+      {state === "done" ? <Check className="size-3.5" /> : state === "stopped" ? <X className="size-3.5" /> : state === "current" ? <span className="size-2 rounded-full bg-primary" /> : null}
+    </span>
+    <p className="flex flex-wrap items-baseline gap-x-2 leading-6">
+      <span className={cn("font-semibold whitespace-nowrap", state === "current" ? "text-primary" : state === "upcoming" || state === "stopped" ? "text-muted-foreground" : "")}>{title}</span>
+      {meta && <span className="text-sm whitespace-nowrap text-muted-foreground">{meta}</span>}
+    </p>
+    {children && <div className="mt-3">{children}</div>}
+  </li>
+}
