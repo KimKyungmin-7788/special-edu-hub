@@ -17,6 +17,13 @@ export const projects = {
     done: "완성",
     stopped: "그만둠",
   } satisfies Record<ProjectStatus, string>,
+  /** 완성 표식(왕관 메달) — 협업 카드·상세, 그 협업으로 만든 자료 카드에 붙는다(2026-11-28 C안) */
+  medal: {
+    label: "협업 완성",
+    /** 자료 카드에서는 '완성'을 빼고(2026-11-28 사용자 요청) */
+    short: "협업",
+    together: (n: number) => `${n}명이 함께`,
+  },
   /** 목록 걸러보기 순서. 그만둠은 '전체'에서 빼고 그만둠 칩에서만 보인다(3묶음) */
   filters: ["recruiting", "working", "done", "stopped"] as ProjectStatus[],
   emptyTitle: "첫 프로젝트를 기다리고 있어요",

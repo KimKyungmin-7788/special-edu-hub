@@ -62,6 +62,11 @@
   --color-avatar-4-foreground: var(--avatar-4-foreground);
   --color-avatar-5: var(--avatar-5);
   --color-avatar-5-foreground: var(--avatar-5-foreground);
+  --color-gold: var(--gold);
+  --color-gold-foreground: var(--gold-foreground);
+  --color-gold-soft: var(--gold-soft);
+  --color-gold-line: var(--gold-line);
+  --color-gold-text: var(--gold-text);
   --color-research: var(--research);
   --color-research-foreground: var(--research-foreground);
   --color-avatar-6: var(--avatar-6);

@@ -122,6 +122,13 @@
   --research: #e9e4f6;
   --research-foreground: #45366e; /* 대비 8.9:1 */
 
+  /* 협업 완성 왕관 메달 — '협업으로 완성했다'는 표식에만 쓴다(협업 카드·자료 카드). */
+  --gold: #d9a520; /* 메달 원(왕관 아이콘 바탕) */
+  --gold-foreground: #ffffff; /* 메달 원 위 왕관 */
+  --gold-soft: #fffbef; /* 꼬리표 바탕 */
+  --gold-line: #e3bf5a; /* 꼬리표 테두리 */
+  --gold-text: #7a5200; /* 꼬리표 글씨(바탕 대비 6.7:1) */
+
   --cta: #fcd34d;
   --cta-foreground: #1b3d22; /* 대비 8.4:1 */
   --heart: #e0587a; /* 서로 존중 약속에서 체크할 때 톡 튀어 오르는 하트 */

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react"
 import { Link, useSearchParams } from "react-router-dom"
 import { Users } from "lucide-react"
 import { projectPath, projects, type ProjectStatus } from "@/config/projects"
-import { getProjects, projectError, type Project } from "@/lib/projects"
+import { getPeopleCount, getProjects, projectError, type Project } from "@/lib/projects"
 import { cn } from "@/lib/utils"
 import { PersonAvatar } from "@/components/projects/PersonAvatar"
 import { ProjectStatusBadge } from "@/components/projects/ProjectStatusBadge"
@@ -40,13 +40,16 @@ export function ProjectCatalogue() {
 
 function ProjectCard({ project: p }: { project: Project }) {
   const to = projectPath(p.id)
+  // 완성 메달의 'N명이 함께'
+  const [people, setPeople] = useState<number>()
+  useEffect(() => { if (p.status === "done") getPeopleCount(p.id).then(setPeople) }, [p.id, p.status])
   return <li className="flex flex-col overflow-hidden rounded-xl border bg-card transition-colors hover:border-brand-line">
     <Link to={to} tabIndex={-1} aria-hidden>
       {p.cover_url ? <img src={p.cover_url} alt="" loading="lazy" className="aspect-video w-full object-cover" />
         : <div className="flex aspect-video items-end bg-brand-soft p-5"><span className="line-clamp-2 text-xl leading-snug font-bold break-keep text-brand-muted-foreground">{p.title}</span></div>}
     </Link>
     <div className="flex flex-1 flex-col p-4">
-      <ProjectStatusBadge project={p} />
+      <ProjectStatusBadge project={p} people={people} />
       <Link to={to} className="mt-2 font-bold leading-snug break-keep hover:text-primary">{p.title}</Link>
       <p className="mt-1 line-clamp-2 text-sm break-keep text-muted-foreground">{p.vision}</p>
       <p className="mt-auto flex items-center gap-1.5 pt-4 text-sm text-muted-foreground"><span className="whitespace-nowrap">{projects.detail.leader}</span><PersonAvatar name={p.leader?.nickname} url={p.leader?.avatar_url} />{p.leader?.nickname || "사용자"}</p>

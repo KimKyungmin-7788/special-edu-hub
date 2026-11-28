@@ -111,7 +111,7 @@ export function ProjectDetail() {
     <section aria-labelledby="project-title" className="mb-8 grid items-center gap-6 rounded-2xl bg-brand-soft p-6 sm:p-8 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-3">
-          <ProjectStatusBadge project={p} />
+          <ProjectStatusBadge project={p} people={members.length + 1} />
           <span className="inline-flex items-center gap-1 text-sm whitespace-nowrap text-muted-foreground"><Eye className="size-4" aria-hidden />조회 {(p.view_count ?? 0).toLocaleString()}</span>
         </div>
         <h1 id="project-title" className="mt-3 text-3xl font-bold tracking-tight break-keep">{p.title}</h1>

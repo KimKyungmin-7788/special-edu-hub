@@ -126,6 +126,24 @@ export function rpcError(e: unknown): string {
   return /[가-힣]/.test(msg) ? msg : "처리하지 못했어요. 잠시 뒤 다시 시도해 주세요."
 }
 
+/** 협업 완성 메달의 'N명이 함께' — 리더 1 + 함께하는 사람. 실패하면 사람 수 없이 보인다. */
+export async function getPeopleCount(projectId: string): Promise<number | undefined> {
+  const { data, error } = await supabase.rpc("collab_members", { p_project: projectId })
+  return error ? undefined : (data as unknown[]).length + 1
+}
+
+let doneAppsCache: Promise<Map<string, number | undefined>> | null = null
+/** 완성된 협업에 연결된 자료 id → 함께한 사람 수. 자료 카드 메달용, 한 번만 불러 둔다. */
+export function getCollabDoneApps(): Promise<Map<string, number | undefined>> {
+  doneAppsCache ??= (async () => {
+    const { data, error } = await supabase.from("collab_projects").select("id, app_id").eq("status", "done").not("app_id", "is", null)
+    if (error) return new Map()
+    const rows = data as { id: string; app_id: string }[]
+    return new Map(await Promise.all(rows.map(async (r) => [r.app_id, await getPeopleCount(r.id)] as const)))
+  })()
+  return doneAppsCache
+}
+
 export async function getMembers(projectId: string): Promise<Member[]> {
   const { data, error } = await supabase.rpc("collab_members", { p_project: projectId })
   if (error) throw error

@@ -1,9 +1,11 @@
 import { projects } from "@/config/projects"
 import { isRecruitClosed, type Project } from "@/lib/projects"
 import { cn } from "@/lib/utils"
+import { CollabMedal } from "@/components/projects/CollabMedal"
 
-/** 모집 중 · N명 · 11월 30일 마감 / 모집 기간 끝남 / 작업 중 · 12월 20일까지 / 완성 / 그만둠 */
-export function ProjectStatusBadge({ project: p }: { project: Pick<Project, "status" | "needed" | "due_date"> & { recruit_until?: string | null } }) {
+/** 모집 중 · N명 · 11월 30일 마감 / 모집 기간 끝남 / 작업 중 · 12월 20일까지 / 협업 완성(왕관 메달) / 그만둠 */
+export function ProjectStatusBadge({ project: p, people }: { project: Pick<Project, "status" | "needed" | "due_date"> & { recruit_until?: string | null }; people?: number }) {
+  if (p.status === "done") return <CollabMedal people={people} />
   const recruit = { status: p.status, recruit_until: p.recruit_until ?? null }
   const label = isRecruitClosed(recruit) ? projects.request.closedBadge
     : p.status === "recruiting" ? `${projects.status.recruiting} · ${p.needed}명${p.recruit_until ? ` · ${dueLabel(p.recruit_until)} 마감` : ""}`

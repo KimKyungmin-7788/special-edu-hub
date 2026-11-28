@@ -20,6 +20,8 @@ import { avatarTone, AVATAR_PHOTO } from "@/lib/avatarTone"
 import { ProfileTrigger } from "@/components/profile/ProfileTrigger"
 import { relativeTime } from "@/lib/time"
 import { VerifyMark } from "@/components/app/VerifyMark"
+import { CollabMedal } from "@/components/projects/CollabMedal"
+import { getCollabDoneApps } from "@/lib/projects"
 
 /** 아래줄 아이콘 버튼(바로가기·공유). */
 const iconButtonClass =
@@ -71,6 +73,7 @@ export function AppCard({
   const teachersOnly = app.visibility === "teachers" && !app.locked
   const [shareOpen, setShareOpen] = useState(false)
   const preview = usePreviewOnHover(app.locked ? null : app.previewUrl)
+  const collab = useCollabDone(app.id)
 
   return (
     <>
@@ -151,6 +154,8 @@ export function AppCard({
                 교사 전용
               </span>
             )}
+            {/* 협업 완성 메달 — 완성된 협업 프로젝트에 연결된 자료 */}
+            {collab && <CollabMedal short people={collab.people} />}
             {/* 검증 마크(68) — 앱 링크가 있는 자료만 */}
             {!app.locked && app.appUrl && <VerifyMark status={app.verificationStatus} iconOnly />}
             {move && (
@@ -318,4 +323,15 @@ function usePreviewOnHover(url: string | null) {
       setShown(false)
     },
   }
+}
+
+/** 이 자료가 완성된 협업 프로젝트의 결과물이면 { people } (함께한 사람 수, 모르면 undefined) */
+function useCollabDone(appId: string): { people?: number } | null {
+  const [hit, setHit] = useState<{ people?: number } | null>(null)
+  useEffect(() => {
+    let alive = true
+    getCollabDoneApps().then((m) => { if (alive && m.has(appId)) setHit({ people: m.get(appId) }) })
+    return () => { alive = false }
+  }, [appId])
+  return hit
 }
