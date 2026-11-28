@@ -1,3 +1,4 @@
+import { Fragment } from "react"
 import { NavLink, useLocation } from "react-router-dom"
 import { navItems, type NavChild, type NavItem } from "@/config/nav"
 import { cn } from "@/lib/utils"
@@ -56,10 +57,14 @@ export function Nav({
     <nav aria-label="주 메뉴" className="h-full">
       <ul className="flex h-full items-stretch">
         {navItems.map((item) => (
-          <li key={item.to} className="group/nav relative flex">
-            <BarLink item={item} density={density} />
-            {item.children && <SubMenu label={item.label} items={item.children} />}
-          </li>
+          <Fragment key={item.to}>
+            {/* 묶음 구분선(홈 | 자료 | 함께 | 안내) */}
+            {item.groupStart && <li aria-hidden className={cn("my-auto h-4 w-px shrink-0 bg-border", density >= 1 ? "mx-0.5" : "mx-1.5")} />}
+            <li className="group/nav relative flex">
+              <BarLink item={item} density={density} />
+              {item.children && <SubMenu label={item.label} items={item.children} />}
+            </li>
+          </Fragment>
         ))}
       </ul>
     </nav>
@@ -84,7 +89,7 @@ function BarLink({ item, density }: { item: NavItem; density: number }) {
           "after:absolute after:-bottom-px after:h-0.5 after:rounded-full after:transition-colors",
           isActive || inChild
             ? "font-semibold text-primary after:bg-primary"
-            : "font-medium text-foreground/70 hover:text-foreground after:bg-transparent hover:after:bg-border",
+            : "font-medium text-foreground/90 hover:text-foreground after:bg-transparent hover:after:bg-border",
         )
       }
     >
