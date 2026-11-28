@@ -34,7 +34,7 @@ export function ProjectCatalogue() {
     {error ? <div role="alert" className="rounded-xl border px-4 py-10 text-center text-sm text-muted-foreground">{error}</div>
       : !list ? <p role="status" className="py-10 text-center text-sm text-muted-foreground">불러오는 중…</p>
       : shown.length === 0 ? <div className="rounded-xl border px-4 py-10 text-center"><Users className="mx-auto size-7 text-muted-foreground" aria-hidden /><p className="mt-3 font-medium">{filter ? `${projects.status[filter]} 프로젝트가 없습니다` : projects.emptyTitle}</p></div>
-      : <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{shown.map((p) => <ProjectCard key={p.id} project={p} />)}</ul>}
+      : <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{shown.map((p) => <ProjectCard key={p.id} project={p} />)}</ul>}
   </div>
 }
 
