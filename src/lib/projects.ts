@@ -83,7 +83,10 @@ export async function deleteProject(project: Project): Promise<void> {
   const { data, error } = await supabase.from("collab_projects").delete().eq("id", project.id).select("id")
   if (error) throw error
   if (!data?.length) throw new Error("지울 권한이 없어요.")
-  if (project.cover_url) await removeThumbnail(project.cover_url).catch(() => {})
+  if (!project.cover_url) return
+  // 등록된 자료의 썸네일을 대표 사진으로 같이 쓰는 경우(87·88)에는 파일을 남긴다
+  const { data: shared, error: checkError } = await supabase.from("apps").select("id").eq("thumbnail_url", project.cover_url).limit(1)
+  if (!checkError && !shared?.length) await removeThumbnail(project.cover_url).catch(() => {})
 }
 
 /** 표에 없을 때(SQL 79 적용 전) 알아볼 수 있는 안내 */
